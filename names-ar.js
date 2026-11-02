@@ -165,44 +165,102 @@
     .replace(/[^a-z0-9 ]+/g, ' ')
     .split(/\s+/).filter((w) => w && !STRIP.has(w)).join(' ');
 
+  // نعيد بناء القواميس بمفاتيح موحّدة (تُحذف fc/club.. من المفتاح) حتى تتطابق مع key() دائمًا
+  const normMap = (obj) => { const m = new Map(); Object.entries(obj).forEach(([k, v]) => { const nk = key(k); if (nk && !m.has(nk)) m.set(nk, v); }); return m; };
+  const TM = normMap(TEAMS);
+  const PM = normMap(PLAYERS);
+
+  /* ---------- كتابة تقريبية بالعربي لأي اسم غير موجود في القاموس ---------- */
+  const WORDS = {
+    real: 'ريال', united: 'يونايتد', city: 'سيتي', town: 'تاون', rovers: 'روفرز', wanderers: 'واندررز', athletic: 'أتلتيك', atletico: 'أتلتيكو', sporting: 'سبورتينغ', racing: 'راسينغ', deportivo: 'ديبورتيفو',
+    olympique: 'أولمبيك', olympic: 'أولمبيك', sport: 'سبورت', sports: 'سبورتس', dynamo: 'دينامو', inter: 'إنتر', stade: 'ستاد', union: 'يونيون', albion: 'ألبيون', county: 'كاونتي', rangers: 'رينجرز', athletics: 'أتلتيكس',
+    de: 'دي', del: 'ديل', da: 'دا', do: 'دو', dos: 'دوس', van: 'فان', von: 'فون', di: 'دي', la: 'لا', le: 'لو', el: 'ال', al: 'ال', women: '(سيدات)', w: '(سيدات)', ii: 'الثاني', b: 'ب',
+    u17: 'تحت 17', u18: 'تحت 18', u19: 'تحت 19', u20: 'تحت 20', u21: 'تحت 21', u23: 'تحت 23',
+  };
+  const INITIAL = { a: 'أ', b: 'ب', c: 'س', d: 'د', e: 'إ', f: 'ف', g: 'ج', h: 'هـ', i: 'إ', j: 'ج', k: 'ك', l: 'ل', m: 'م', n: 'ن', o: 'أ', p: 'ب', q: 'ك', r: 'ر', s: 'س', t: 'ت', u: 'أ', v: 'ف', w: 'و', x: 'إ', y: 'ي', z: 'ز' };
+  const CONS = { b: 'ب', d: 'د', f: 'ف', h: 'ه', k: 'ك', l: 'ل', m: 'م', n: 'ن', p: 'ب', r: 'ر', s: 'س', t: 'ت', v: 'ف', w: 'و', z: 'ز', q: 'ك', x: 'كس', j: 'ج' };
+  const VOW = 'aeiou';
+  const translitWord = (w) => {
+    if (WORDS[w]) return WORDS[w];
+    if (/\d/.test(w)) return w;
+    let out = '';
+    for (let i = 0; i < w.length; i += 1) {
+      const c = w[i]; const n = w[i + 1] || ''; const two = c + n; const three = two + (w[i + 2] || '');
+      const initial = i === 0;
+      if (three === 'sch') { out += 'ش'; i += 2; continue; }
+      if (two === 'ch') { out += 'تش'; i += 1; continue; }
+      if (two === 'sh') { out += 'ش'; i += 1; continue; }
+      if (two === 'ph') { out += 'ف'; i += 1; continue; }
+      if (two === 'th') { out += 'ت'; i += 1; continue; }
+      if (two === 'ck') { out += 'ك'; i += 1; continue; }
+      if (two === 'qu') { out += 'ك'; i += 1; if (!'ei'.includes(w[i + 1] || '')) out += 'و'; continue; }
+      if (two === 'gu' && 'ei'.includes(w[i + 2] || '')) { out += 'غ'; i += 1; continue; }
+      if (c === 'c') { out += 'eiy'.includes(n) ? 'س' : 'ك'; continue; }
+      if (c === 'g') { out += 'eiy'.includes(n) ? 'ج' : 'غ'; continue; }
+      if (two === 'ou' || two === 'oo') { out += initial ? 'أو' : 'و'; i += 1; continue; }
+      if (two === 'ee') { out += initial ? 'إي' : 'ي'; i += 1; continue; }
+      if (c === 'y') { out += 'ي'; continue; }
+      if (VOW.includes(c)) {
+        if (initial) out += { a: 'أ', e: 'إ', i: 'إ', o: 'أو', u: 'أو' }[c];
+        else out += { a: 'ا', e: 'ي', i: 'ي', o: 'و', u: 'و' }[c];
+        continue;
+      }
+      out += CONS[c] || '';
+    }
+    return out.replace(/(.)\1+/g, '$1');
+  };
+  const translit = (name, { dropStrip = false } = {}) => {
+    const flat = String(name ?? '').toLowerCase().replace(/ñ/g, 'ny').replace(/ß/g, 'ss').replace(/[øö]/g, 'o').replace(/æ/g, 'ae').replace(/ł/g, 'l').replace(/đ/g, 'd').replace(/ı/g, 'i')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '');
+    if (!/[a-z]/.test(flat)) return String(name ?? '').trim(); // ليس لاتينيًا (عربي مثلًا): نتركه
+    const tokens = flat.replace(/[^a-z0-9. ]+/g, ' ').split(/\s+/).filter(Boolean).filter((t) => !(dropStrip && STRIP.has(t)));
+    const out = [];
+    for (let i = 0; i < tokens.length; i += 1) {
+      const t = tokens[i];
+      if (/^[a-z]\.$/.test(t)) { out.push(`${INITIAL[t[0]]}.`); continue; }
+      const word = t.replace(/\./g, '');
+      if ((word === 'al' || word === 'el') && i < tokens.length - 1) { out.push(`ال${translitWord(tokens[i + 1].replace(/\./g, ''))}`); i += 1; continue; }
+      out.push(translitWord(word));
+    }
+    return out.join(' ').trim();
+  };
+
   const unknown = new Set();
   const team = (name) => {
     const original = String(name ?? '');
+    if (!original) return '';
     let k = key(original);
+    let base = original;
     let suffix = '';
-    if (/\sw$/.test(k)) { k = k.replace(/\sw$/, ''); suffix = ' (سيدات)'; }
-    const ar = TEAMS[k];
+    const age = k.match(/\su(\d\d)$/);
+    if (age) { k = k.replace(/\su\d\d$/, ''); base = base.replace(/\s+U\d\d$/i, ''); suffix = ` (تحت ${age[1]})`; }
+    if (/\sii$/.test(k)) { k = k.replace(/\sii$/, ''); base = base.replace(/\s+II$/i, ''); suffix += ' (الثاني)'; }
+    if (/\sw$/.test(k)) { k = k.replace(/\sw$/, ''); base = base.replace(/\s+W$/i, ''); suffix = ' (سيدات)' + suffix; }
+    const ar = TM.get(k);
     if (ar) return ar + suffix;
-    if (original) unknown.add(original);
-    return original;
+    unknown.add(original);
+    return translit(base, { dropStrip: true }) + suffix;
   };
 
   const unknownPlayers = new Set();
-  // اللاعب: نطابق الاسم كاملًا، ثم آخر كلمة منه (اللقب). يُرجع العربي أو الاسم الأصلي لو غير معروف.
+  // اللاعب/المدرب: الاسم كاملًا، ثم اللقب (آخر كلمة)، وإلا كتابة تقريبية بالعربي
   const player = (name) => {
     const original = String(name ?? '').trim();
     if (!original) return '';
     const k = key(original);
-    if (PLAYERS[k]) return PLAYERS[k];
+    if (PM.has(k)) return PM.get(k);
     const parts = k.split(' ');
     const last = parts[parts.length - 1];
-    if (parts.length > 1 && PLAYERS[last]) return PLAYERS[last];
-    if (parts.length > 1 && PLAYERS[parts.slice(-2).join(' ')]) return PLAYERS[parts.slice(-2).join(' ')];
+    if (parts.length > 1 && PM.has(last)) return PM.get(last);
+    if (parts.length > 2 && PM.has(parts.slice(-2).join(' '))) return PM.get(parts.slice(-2).join(' '));
     unknownPlayers.add(original);
-    return original;
+    return translit(original);
   };
 
-  // أسماء إضافية من جدول Supabase `name_translations` (kind: team | player) — تضيفها من Table Editor بدون تعديل كود.
+  // أسماء إضافية من جدول Supabase `name_translations` (kind: team | player) — تتفوق على القاموس والكتابة التلقائية.
   const remote = { team: new Map(), player: new Map() };
-  const origTeam = team;
-  const teamFinal = (name) => {
-    const hit = remote.team.get(key(name));
-    return hit || origTeam(name);
-  };
-  const playerFinal = (name) => {
-    const hit = remote.player.get(key(name));
-    return hit || player(name);
-  };
+  const teamFinal = (name) => remote.team.get(key(name)) || team(name);
+  const playerFinal = (name) => remote.player.get(key(name)) || player(name);
   const ready = (async () => {
     try {
       const db = window.yrSupabase;
@@ -213,8 +271,8 @@
     } catch { /* الجدول اختياري */ }
   })();
 
-  window.YR_NAMES = { team: teamFinal, player: playerFinal, ready, unknown: () => ({ teams: [...unknown].sort(), players: [...unknownPlayers].sort() }) };
+  window.YR_NAMES = { team: teamFinal, player: playerFinal, translit, ready, unknown: () => ({ teams: [...unknown].sort(), players: [...unknownPlayers].sort() }) };
   window.addEventListener('load', () => setTimeout(() => {
-    if (unknown.size || unknownPlayers.size) console.info('[يلا رياضة] أسماء بدون ترجمة عربية:', { teams: [...unknown].sort(), players: [...unknownPlayers].sort() });
+    if (unknown.size || unknownPlayers.size) console.info('[يلا رياضة] أسماء كُتبت تلقائيًا (تقريبية) — صحّحها في names-ar.js أو جدول name_translations:', { teams: [...unknown].sort(), players: [...unknownPlayers].sort() });
   }, 2500));
 })();

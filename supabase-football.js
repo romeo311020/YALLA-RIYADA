@@ -50,18 +50,32 @@
   };
   const centerMarkup = (m) => {
     if (m.home_score == null || m.away_score == null) return `<div class="kick">${escapeHtml(formatTime(m.kickoff))}</div>`;
-    return `<div class="score">${escapeHtml(m.home_score)} : ${escapeHtml(m.away_score)}</div>`;
+    // الصفحة من اليمين لليسار: الفريق صاحب الأرض على اليمين، والرقم يُكتب LTR، فنكتب الضيف أولًا ليكون صاحب الأرض على اليمين
+    return `<div class="score" dir="ltr">${escapeHtml(m.away_score)} : ${escapeHtml(m.home_score)}</div>`;
   };
-  const fixtureCard = (m, ctx) => `<a class="match" href="match.html?fixture=${encodeURIComponent(m.fixture_id)}&sport=${encodeURIComponent(m.sport || 'football')}&day=${encodeURIComponent(ctx.day)}">
+  const fixtureCard = (m, ctx) => `<a class="match" href="match.html?fixture=${encodeURIComponent(m.fixture_id)}&sport=${encodeURIComponent(m.sport || 'football')}&day=${encodeURIComponent(ctx.day)}${m.has_stream ? '&watch=1' : ''}">
       <div class="match-meta"><span>${escapeHtml(m.league_label || m.league || '')}</span>${statusTag(m)}</div>
       <div class="teams">${teamMarkup(m.home_team, m.home_logo, m.sport)}${centerMarkup(m)}${teamMarkup(m.away_team, m.away_logo, m.sport)}</div>
-      <div class="match-foot"><span>${escapeHtml(formatDate(m.kickoff))}</span><span>التفاصيل ←</span></div>
+      <div class="match-foot"><span>${escapeHtml(formatDate(m.kickoff))}</span><span>${m.has_stream ? '<b class="watch-tag">▶ شاهد</b> ' : ''}التفاصيل ←</span></div>
     </a>`;
   const manualCard = (m) => `<a class="match" href="match.html?id=${encodeURIComponent(m.id)}">
       <div class="match-meta"><span>${escapeHtml(m.league || 'كرة القدم')}</span>${statusTag(m)}</div>
       <div class="teams">${teamMarkup(m.home_team)}${centerMarkup(m)}${teamMarkup(m.away_team)}</div>
       <div class="match-foot"><span>${escapeHtml(formatDate(m.kickoff))}</span><span>التفاصيل ←</span></div>
     </a>`;
+
+
+  // أي مباراة لها رابط مشغّل رسمي في fixture_streams تُعلَّم لتظهر عليها علامة «شاهد»
+  const markStreams = async (fixtures) => {
+    const ids = fixtures.filter((m) => m.sport !== 'basketball' && Number.isSafeInteger(Number(m.fixture_id))).map((m) => Number(m.fixture_id));
+    if (!db || !ids.length) return;
+    try {
+      const { data, error } = await db.from('fixture_streams').select('fixture_id,embed_url').in('fixture_id', ids);
+      if (error) throw error;
+      const ok = new Set((data || []).filter((r) => safeUrl(r.embed_url)).map((r) => Number(r.fixture_id)));
+      fixtures.forEach((m) => { if (ok.has(Number(m.fixture_id)) && m.sport !== 'basketball') m.has_stream = true; });
+    } catch (e) { console.error('streams lookup:', e); }
+  };
 
   const loadManualMatches = async (day) => {
     const { data, error } = await db.from('matches')
@@ -280,7 +294,7 @@
         state.sport === 'football' ? loadManualMatches(state.day) : Promise.resolve([]),
       ]);
       if (my !== token) return; // وصل رد قديم بعد تغيير الاختيار
-      if (api.status === 'fulfilled') { data.fixtures = api.value?.fixtures || []; data.leagues = api.value?.leagues || []; }
+      if (api.status === 'fulfilled') { data.fixtures = api.value?.fixtures || []; data.leagues = api.value?.leagues || []; await markStreams(data.fixtures); if (my !== token) return; }
       else { console.error('matches:', api.reason); data.error = `تعذّر تحميل المباريات: ${api.reason?.message || 'خطأ غير معروف'}`; }
       if (manual.status === 'fulfilled') data.manual = manual.value;
       host.removeAttribute('aria-busy');
@@ -316,6 +330,7 @@
     (async () => {
       const [api, manual] = await Promise.allSettled([request({ action: 'fixtures', sport: 'football', date: localDate(0) }), loadManualMatches('today')]);
       const fixtures = api.status === 'fulfilled' ? (api.value?.fixtures || []).slice().sort((a, b) => (a.status === 'live' ? 0 : 1) - (b.status === 'live' ? 0 : 1) || new Date(a.kickoff || 0) - new Date(b.kickoff || 0)).slice(0, 3) : [];
+      await markStreams(fixtures);
       const manuals = manual.status === 'fulfilled' ? manual.value : [];
       if (api.status === 'rejected') console.error('home matches:', api.reason);
       const cards = [...fixtures.map((m) => fixtureCard(m, { day: 'today' })), ...manuals.map(manualCard)].join('');
@@ -369,6 +384,13 @@
           frame.sandbox = 'allow-scripts allow-same-origin allow-presentation';
           frameBox.replaceChildren(frame);
           player.hidden = false;
+          if (note && !$('watch-btn')) {
+            const btn = document.createElement('button');
+            btn.type = 'button'; btn.id = 'watch-btn'; btn.className = 'btn primary watch-btn'; btn.textContent = '▶ شاهد المباراة';
+            btn.addEventListener('click', () => player.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+            note.after(btn);
+            if (p.get('watch') === '1') setTimeout(() => player.scrollIntoView({ block: 'start' }), 300);
+          }
         }
       } catch (error) {
         console.error('match details:', error);

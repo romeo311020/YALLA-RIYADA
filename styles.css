@@ -344,3 +344,5 @@ footer.footer{margin-top:40px;padding:32px 0 calc(32px + env(safe-area-inset-bot
 .sbar i{display:block;height:100%;border-radius:3px;background:var(--acc)}
 .sbar i.away{background:var(--text);opacity:.85}
 @media(max-width:600px){.benches,.starters{grid-template-columns:1fr}.pl{width:54px}.pl-name{font-size:10px;max-width:54px}.pl-no{width:24px;height:24px;font-size:11px}}
+.watch-tag{display:inline-block;padding:2px 9px;border-radius:999px;background:var(--acc);color:var(--on-acc);font-size:12px;font-weight:900;margin-inline-end:6px}
+.watch-btn{margin-top:12px;width:100%}
