@@ -65,8 +65,15 @@
   const tabbar = document.createElement('nav');
   tabbar.className = 'tabbar';
   tabbar.setAttribute('aria-label', 'التنقل السريع');
-  tabbar.innerHTML = tabs.map(([u, t, i]) => `<a href="${u}" class="${current === u ? 'active' : ''}" ${current === u ? 'aria-current="page"' : ''}>${i}<span>${t}</span></a>`).join('');
+  const activeIndex = Math.max(0, tabs.findIndex(([u]) => u === current || (current === 'match.html' && u === 'matches.html') || (current === 'product.html' && u === 'store.html')));
+  tabbar.innerHTML = `<div class="tab-track" style="--n:${tabs.length}"><i class="tab-pill" aria-hidden="true"></i>${tabs.map(([u, t, i], k) => `<a href="${u}" class="${k === activeIndex ? 'active' : ''}" ${k === activeIndex ? 'aria-current="page"' : ''}>${i}<span>${t}</span></a>`).join('')}</div>`;
   document.body.appendChild(tabbar);
+  // المؤشر ينزلق من التبويب السابق إلى الحالي (نتذكّر مكانه بين الصفحات)
+  const pill = tabbar.querySelector('.tab-pill');
+  const prev = Number(store.get('yr-tab-prev', activeIndex));
+  pill.style.setProperty('--i', Number.isFinite(prev) ? prev : activeIndex);
+  requestAnimationFrame(() => requestAnimationFrame(() => pill.style.setProperty('--i', activeIndex)));
+  store.set('yr-tab-prev', String(activeIndex));
 
   /* ---------- زر رجوع داخل الموقع (صفحات التفاصيل) ---------- */
   const parents = { 'match.html': ['matches.html', 'المباريات'], 'product.html': ['store.html', 'المتجر'] };

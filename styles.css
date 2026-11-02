@@ -425,3 +425,134 @@ footer.footer{margin-top:40px;padding:32px 0 calc(32px + env(safe-area-inset-bot
 .product-price{font-size:24px;font-weight:900;color:var(--acc);margin:6px 0}
 .product-desc{white-space:pre-wrap;line-height:1.8}
 @media(max-width:700px){.product-detail{grid-template-columns:1fr}}
+
+
+/* =====================================================================
+   V11 — لمسة جمالية: زجاج شفاف، حركات ناعمة، بطاقات أفخم
+   ===================================================================== */
+:root{--glass:color-mix(in srgb,var(--bg) 58%,transparent);--glass-line:color-mix(in srgb,var(--text) 14%,transparent);--ease:cubic-bezier(.22,1,.36,1)}
+
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:translate(-50%,-50%) scale(.4)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes pulseDot{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--on-acc) 55%,transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@keyframes barIn{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-100%)}to{opacity:1;transform:none}}
+@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+
+/* خلفية بتوهّج خفيف في الأعلى */
+body{background-image:radial-gradient(70% 380px at 50% -80px,color-mix(in srgb,var(--acc) 13%,transparent),transparent 70%);background-repeat:no-repeat}
+main.page{animation:fadeIn .45s var(--ease) both}
+
+/* الهيدر زجاجي */
+header.header{background:var(--glass);backdrop-filter:blur(16px) saturate(1.5);-webkit-backdrop-filter:blur(16px) saturate(1.5);border-bottom:1px solid var(--glass-line)}
+.header nav a{position:relative;transition:color .2s}
+.header nav a::after{content:"";position:absolute;inset-inline:12px;bottom:4px;height:2px;border-radius:2px;background:var(--acc);transform:scaleX(0);transition:transform .3s var(--ease)}
+.header nav a:hover::after,.header nav a.active::after{transform:scaleX(1)}
+.brand .mark{transition:transform .5s var(--ease)}
+.brand:hover .mark{transform:rotate(-8deg) scale(1.06)}
+
+/* الأزرار */
+.btn{transition:transform .18s var(--ease),box-shadow .25s,background .2s,border-color .2s}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:scale(.97)}
+.btn.primary:hover{box-shadow:0 10px 28px -8px color-mix(in srgb,var(--acc) 70%,transparent)}
+.icon-btn{transition:transform .2s var(--ease),background .2s}
+.icon-btn:active{transform:scale(.92)}
+
+/* بطاقات تظهر بالتتابع */
+.match-grid>*,.news-grid>*,.product-grid>*,.feature-grid>*,.league-group,.stat-card,.user-row{animation:rise .55s var(--ease) both;animation-delay:calc(var(--i,0) * 55ms)}
+.match-grid>*:nth-child(1),.news-grid>*:nth-child(1),.product-grid>*:nth-child(1),.feature-grid>*:nth-child(1){--i:0}
+.match-grid>*:nth-child(2),.news-grid>*:nth-child(2),.product-grid>*:nth-child(2),.feature-grid>*:nth-child(2){--i:1}
+.match-grid>*:nth-child(3),.news-grid>*:nth-child(3),.product-grid>*:nth-child(3),.feature-grid>*:nth-child(3){--i:2}
+.match-grid>*:nth-child(4),.news-grid>*:nth-child(4),.product-grid>*:nth-child(4),.feature-grid>*:nth-child(4){--i:3}
+.match-grid>*:nth-child(5),.news-grid>*:nth-child(5),.product-grid>*:nth-child(5),.feature-grid>*:nth-child(5){--i:4}
+.match-grid>*:nth-child(6),.news-grid>*:nth-child(6),.product-grid>*:nth-child(6),.feature-grid>*:nth-child(6){--i:5}
+.match-grid>*:nth-child(7),.news-grid>*:nth-child(7),.product-grid>*:nth-child(7),.feature-grid>*:nth-child(7){--i:6}
+.match-grid>*:nth-child(8),.news-grid>*:nth-child(8),.product-grid>*:nth-child(8),.feature-grid>*:nth-child(8){--i:7}
+.match-grid>*:nth-child(9),.news-grid>*:nth-child(9),.product-grid>*:nth-child(9),.feature-grid>*:nth-child(9){--i:8}
+.match-grid>*:nth-child(10),.news-grid>*:nth-child(10),.product-grid>*:nth-child(10),.feature-grid>*:nth-child(10){--i:9}
+.match-grid>*:nth-child(11),.news-grid>*:nth-child(11),.product-grid>*:nth-child(11),.feature-grid>*:nth-child(11){--i:10}
+.match-grid>*:nth-child(12),.news-grid>*:nth-child(12),.product-grid>*:nth-child(12),.feature-grid>*:nth-child(12){--i:11}
+
+/* بطاقة المباراة */
+.match{position:relative;background:linear-gradient(160deg,var(--panel),color-mix(in srgb,var(--panel2) 70%,var(--panel)));border-radius:20px;transition:transform .25s var(--ease),border-color .25s,box-shadow .3s}
+.match::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s;background:radial-gradient(120% 90% at 50% 0%,color-mix(in srgb,var(--acc) 14%,transparent),transparent 65%)}
+a.match:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--acc) 70%,var(--line));box-shadow:0 14px 34px -14px color-mix(in srgb,var(--acc) 45%,transparent)}
+a.match:hover::before{opacity:1}
+a.match:active{transform:scale(.985)}
+.match>*{position:relative}
+.crest{width:50px;height:50px;background:radial-gradient(circle at 30% 25%,var(--panel2),var(--panel));box-shadow:0 6px 16px -8px #000,inset 0 0 0 1px var(--glass-line);transition:transform .35s var(--ease)}
+a.match:hover .crest{transform:scale(1.1) rotate(-4deg)}
+.team-name{font-size:13px;font-weight:800}
+.score{font-size:26px;letter-spacing:2px;text-shadow:0 2px 14px color-mix(in srgb,var(--acc) 35%,transparent)}
+.tag.live{position:relative;padding-inline-start:20px}
+.tag.live::before{content:"";position:absolute;inset-inline-start:8px;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;background:var(--on-acc);animation:pulseDot 1.4s infinite}
+.tag{backdrop-filter:blur(6px)}
+.watch-tag{animation:floatY 2.4s ease-in-out infinite}
+.league-title{position:relative;padding-inline-start:14px}
+.league-title::before{content:"";position:absolute;inset-inline-start:0;top:6px;bottom:6px;width:4px;border-radius:4px;background:var(--acc)}
+.league-title img{box-shadow:0 4px 12px -6px #000}
+
+/* الأزرار الصغيرة (رياضة/أيام/بطولات) */
+.chip,.sport-tab,.day-pill,.tab,.atab{transition:transform .2s var(--ease),background .2s,color .2s,border-color .2s,box-shadow .25s}
+.chip:active,.sport-tab:active,.day-pill:active,.tab:active,.atab:active{transform:scale(.94)}
+.chip.active,.tab.active,.atab.active{box-shadow:0 8px 20px -8px color-mix(in srgb,var(--acc) 70%,transparent)}
+.search-box input,.users-toolbar input{transition:border-color .2s,box-shadow .25s}
+.search-box input:focus,.users-toolbar input:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 30%,transparent)}
+
+/* الأخبار */
+.news-card{border-radius:20px;transition:transform .3s var(--ease),border-color .25s,box-shadow .3s}
+.news-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--acc) 60%,var(--line));box-shadow:0 16px 36px -18px color-mix(in srgb,var(--acc) 40%,transparent)}
+.news-card-image{position:relative}
+.news-card-image::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,color-mix(in srgb,var(--panel) 85%,transparent),transparent 55%);pointer-events:none}
+.news-card-image img{transition:transform .8s var(--ease)}
+.news-card:hover .news-card-image img{transform:scale(1.07)}
+.news-read-more{display:inline-block;transition:transform .25s var(--ease),color .2s}
+.news-read-more:hover{transform:translateX(-4px)}
+
+/* المتجر */
+.product-card{border-radius:20px;transition:transform .3s var(--ease),border-color .25s,box-shadow .3s}
+.product-card:hover{transform:translateY(-4px);box-shadow:0 16px 36px -18px color-mix(in srgb,var(--acc) 40%,transparent)}
+.product-card img{transition:transform .6s var(--ease)}
+.product-card:hover img{transform:scale(1.06)}
+
+/* صفحة المباراة */
+.tab-panel:not([hidden]){animation:fadeIn .3s var(--ease),rise .4s var(--ease)}
+.ev{transition:background .2s}
+.ev:hover{background:color-mix(in srgb,var(--text) 5%,transparent)}
+.pitch{background:repeating-linear-gradient(to bottom,#166534 0 12.5%,#15803d 12.5% 25%);box-shadow:inset 0 0 40px rgba(0,0,0,.35),0 18px 40px -22px #000}
+.pl{animation:pop .5s var(--ease) both;animation-delay:calc(var(--k,0) * 25ms + 120ms)}
+.pl-no{box-shadow:0 4px 10px -2px rgba(0,0,0,.55);transition:transform .2s var(--ease)}
+.pl:hover .pl-no{transform:scale(1.18)}
+.sbar i{transform-origin:right;animation:barIn .9s var(--ease) both}
+.sbar i.away{transform-origin:left}
+.bench{transition:transform .25s var(--ease)}
+.bench:hover{transform:translateY(-2px)}
+.panel{transition:border-color .25s}
+.install-bar{animation:slideDown .5s var(--ease) both;backdrop-filter:blur(14px);background:var(--glass)}
+
+/* شريط التنقل السفلي: زجاج بعرض الشاشة كلها + مؤشر ينزلق */
+@media(max-width:820px){
+  body{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+  .tabbar{display:block;position:fixed;inset-inline:0;bottom:0;z-index:50;padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+    background:var(--glass);backdrop-filter:blur(22px) saturate(1.6);-webkit-backdrop-filter:blur(22px) saturate(1.6);
+    border-top:1px solid var(--glass-line);border-radius:22px 22px 0 0;box-shadow:0 -10px 40px -12px rgba(0,0,0,.55)}
+  .tabbar::before{content:"";position:absolute;top:-1px;inset-inline:18%;height:1px;background:linear-gradient(90deg,transparent,var(--acc),transparent);opacity:.7}
+  .tab-track{position:relative;display:grid;grid-template-columns:repeat(var(--n),1fr)}
+  .tab-pill{position:absolute;top:0;bottom:0;inset-inline-start:calc(var(--i,0) * (100% / var(--n)));width:calc(100% / var(--n));padding:0 4px;z-index:0;transition:inset-inline-start .45s var(--ease)}
+  .tab-pill::before{content:"";display:block;height:100%;border-radius:16px;background:linear-gradient(180deg,color-mix(in srgb,var(--acc) 26%,transparent),color-mix(in srgb,var(--acc) 10%,transparent));border:1px solid color-mix(in srgb,var(--acc) 45%,transparent);box-shadow:0 6px 20px -8px color-mix(in srgb,var(--acc) 80%,transparent)}
+  .tabbar a{position:relative;z-index:1;display:grid;justify-items:center;gap:3px;padding:8px 2px 7px;background:none;border-radius:16px;font-size:11px;font-weight:800;color:var(--muted);transition:color .25s}
+  .tabbar a svg{width:24px;height:24px;transition:transform .4s var(--ease)}
+  .tabbar a.active{background:none;color:var(--acc)}
+  .tabbar a.active svg{transform:translateY(-2px) scale(1.12)}
+  .tabbar a:active svg{transform:scale(.88)}
+  .tabbar a span{transition:transform .3s var(--ease)}
+  .tabbar a.active span{transform:translateY(-1px)}
+}
+@media(min-width:821px){.tabbar{display:none}}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .skeleton-list div{animation:sk 1.2s infinite linear!important}
+}
