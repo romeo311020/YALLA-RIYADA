@@ -295,3 +295,52 @@ footer.footer{margin-top:40px;padding:32px 0 calc(32px + env(safe-area-inset-bot
 @keyframes sk{to{background-position:-200% 0}}
 @media(max-width:900px){.skeleton-list{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.skeleton-list{grid-template-columns:1fr}.sport-tabs{width:100%}.sport-tab{flex:1}.search-box{min-width:100%}}
+
+/* ===== تفاصيل المباراة: تبويبات + أحداث + ملعب + إحصائيات ===== */
+.tabs{display:flex;gap:8px;margin:16px 0 0;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1 1 0;min-height:44px;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--text);font-weight:800;font-size:14px;cursor:pointer}
+.tab.active{background:var(--acc);color:var(--on-acc);border-color:var(--acc)}
+.empty-note{text-align:center;padding:18px 0}
+.events{list-style:none;margin:0;padding:0}
+.ev{display:grid;grid-template-columns:1fr 54px 1fr;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid var(--line)}
+.ev:last-child{border-bottom:0}
+.ev-min{text-align:center;font-weight:900;font-size:13px;color:var(--muted)}
+.ev-side{display:flex;align-items:center;gap:8px;min-width:0}
+.ev-away .ev-side:last-child{justify-content:flex-start}
+.ev-ico{flex:0 0 auto;display:inline-flex;flex-direction:column;align-items:center;font-size:16px;line-height:1}
+.ev-ico small{font-size:9px;color:var(--muted)}
+.ev-txt{display:flex;flex-direction:column;font-size:14px;min-width:0;overflow-wrap:anywhere}
+.ev-sub{font-size:12px;color:var(--muted)}
+.card{display:inline-block;width:11px;height:15px;border-radius:2px}
+.card.yellow{background:#f5c518}.card.red{background:#e5383b}
+.pitch-head{display:flex;justify-content:space-between;gap:10px;font-weight:800;font-size:14px;margin-bottom:10px}
+.pitch-head b{color:var(--acc);margin-inline-start:6px}
+.pitch{position:relative;width:100%;max-width:460px;aspect-ratio:2/3;margin:0 auto;border-radius:14px;background:linear-gradient(#14532d,#166534);border:2px solid rgba(255,255,255,.55);overflow:hidden}
+.pitch i{position:absolute;pointer-events:none;border:2px solid rgba(255,255,255,.45)}
+.pitch-mid{left:0;right:0;top:50%;border-width:2px 0 0}
+.pitch-circle{left:50%;top:50%;width:26%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%}
+.pitch-box{left:25%;width:50%;height:15%}
+.pitch-box.top{top:-2px}.pitch-box.bottom{bottom:-2px}
+.pl{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;width:64px;text-align:center}
+.pl-no{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-size:12px;font-weight:900}
+.pl-no.sm{width:24px;height:24px;font-size:11px;margin-inline-end:8px;background:var(--panel2);color:var(--text)}
+.pl-home .pl-no{background:var(--acc);color:var(--on-acc)}
+.pl-away .pl-no{background:#fff;color:#000}
+.pl-name{margin-top:2px;font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 2px #000;line-height:1.15;max-width:64px;overflow-wrap:anywhere;direction:rtl}
+.benches,.starters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.bench{background:var(--panel2);border-radius:12px;padding:12px}
+.bench h3{margin:0 0 6px;font-size:14px}
+.bench ul{list-style:none;margin:0;padding:0}
+.bench li{display:flex;align-items:center;padding:5px 0;font-size:13px}
+.coach{margin:0 0 6px;font-size:13px;color:var(--muted)}
+.stat-head{display:flex;justify-content:space-between;font-weight:900;font-size:14px;margin-bottom:8px}
+.stat{padding:9px 0}
+.stat-nums{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;font-size:13px;margin-bottom:5px}
+.stat-nums b{font-size:15px}
+.stat-nums b:last-child{text-align:end}
+.stat-nums span{color:var(--muted);text-align:center}
+.sbar{display:flex;gap:3px;height:6px}
+.sbar i{display:block;height:100%;border-radius:3px;background:var(--acc)}
+.sbar i.away{background:var(--text);opacity:.85}
+@media(max-width:600px){.benches,.starters{grid-template-columns:1fr}.pl{width:54px}.pl-name{font-size:10px;max-width:54px}.pl-no{width:24px;height:24px;font-size:11px}}

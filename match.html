@@ -29,20 +29,15 @@
       <div class="match-player-frame" id="match-player-frame"></div>
       <p class="note">المشغّل مقدم من جهة خارجية. تابع المباراة عبر مصدر رسمي ومصرّح به فقط.</p>
     </section>
-    <div class="detail-grid">
-      <section class="panel">
-        <h2>التشكيلة</h2>
-        <div class="lineup">
-          <div>الفريق الأول<br><small>التشكيلة تظهر عند توفر مصدر بيانات</small></div>
-          <div>الفريق الثاني<br><small>التشكيلة تظهر عند توفر مصدر بيانات</small></div>
-        </div>
-      </section>
-      <section class="panel">
-        <h2>الإحصائيات</h2>
-        <p>الاستحواذ</p>
-        <div class="statbar"><i style="width:50%"></i></div>
-        <p class="note">الإحصائيات الفعلية ستظهر بعد ربط API.</p>
-      </section>
+    <div id="match-body" hidden>
+      <div class="tabs" role="tablist" aria-label="أقسام المباراة">
+        <button type="button" class="tab active" role="tab" data-tab="summary" aria-selected="true">الملخص</button>
+        <button type="button" class="tab" role="tab" data-tab="lineup" aria-selected="false">التشكيلة</button>
+        <button type="button" class="tab" role="tab" data-tab="stats" aria-selected="false">الإحصائيات</button>
+      </div>
+      <section class="panel tab-panel" id="tab-summary" role="tabpanel"></section>
+      <section class="panel tab-panel" id="tab-lineup" role="tabpanel" hidden></section>
+      <section class="panel tab-panel" id="tab-stats" role="tabpanel" hidden></section>
     </div>
   </main>
   <div id="shared-footer"></div>
@@ -51,6 +46,7 @@
   <script src="supabase-config.js"></script>
   <script src="supabase-client.js"></script>
   <script src="supabase-public.js"></script>
+  <script src="names-ar.js"></script>
   <script src="supabase-football.js"></script>
 </body>
 </html>

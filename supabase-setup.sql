@@ -120,3 +120,22 @@ grant update, insert, delete on public.profiles to authenticated;
 -- IMPORTANT: after signing up your admin account on the site, run this separately,
 -- replacing the email with the exact admin email. Never let public users choose their role.
 -- update public.profiles set role = 'admin' where email = 'YOUR_ADMIN_EMAIL';
+
+-- ============================================================
+-- أسماء عربية إضافية للفرق واللاعبين (اختياري) — تُقرأ من الموقع وتتفوق على القاموس المدمج
+-- kind = 'team' أو 'player'، en = الاسم الإنجليزي كما يظهر من المزوّد، ar = الاسم العربي
+-- ============================================================
+create table if not exists public.name_translations (
+  id bigint generated always as identity primary key,
+  kind text not null check (kind in ('team','player')),
+  en text not null,
+  ar text not null,
+  unique (kind, en)
+);
+alter table public.name_translations enable row level security;
+drop policy if exists "name_translations_read" on public.name_translations;
+create policy "name_translations_read" on public.name_translations for select using (true);
+drop policy if exists "name_translations_admin_write" on public.name_translations;
+create policy "name_translations_admin_write" on public.name_translations for all
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));

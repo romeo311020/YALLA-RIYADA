@@ -10,15 +10,20 @@ const corsHeaders = {
 type Sport = 'football' | 'basketball';
 
 // ---------- البطولات المعروضة ----------
-// كرة القدم: بالأرقام (IDs) في API-Football لتجنّب تشابه الأسماء (مثلًا Premier League في أكثر من دولة).
-// إذا لم تظهر بطولة، راجع رقمها في لوحة API-Football وعدّله هنا.
-const FOOTBALL_LEAGUES: Record<number, string> = {
-  2: 'دوري أبطال أوروبا',
-  12: 'دوري أبطال أفريقيا',
-  39: 'الدوري الإنجليزي الممتاز',
-  140: 'الدوري الإسباني',
-  233: 'الدوري المصري الممتاز',
-};
+// كرة القدم: بالأرقام (IDs) في API-Football لتجنّب تشابه الأسماء. الترتيب هنا هو ترتيب العرض.
+// الأرقام من معرفتي بالمزوّد؛ لو بطولة لم تظهر راجع رقمها في https://dashboard.api-football.com (قسم Leagues) وعدّله هنا.
+const FOOTBALL_LEAGUE_LIST: [number, string][] = [
+  [2, 'دوري أبطال أوروبا'], [3, 'الدوري الأوروبي'], [848, 'دوري المؤتمر الأوروبي'],
+  [12, 'دوري أبطال أفريقيا'], [20, 'كأس الكونفدرالية الأفريقية'],
+  [39, 'الدوري الإنجليزي الممتاز'], [140, 'الدوري الإسباني'], [135, 'الدوري الإيطالي'], [78, 'الدوري الألماني'], [61, 'الدوري الفرنسي'],
+  [307, 'الدوري السعودي'], [233, 'الدوري المصري الممتاز'], [200, 'الدوري المغربي'], [202, 'الدوري التونسي'], [186, 'الدوري الجزائري'], [301, 'الدوري الإماراتي'], [305, 'الدوري القطري'],
+  [203, 'الدوري التركي'], [94, 'الدوري البرتغالي'], [88, 'الدوري الهولندي'], [253, 'الدوري الأمريكي MLS'], [71, 'الدوري البرازيلي'], [128, 'الدوري الأرجنتيني'],
+  [13, 'كوبا ليبرتادوريس'], [17, 'دوري أبطال آسيا'], [15, 'كأس العالم للأندية'],
+  [143, 'كأس ملك إسبانيا'], [45, 'كأس الاتحاد الإنجليزي'], [48, 'كأس الرابطة الإنجليزية'], [137, 'كأس إيطاليا'], [81, 'كأس ألمانيا'], [66, 'كأس فرنسا'],
+  [1, 'كأس العالم'], [4, 'كأس أمم أوروبا'], [6, 'كأس الأمم الأفريقية'], [9, 'كوبا أمريكا'], [5, 'دوري الأمم الأوروبية'],
+  [29, 'تصفيات كأس العالم - أفريقيا'], [32, 'تصفيات كأس العالم - أوروبا'], [30, 'تصفيات كأس العالم - آسيا'], [34, 'تصفيات كأس العالم - أمريكا الجنوبية'], [10, 'مباريات ودية دولية'],
+];
+const FOOTBALL_LEAGUES: Record<number, string> = Object.fromEntries(FOOTBALL_LEAGUE_LIST);
 // كرة السلة: بالاسم كما يرسله المزوّد.
 const BASKETBALL_LEAGUES: { key: string; label: string; test: (name: string) => boolean }[] = [
   { key: 'nba', label: 'NBA', test: (n) => /^nba$/i.test(n.trim()) },
@@ -32,7 +37,7 @@ const PROVIDERS: Record<Sport, string> = {
 
 const leaguesFor = (sport: Sport) =>
   sport === 'football'
-    ? Object.entries(FOOTBALL_LEAGUES).map(([key, label]) => ({ key, label }))
+    ? FOOTBALL_LEAGUE_LIST.map(([key, label]) => ({ key: String(key), label }))
     : BASKETBALL_LEAGUES.map(({ key, label }) => ({ key, label }));
 
 // ---------- أدوات ----------
@@ -66,6 +71,8 @@ type Normalized = {
   minute: number | null;
   home_team: string;
   away_team: string;
+  home_id: number | null;
+  away_id: number | null;
   home_logo: string | null;
   away_logo: string | null;
   league: string;
@@ -91,6 +98,8 @@ function normalizeFootball(item: any): Normalized {
     minute: typeof item.fixture?.status?.elapsed === 'number' ? item.fixture.status.elapsed : null,
     home_team: item.teams?.home?.name ?? 'الفريق الأول',
     away_team: item.teams?.away?.name ?? 'الفريق الثاني',
+    home_id: item.teams?.home?.id ?? null,
+    away_id: item.teams?.away?.id ?? null,
     home_logo: item.teams?.home?.logo ?? null,
     away_logo: item.teams?.away?.logo ?? null,
     league: item.league?.name ?? 'كرة القدم',
@@ -118,6 +127,8 @@ function normalizeBasketball(item: any): Normalized {
     minute: null,
     home_team: item.teams?.home?.name ?? 'الفريق الأول',
     away_team: item.teams?.away?.name ?? 'الفريق الثاني',
+    home_id: item.teams?.home?.id ?? null,
+    away_id: item.teams?.away?.id ?? null,
     home_logo: item.teams?.home?.logo ?? null,
     away_logo: item.teams?.away?.logo ?? null,
     league: name || 'كرة السلة',
@@ -127,6 +138,45 @@ function normalizeBasketball(item: any): Normalized {
     home_score: item.scores?.home?.total ?? null,
     away_score: item.scores?.away?.total ?? null,
   };
+}
+
+// ---------- تفاصيل المباراة (كرة القدم): الأحداث والتشكيلة والإحصائيات من نفس الطلب ----------
+// deno-lint-ignore no-explicit-any
+const pl = (p: any) => (p ? { id: p.id ?? null, name: p.name ?? '', number: p.number ?? null, pos: p.pos ?? null, grid: p.grid ?? null } : null);
+
+// deno-lint-ignore no-explicit-any
+function extractDetails(item: any) {
+  const events = (Array.isArray(item.events) ? item.events : []).map(
+    // deno-lint-ignore no-explicit-any
+    (e: any) => ({
+      minute: e.time?.elapsed ?? null,
+      extra: e.time?.extra ?? null,
+      team_id: e.team?.id ?? null,
+      player: e.player?.name ?? '',
+      assist: e.assist?.name ?? '',
+      type: String(e.type ?? '').toLowerCase(),
+      detail: e.detail ?? '',
+    }),
+  );
+  const lineups = (Array.isArray(item.lineups) ? item.lineups : []).map(
+    // deno-lint-ignore no-explicit-any
+    (l: any) => ({
+      team_id: l.team?.id ?? null,
+      formation: l.formation ?? '',
+      coach: l.coach?.name ?? '',
+      // deno-lint-ignore no-explicit-any
+      start: (l.startXI ?? []).map((x: any) => pl(x.player)).filter(Boolean),
+      // deno-lint-ignore no-explicit-any
+      subs: (l.substitutes ?? []).map((x: any) => pl(x.player)).filter(Boolean),
+    }),
+  );
+  const stats: Record<string, Record<string, unknown>> = {};
+  // deno-lint-ignore no-explicit-any
+  for (const t of (Array.isArray(item.statistics) ? item.statistics : []) as any[]) {
+    // deno-lint-ignore no-explicit-any
+    stats[String(t.team?.id)] = Object.fromEntries((t.statistics ?? []).map((s: any) => [s.type, s.value]));
+  }
+  return { events, lineups, stats };
 }
 
 // deno-lint-ignore no-explicit-any
@@ -217,9 +267,11 @@ Deno.serve(async (request) => {
         let out: Record<string, unknown>;
         let ttl: number;
         if (body.action === 'fixture') {
-          const fixture = rows.map(normalize).find((item: Normalized) => item.fixture_id === body.fixtureId) ?? null;
-          out = { fixture };
-          ttl = fixture?.status === 'live' ? 3 * MIN : 30 * MIN;
+          const raw = rows.find((r: { fixture?: { id?: number }; id?: number }) => (sport === 'football' ? r.fixture?.id : r.id) === body.fixtureId);
+          const fixture = raw ? normalize(raw) : null;
+          out = fixture && sport === 'football' ? { fixture, ...extractDetails(raw) } : { fixture };
+          const soon = fixture?.kickoff ? new Date(fixture.kickoff).getTime() - Date.now() < 2 * 60 * MIN : false;
+          ttl = fixture?.status === 'live' ? 3 * MIN : fixture?.status === 'finished' ? 6 * 60 * MIN : soon ? 10 * MIN : 60 * MIN;
         } else {
           const fixtures = rows.filter((item: unknown) => isImportant(sport, item)).map(normalize);
           out = { fixtures, leagues: leaguesFor(sport) };

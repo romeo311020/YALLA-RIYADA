@@ -21,6 +21,9 @@
   const SPORT_ICON = { football: '⚽', basketball: '🏀' };
   const SPORT_NAME = { football: 'كرة القدم', basketball: 'كرة السلة' };
 
+  const tn = (name) => (window.YR_NAMES ? window.YR_NAMES.team(name) : name);
+  const pn = (name) => (window.YR_NAMES ? window.YR_NAMES.player(name) : name);
+
   const request = async (body) => {
     if (!db) throw new Error('إعدادات Supabase غير مكتملة.');
     const { data, error } = await db.functions.invoke('football-matches', { body });
@@ -31,12 +34,13 @@
       throw error;
     }
     if (data?.error) throw new Error(data.error);
+    try { await window.YR_NAMES?.ready; } catch { /* الأسماء الإضافية اختيارية */ }
     return data;
   };
 
   const teamMarkup = (name, logo, sport = 'football') => {
     const image = safeUrl(logo);
-    return `<div class="team"><span class="crest">${image ? `<img src="${escapeHtml(image)}" alt="" loading="lazy">` : SPORT_ICON[sport] || '⚽'}</span><span class="team-name">${escapeHtml(name)}</span></div>`;
+    return `<div class="team"><span class="crest">${image ? `<img src="${escapeHtml(image)}" alt="" loading="lazy">` : SPORT_ICON[sport] || '⚽'}</span><span class="team-name">${escapeHtml(tn(name))}</span></div>`;
   };
   const statusTag = (m) => {
     if (m.status === 'live') return `<span class="tag live">● مباشر${m.minute ? ` · ${escapeHtml(m.minute)}'` : ''}</span>`;
@@ -87,7 +91,109 @@
   };
   const ALIAS_RULES = Object.entries(ALIASES).map(([k, v]) => [new RegExp(`\\b${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i'), v]);
   const aliasesFor = (name) => ALIAS_RULES.filter(([re]) => re.test(name)).map(([, ar]) => ar).join(' ');
-  const haystack = (m) => norm(`${m.home_team} ${m.away_team} ${m.league || ''} ${m.league_label || ''} ${aliasesFor(m.home_team)} ${aliasesFor(m.away_team)}`);
+  const haystack = (m) => norm(`${m.home_team} ${m.away_team} ${m.league || ''} ${m.league_label || ''} ${aliasesFor(m.home_team)} ${aliasesFor(m.away_team)} ${tn(m.home_team)} ${tn(m.away_team)}`);
+
+
+  /* ---------- تفاصيل المباراة: الملخص + التشكيلة + الإحصائيات ---------- */
+  const STAT_ROWS = [
+    ['Ball Possession', 'الاستحواذ'], ['expected_goals', 'الأهداف المتوقعة (xG)'], ['Total Shots', 'التسديدات'], ['Shots on Goal', 'تسديدات على المرمى'], ['Shots off Goal', 'تسديدات خارج المرمى'],
+    ['Blocked Shots', 'تسديدات مصدودة'], ['Corner Kicks', 'الركنيات'], ['Offsides', 'التسلل'], ['Fouls', 'الأخطاء'], ['Yellow Cards', 'بطاقات صفراء'], ['Red Cards', 'بطاقات حمراء'],
+    ['Goalkeeper Saves', 'تصديات الحارس'], ['Total passes', 'التمريرات'], ['Passes accurate', 'تمريرات صحيحة'], ['Passes %', 'دقة التمرير'],
+  ];
+  const num = (v) => { const n = parseFloat(String(v ?? '').replace('%', '')); return Number.isFinite(n) ? n : null; };
+  const statValue = (v) => (v == null ? '0' : String(v));
+  const emptyMsg = (text) => `<p class="note empty-note">${escapeHtml(text)}</p>`;
+
+  const eventIcon = (e) => {
+    if (e.type === 'goal') return /own/i.test(e.detail) ? '⚽<small>عكسي</small>' : /missed/i.test(e.detail) ? '✖<small>ركلة ضائعة</small>' : /penalty/i.test(e.detail) ? '⚽<small>ركلة جزاء</small>' : '⚽';
+    if (e.type === 'card') return /red/i.test(e.detail) ? '<span class="card red"></span>' : '<span class="card yellow"></span>';
+    if (e.type === 'subst') return '🔄';
+    if (e.type === 'var') return '📺';
+    return '•';
+  };
+  const eventText = (e) => {
+    if (e.type === 'subst') return `<b>${escapeHtml(pn(e.assist))}</b><span class="ev-sub"> ↔ ${escapeHtml(pn(e.player))}</span>`;
+    const assist = e.type === 'goal' && e.assist ? `<span class="ev-sub"> صناعة: ${escapeHtml(pn(e.assist))}</span>` : '';
+    return `<b>${escapeHtml(pn(e.player))}</b>${assist}`;
+  };
+  const renderSummary = (m, res) => {
+    const events = (res.events || []).filter((e) => ['goal', 'card', 'subst', 'var'].includes(e.type));
+    if (!events.length) return emptyMsg(m.status === 'scheduled' ? 'الأحداث تظهر بعد بداية المباراة.' : 'لا توجد أحداث مسجلة لهذه المباراة.');
+    return `<ol class="events">${events.map((e) => {
+      const home = e.team_id != null && e.team_id === m.home_id;
+      const min = `${e.minute ?? ''}${e.extra ? `+${e.extra}` : ''}'`;
+      return `<li class="ev ${home ? 'ev-home' : 'ev-away'}"><span class="ev-side">${home ? `<span class="ev-ico">${eventIcon(e)}</span><span class="ev-txt">${eventText(e)}</span>` : ''}</span><span class="ev-min">${escapeHtml(min)}</span><span class="ev-side">${!home ? `<span class="ev-ico">${eventIcon(e)}</span><span class="ev-txt">${eventText(e)}</span>` : ''}</span></li>`;
+    }).join('')}</ol>`;
+  };
+
+  const shortName = (name) => pn(name);
+  const pitchPlayers = (lineup, isHome) => {
+    const rows = new Map();
+    lineup.start.forEach((p) => {
+      const [r, c] = String(p.grid || '').split(':').map(Number);
+      if (!Number.isFinite(r) || !Number.isFinite(c)) return;
+      if (!rows.has(r)) rows.set(r, []);
+      rows.get(r).push({ ...p, c });
+    });
+    const rmax = Math.max(...rows.keys(), 1);
+    const out = [];
+    rows.forEach((arr, r) => {
+      arr.sort((a, b) => a.c - b.c);
+      arr.forEach((p, i) => {
+        let x = ((i + 1) / (arr.length + 1)) * 100;
+        if (!isHome) x = 100 - x;
+        const t = rmax === 1 ? 0 : (r - 1) / (rmax - 1);
+        const y = isHome ? 7 + t * 38 : 93 - t * 38;
+        out.push(`<div class="pl ${isHome ? 'pl-home' : 'pl-away'}" style="left:${x.toFixed(1)}%;top:${y.toFixed(1)}%"><span class="pl-no">${escapeHtml(p.number ?? '')}</span><span class="pl-name">${escapeHtml(shortName(p.name))}</span></div>`);
+      });
+    });
+    return out.join('');
+  };
+  const benchList = (title, lineup, teamName) => `<div class="bench"><h3>${escapeHtml(title)}</h3>
+      ${lineup.coach ? `<p class="coach">المدرب: <b>${escapeHtml(pn(lineup.coach))}</b></p>` : ''}
+      <ul>${lineup.subs.map((p) => `<li><span class="pl-no sm">${escapeHtml(p.number ?? '')}</span>${escapeHtml(shortName(p.name))}</li>`).join('') || '<li class="note">لا يوجد احتياط معلن.</li>'}</ul></div>`;
+  const renderLineup = (m, res) => {
+    const lineups = res.lineups || [];
+    const home = lineups.find((l) => l.team_id === m.home_id);
+    const away = lineups.find((l) => l.team_id === m.away_id);
+    if (!home || !away || !home.start.length || !away.start.length) return emptyMsg('التشكيلة لم تُعلن بعد، وتظهر عادةً قبل المباراة بحوالي ساعة.');
+    const gridOk = [...home.start, ...away.start].every((p) => /^\d+:\d+$/.test(String(p.grid || '')));
+    const H = tn(m.home_team); const A = tn(m.away_team);
+    const pitch = gridOk
+      ? `<div class="pitch-head"><span>${escapeHtml(H)} <b dir="ltr">${escapeHtml(home.formation)}</b></span><span>${escapeHtml(A)} <b dir="ltr">${escapeHtml(away.formation)}</b></span></div>
+         <div class="pitch" dir="ltr" aria-label="ملعب التشكيلة"><i class="pitch-mid"></i><i class="pitch-circle"></i><i class="pitch-box top"></i><i class="pitch-box bottom"></i>${pitchPlayers(home, true)}${pitchPlayers(away, false)}</div>`
+      : `<div class="starters">${[[H, home], [A, away]].map(([n, l]) => `<div class="bench"><h3>${escapeHtml(n)} <small dir="ltr">${escapeHtml(l.formation)}</small></h3><ul>${l.start.map((p) => `<li><span class="pl-no sm">${escapeHtml(p.number ?? '')}</span>${escapeHtml(shortName(p.name))}</li>`).join('')}</ul></div>`).join('')}</div>`;
+    return `${pitch}<div class="benches">${benchList(`احتياط ${H}`, home)}${benchList(`احتياط ${A}`, away)}</div>`;
+  };
+
+  const renderStats = (m, res) => {
+    const h = (res.stats || {})[String(m.home_id)] || {};
+    const a = (res.stats || {})[String(m.away_id)] || {};
+    const rows = STAT_ROWS.filter(([k]) => k in h || k in a);
+    if (!rows.length) return emptyMsg(m.status === 'scheduled' ? 'الإحصائيات تظهر بعد بداية المباراة.' : 'لا توجد إحصائيات متاحة لهذه المباراة.');
+    return `<div class="stat-head"><span>${escapeHtml(tn(m.home_team))}</span><span>${escapeHtml(tn(m.away_team))}</span></div>` + rows.map(([k, label]) => {
+      const hv = num(h[k]) ?? 0; const av = num(a[k]) ?? 0;
+      const total = hv + av;
+      const hp = total ? (hv / total) * 100 : 50;
+      return `<div class="stat"><div class="stat-nums"><b>${escapeHtml(statValue(h[k]))}</b><span>${escapeHtml(label)}</span><b>${escapeHtml(statValue(a[k]))}</b></div>
+        <div class="sbar"><i style="width:${hp.toFixed(1)}%"></i><i class="away" style="width:${(100 - hp).toFixed(1)}%"></i></div></div>`;
+    }).join('');
+  };
+
+  function renderDetails(m, res) {
+    const body = $('match-body');
+    $('tab-summary').innerHTML = renderSummary(m, res);
+    $('tab-lineup').innerHTML = renderLineup(m, res);
+    $('tab-stats').innerHTML = renderStats(m, res);
+    body.hidden = false;
+    const select = (name) => {
+      body.querySelectorAll('[data-tab]').forEach((b) => { const on = b.dataset.tab === name; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
+      ['summary', 'lineup', 'stats'].forEach((t) => { $(`tab-${t}`).hidden = t !== name; });
+    };
+    body.querySelector('.tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) select(b.dataset.tab); });
+    // قبل المباراة: افتح التشكيلة لو أُعلنت
+    if (m.status === 'scheduled' && (res.lineups || []).length) select('lineup');
+  }
 
   /* ======================================================================
      صفحة مركز المباريات
@@ -117,7 +223,7 @@
       document.querySelectorAll('[data-day]').forEach((b) => { const on = b.dataset.day === state.day; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
       const sub = $('mc-sub');
       if (sub) sub.textContent = state.sport === 'football'
-        ? 'أهم البطولات: دوري أبطال أوروبا وأفريقيا، الدوري الإنجليزي والإسباني والمصري.'
+        ? 'أهم البطولات حول العالم: أوروبا وأفريقيا، الدوريات الخمسة الكبرى، السعودي والمصري والعربية.'
         : 'أهم البطولات: NBA ويوروليغ.';
     };
 
@@ -125,7 +231,7 @@
     const renderChips = () => {
       const box = $('league-chips'); if (!box) return;
       const list = all();
-      const chips = [{ key: 'all', label: 'كل البطولات المهمة', n: list.length }, ...data.leagues.map((l) => ({ key: l.key, label: l.label, n: list.filter((m) => m.league_key === l.key).length }))];
+      const chips = [{ key: 'all', label: 'كل البطولات المهمة', n: list.length }, ...data.leagues.map((l) => ({ key: l.key, label: l.label, n: list.filter((m) => m.league_key === l.key).length })).filter((c) => c.n > 0 || c.key === state.league)];
       if (state.sport === 'football' && data.manual.length) chips.push({ key: 'manual', label: 'مباريات منشورة', n: data.manual.length });
       box.innerHTML = chips.map((c) => `<button type="button" class="chip${state.league === c.key ? ' active' : ''}" data-league="${escapeHtml(c.key)}" aria-pressed="${state.league === c.key}">${escapeHtml(c.label)} <span class="chip-n">${c.n}</span></button>`).join('');
     };
@@ -229,9 +335,8 @@
     const day = ['yesterday', 'today', 'tomorrow'].includes(p.get('day')) ? p.get('day') : 'today';
     const title = $('match-title'); const score = $('match-score');
     const note = document.querySelector('main .panel .note');
-    const details = document.querySelector('.detail-grid');
+    const body = $('match-body');
     const player = $('match-player'); const frameBox = $('match-player-frame');
-    if (details) details.hidden = true;
     if (player) player.hidden = true; // يظهر فقط لو أضاف المسؤول رابط مشغّل رسمي
     const back = document.querySelector('main .back');
     if (back) back.href = `matches.html?sport=${sport}&day=${day}`;
@@ -242,10 +347,12 @@
         const res = await request({ action: 'fixture', sport, fixtureId: Number(fixtureId) });
         const m = res?.fixture;
         if (!m) { if (note) note.textContent = 'المباراة غير متاحة من المزوّد حاليًا.'; return; }
-        title.textContent = `${m.home_team} × ${m.away_team}`;
-        document.title = `${m.home_team} × ${m.away_team} | يلا رياضة`;
+        const H = tn(m.home_team); const A = tn(m.away_team);
+        title.textContent = `${H} × ${A}`;
+        document.title = `${H} × ${A} | يلا رياضة`;
         score.innerHTML = `${teamMarkup(m.home_team, m.home_logo, sport)}${centerMarkup(m)}${teamMarkup(m.away_team, m.away_logo, sport)}`;
         if (note) note.textContent = `${m.league_label || m.league} · ${formatDate(m.kickoff)} · ${m.status === 'live' ? 'مباشرة' : m.status === 'finished' ? 'انتهت' : m.status_note || 'قادمة'}`;
+        if (sport === 'football' && body) renderDetails(m, res);
 
         // المشغّل: لكرة القدم فقط حاليًا (جدول fixture_streams مفتاحه رقم المباراة)، ولا يظهر إلا لو يوجد رابط
         if (sport === 'football' && player && frameBox) {
@@ -255,7 +362,7 @@
           if (!url) return;
           const frame = document.createElement('iframe');
           frame.src = url;
-          frame.title = `مشغّل مباراة ${m.home_team} ضد ${m.away_team}`;
+          frame.title = `مشغّل مباراة ${H} ضد ${A}`;
           frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
           frame.allowFullscreen = true;
           frame.referrerPolicy = 'strict-origin-when-cross-origin';
