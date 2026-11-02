@@ -9,7 +9,52 @@
   "background_color": "#000000",
   "theme_color": "#000000",
   "icons": [
-    { "src": "assets/brand/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "assets/brand/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "assets/brand/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/brand/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/brand/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "id": "./",
+  "description": "كل الرياضة في مكان واحد: المباريات والأخبار والمساعد الذكي.",
+  "categories": [
+    "sports",
+    "news"
+  ],
+  "orientation": "portrait",
+  "shortcuts": [
+    {
+      "name": "المباريات",
+      "url": "matches.html",
+      "icons": [
+        {
+          "src": "assets/brand/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "الأخبار",
+      "url": "news.html",
+      "icons": [
+        {
+          "src": "assets/brand/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }
