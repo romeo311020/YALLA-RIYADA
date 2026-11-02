@@ -1,7 +1,7 @@
 // يلا رياضة — Service Worker: يجعل الموقع قابلًا للتثبيت كتطبيق، ويعرض آخر نسخة محفوظة لو انقطع الإنترنت.
 // الاستراتيجية: الشبكة أولًا (تحديثاتك تظهر فورًا)، والنسخة المحفوظة احتياطية فقط. لا نحفظ طلبات Supabase أو المباريات.
-const CACHE = 'yalla-riyada-v1';
-const SHELL = ['./', 'index.html', 'matches.html', 'news.html', 'store.html', 'assistant.html', 'about.html', 'styles.css', 'app.js', 'assets/brand/icon-192.png', 'assets/brand/favicon.svg'];
+const CACHE = 'yalla-riyada-v2';
+const SHELL = ['./', 'matches.html', 'news.html', 'store.html', 'about.html', 'styles.css', 'app.js', 'icon-192.png', 'favicon.svg'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => Promise.allSettled(SHELL.map((u) => c.add(u)))).then(() => self.skipWaiting()));
@@ -24,7 +24,7 @@ self.addEventListener('fetch', (event) => {
     } catch (error) {
       const hit = await caches.match(req, { ignoreSearch: req.mode === 'navigate' });
       if (hit) return hit;
-      if (req.mode === 'navigate') { const home = await caches.match('index.html'); if (home) return home; }
+      if (req.mode === 'navigate') { const home = await caches.match('matches.html'); if (home) return home; }
       throw error;
     }
   })());

@@ -247,6 +247,7 @@
   const player = (name) => {
     const original = String(name ?? '').trim();
     if (!original) return '';
+    if (!/[a-z]/i.test(original)) return original; // مكتوب بالعربي أصلًا
     const k = key(original);
     if (PM.has(k)) return PM.get(k);
     const parts = k.split(' ');

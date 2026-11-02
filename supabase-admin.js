@@ -1,3 +1,4 @@
+// يلا رياضة — لوحة الإدارة. كل الصلاحيات تُفرض في قاعدة البيانات (RLS) ودالة admin-users، وليس هنا فقط.
 (() => {
   'use strict';
 
@@ -8,393 +9,485 @@
   const logoutButton = $('admin-logout');
   let currentUser = null;
 
-  const say = (id, message) => {
-    const element = $(id);
-    if (element) element.textContent = message;
-  };
-  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-  })[character]);
-  const validHttpsUrl = (value) => {
-    try {
-      return new URL(value).protocol === 'https:';
-    } catch {
-      return false;
-    }
-  };
-  const localDateTimeValue = (value) => {
+  const say = (id, message) => { const el = $(id); if (el) el.textContent = message; };
+  const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const httpsOk = (value) => { try { return new URL(value).protocol === 'https:'; } catch { return false; } };
+  const localDT = (value) => {
     if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    return date.toISOString().slice(0, 16);
+    const d = new Date(value); if (Number.isNaN(d.getTime())) return '';
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+  };
+  const fmt = (value) => value ? new Date(value).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', dateStyle: 'medium', timeStyle: 'short' }) : '—';
+  const cairoDate = (offset) => {
+    const v = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date()).map(({ type, value }) => [type, value]));
+    return new Date(Date.UTC(Number(v.year), Number(v.month) - 1, Number(v.day) + offset)).toISOString().slice(0, 10);
   };
 
-  if (!client) {
-    say('admin-auth-message', 'أكمل إعداد supabase-config.js أولًا، ثم ارفع الملفات إلى الموقع.');
-    return;
+  if (!client) { say('admin-auth-message', 'أكمل إعداد supabase-config.js أولًا، ثم ارفع الملفات إلى الموقع.'); return; }
+
+  // استدعاء دالة Edge مع استخراج رسالة الخطأ الحقيقية
+  async function callFn(name, body) {
+    const { data, error } = await client.functions.invoke(name, { body });
+    if (error) {
+      let msg = error.message || 'خطأ غير معروف';
+      try { const j = await error.context?.json?.(); if (j?.error) msg = j.error; } catch { /* نكتفي بالرسالة */ }
+      if (/failed to send a request/i.test(msg)) msg = `تعذّر الوصول إلى الدالة ${name}. تأكد أنها منشورة بهذا الاسم بالظبط.`;
+      throw new Error(msg);
+    }
+    if (data?.error) throw new Error(data.error);
+    return data;
   }
 
+  /* ======================== الدخول والتبويبات ======================== */
   async function checkSession() {
     try {
       const { data, error } = await client.auth.getSession();
       if (error) throw error;
       if (data.session) await verifyAdmin(data.session.user);
-      else {
-        loginPanel.hidden = false;
-        workspace.hidden = true;
-      }
-    } catch (error) {
-      say('admin-auth-message', `تعذّر التحقق من الجلسة: ${error.message}`);
-    }
+      else { loginPanel.hidden = false; workspace.hidden = true; }
+    } catch (error) { say('admin-auth-message', `تعذّر التحقق من الجلسة: ${error.message}`); }
   }
 
   async function verifyAdmin(user) {
-    const { data: profile, error } = await client
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (error) {
-      say('admin-auth-message', `تعذّر التحقق من صلاحيات الحساب: ${error.message}`);
-      return;
-    }
+    const { data: profile, error } = await client.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    if (error) { say('admin-auth-message', `تعذّر التحقق من صلاحيات الحساب: ${error.message}`); return; }
     if (profile?.role !== 'admin') {
-      currentUser = null;
-      workspace.hidden = true;
-      loginPanel.hidden = false;
-      logoutButton.hidden = false;
+      currentUser = null; workspace.hidden = true; loginPanel.hidden = false; logoutButton.hidden = false;
       say('admin-auth-message', 'هذا الحساب ليس مسؤولًا. يجب أن يعيّن مسؤول المشروع role=admin لهذا الحساب.');
       return;
     }
-
     currentUser = user;
-    loginPanel.hidden = true;
-    workspace.hidden = false;
-    logoutButton.hidden = false;
+    loginPanel.hidden = true; workspace.hidden = false; logoutButton.hidden = false;
     say('admin-auth-message', '');
-    await Promise.all([loadMatches(), loadStreams(), loadProducts(), loadApiFixtures()]);
+    openTab(new URLSearchParams(location.search).get('tab') || 'overview');
   }
 
   $('admin-login-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     say('admin-auth-message', 'جارٍ التحقق...');
-    const { data, error } = await client.auth.signInWithPassword({
-      email: $('admin-email').value.trim(),
-      password: $('admin-password').value,
-    });
-    if (error) {
-      say('admin-auth-message', `تعذّر تسجيل الدخول: ${error.message}`);
-      return;
-    }
+    const { data, error } = await client.auth.signInWithPassword({ email: $('admin-email').value.trim(), password: $('admin-password').value });
+    if (error) { say('admin-auth-message', `تعذّر تسجيل الدخول: ${error.message}`); return; }
     await verifyAdmin(data.user);
   });
-
   logoutButton.addEventListener('click', async () => {
     const { error } = await client.auth.signOut();
-    if (error) {
-      say('admin-auth-message', `تعذّر تسجيل الخروج: ${error.message}`);
-      return;
-    }
-    currentUser = null;
-    workspace.hidden = true;
-    loginPanel.hidden = false;
-    logoutButton.hidden = true;
+    if (error) { say('admin-auth-message', `تعذّر تسجيل الخروج: ${error.message}`); return; }
+    currentUser = null; workspace.hidden = true; loginPanel.hidden = false; logoutButton.hidden = true;
     say('admin-auth-message', 'تم تسجيل الخروج.');
   });
 
+  const loaded = new Set();
+  const loaders = {
+    overview: () => loadOverview(),
+    matches: () => loadMatches(),
+    streams: () => Promise.all([loadStreams(), loadApiFixtures('stream')]),
+    lineups: () => Promise.all([loadLineups(), loadApiFixtures('lineup')]),
+    store: () => Promise.all([loadStoreSetting(), loadProducts()]),
+    news: () => loadNews(),
+    users: () => loadUsers(true),
+    audit: () => loadAudit(),
+  };
+  function openTab(name) {
+    if (!loaders[name]) name = 'overview';
+    document.querySelectorAll('[data-atab]').forEach((b) => { const on = b.dataset.atab === name; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
+    document.querySelectorAll('.admin-pane').forEach((p) => { p.hidden = p.id !== `pane-${name}`; });
+    try { const p = new URLSearchParams(location.search); p.set('tab', name); history.replaceState(null, '', `?${p}`); } catch { /* لا مشكلة */ }
+    if (!loaded.has(name)) { loaded.add(name); Promise.resolve(loaders[name]()).catch((e) => console.error(`admin tab ${name}:`, e)); }
+  }
+  document.querySelector('.admin-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-atab]'); if (b) openTab(b.dataset.atab); });
+
+  /* ======================== نظرة عامة ======================== */
+  async function count(table) {
+    const { count: n, error } = await client.from(table).select('*', { count: 'exact', head: true });
+    return error ? null : n;
+  }
+  async function loadOverview() {
+    const host = $('overview-cards');
+    host.innerHTML = '<p class="note">جارٍ التحميل…</p>';
+    const [matches, streams, lineups, products, news, storeRow, usersRes] = await Promise.all([
+      count('matches'), count('fixture_streams'), count('fixture_manual'), count('products'), count('news'),
+      client.from('site_settings').select('value').eq('key', 'store_enabled').maybeSingle(),
+      callFn('admin-users', { action: 'list', perPage: 200 }).catch((e) => ({ error: e.message })),
+    ]);
+    const users = usersRes.users || [];
+    const week = Date.now() - 7 * 864e5;
+    const cards = [
+      ['المستخدمون', usersRes.error ? '—' : (usersRes.total ?? users.length), usersRes.error ? '' : `${users.filter((u) => new Date(u.created_at).getTime() > week).length} جديد هذا الأسبوع`],
+      ['المحظورون', usersRes.error ? '—' : users.filter((u) => u.banned).length, 'حسابات موقوفة'],
+      ['مباريات يدوية', matches ?? '—', ''],
+      ['مشغّلات', streams ?? '—', 'مباريات عليها زر شاهد'],
+      ['تشكيلات يدوية', lineups ?? '—', ''],
+      ['منتجات', products ?? '—', ''],
+      ['أخبار', news ?? '—', 'كتبتها بنفسك'],
+    ];
+    host.innerHTML = cards.map(([t, n, s]) => `<div class="stat-card"><span>${esc(t)}</span><b>${esc(n)}</b><small>${esc(s)}</small></div>`).join('');
+    const storeOn = storeRow.data?.value === true;
+    const checks = [
+      [!usersRes.error, usersRes.error ? `دالة المستخدمين لا تعمل: ${usersRes.error}` : 'دالة إدارة المستخدمين تعمل'],
+      [storeRow.error ? null : true, storeRow.error ? 'جدول الإعدادات غير موجود — شغّل ملف supabase-admin-upgrade.sql' : 'جدول الإعدادات موجود'],
+      [storeOn ? true : null, storeOn ? 'المتجر مفتوح للزوار' : 'المتجر مغلق حاليًا (يظهر «قريبًا») — فعّله من تبويب المتجر'],
+      [matches !== null && streams !== null, matches === null || streams === null ? 'بعض الجداول ناقصة — شغّل supabase-admin-upgrade.sql' : 'جداول المباريات والمشغّلات موجودة'],
+    ];
+    $('overview-status').innerHTML = checks.map(([ok, text]) => `<li class="${ok === true ? 'ok' : ok === false ? 'bad' : 'warn'}"><span aria-hidden="true">${ok === true ? '✓' : ok === false ? '✕' : '!'}</span>${esc(text)}</li>`).join('');
+  }
+
+  /* ======================== مباريات يدوية ======================== */
   $('match-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!currentUser) return;
-
     const embedUrl = $('match-embed').value.trim();
-    if (embedUrl && !validHttpsUrl(embedUrl)) {
-      say('match-message', 'يجب أن يكون رابط المشغّل آمنًا ويبدأ بـ https://');
-      return;
-    }
-
+    if (embedUrl && !httpsOk(embedUrl)) { say('match-message', 'يجب أن يكون رابط المشغّل آمنًا ويبدأ بـ https://'); return; }
     say('match-message', 'جارٍ حفظ المباراة...');
-    const kickoffValue = $('match-kickoff').value;
+    const k = $('match-kickoff').value;
     const row = {
-      sport: 'football',
-      home_team: $('match-home').value.trim(),
-      away_team: $('match-away').value.trim(),
-      league: $('match-league').value.trim(),
-      kickoff: kickoffValue ? new Date(kickoffValue).toISOString() : null,
-      status: $('match-status').value,
+      sport: 'football', home_team: $('match-home').value.trim(), away_team: $('match-away').value.trim(), league: $('match-league').value.trim(),
+      kickoff: k ? new Date(k).toISOString() : null, status: $('match-status').value,
       home_score: $('match-home-score').value === '' ? null : Number($('match-home-score').value),
       away_score: $('match-away-score').value === '' ? null : Number($('match-away-score').value),
-      embed_url: embedUrl,
-      notes: '',
-      is_published: $('match-published').checked,
+      embed_url: embedUrl, notes: '', is_published: $('match-published').checked,
     };
     const editId = $('match-edit-id').value;
-    const query = editId
-      ? client.from('matches').update(row).eq('id', editId)
-      : client.from('matches').insert(row);
-    const { error } = await query;
-    if (error) {
-      say('match-message', `تعذّر حفظ المباراة: ${error.message}`);
-      return;
-    }
-    resetMatchForm();
-    say('match-message', editId ? 'تم تحديث المباراة.' : 'تمت إضافة المباراة.');
-    await loadMatches();
+    const { error } = await (editId ? client.from('matches').update(row).eq('id', editId) : client.from('matches').insert(row));
+    if (error) { say('match-message', `تعذّر حفظ المباراة: ${error.message}`); return; }
+    resetMatchForm(); say('match-message', editId ? 'تم تحديث المباراة.' : 'تمت إضافة المباراة.'); await loadMatches();
   });
-
   function resetMatchForm() {
-    $('match-form').reset();
-    $('match-edit-id').value = '';
-    $('match-published').checked = true;
-    $('match-save').textContent = 'حفظ المباراة';
-    $('match-cancel-edit').hidden = true;
+    $('match-form').reset(); $('match-edit-id').value = ''; $('match-published').checked = true;
+    $('match-save').textContent = 'حفظ المباراة'; $('match-cancel-edit').hidden = true;
   }
-
   $('match-cancel-edit').addEventListener('click', resetMatchForm);
-
   async function loadMatches() {
     const host = $('admin-matches');
-    const { data, error } = await client
-      .from('matches')
-      .select('id,home_team,away_team,league,kickoff,status,home_score,away_score,embed_url,is_published')
-      .order('created_at', { ascending: false })
-      .limit(50);
-    if (error) {
-      host.textContent = `تعذّر تحميل المباريات: ${error.message}`;
-      return;
-    }
-
-    host.innerHTML = (data || []).map((match) => `<article class="admin-list-item">
-      <div><strong>${escapeHtml(match.home_team)} × ${escapeHtml(match.away_team)}</strong>
-        <small>${escapeHtml(match.league || 'كرة القدم')} · ${match.is_published ? 'منشورة' : 'مخفية'}</small></div>
-      <div class="row">
-        <button type="button" class="btn outline" data-edit-match="${escapeHtml(match.id)}">تعديل</button>
-        <button type="button" class="btn outline" data-delete-match="${escapeHtml(match.id)}">حذف</button>
-      </div>
+    const { data, error } = await client.from('matches').select('id,home_team,away_team,league,kickoff,status,home_score,away_score,embed_url,is_published').order('created_at', { ascending: false }).limit(50);
+    if (error) { host.textContent = `تعذّر تحميل المباريات: ${error.message}`; return; }
+    host.innerHTML = (data || []).map((m) => `<article class="admin-list-item">
+      <div><strong>${esc(m.home_team)} × ${esc(m.away_team)}</strong><small>${esc(m.league || 'كرة القدم')} · ${m.is_published ? 'منشورة' : 'مخفية'}</small></div>
+      <div class="row"><button type="button" class="btn outline" data-edit-match="${esc(m.id)}">تعديل</button><button type="button" class="btn outline" data-delete-match="${esc(m.id)}">حذف</button></div>
     </article>`).join('') || '<p class="note">لا توجد مباريات يدوية بعد.</p>';
-
-    host.querySelectorAll('[data-edit-match]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const match = data.find((item) => item.id === button.dataset.editMatch);
-        if (!match) return;
-        $('match-edit-id').value = match.id;
-        $('match-home').value = match.home_team;
-        $('match-away').value = match.away_team;
-        $('match-league').value = match.league || '';
-        $('match-kickoff').value = localDateTimeValue(match.kickoff);
-        $('match-status').value = match.status;
-        $('match-home-score').value = match.home_score ?? '';
-        $('match-away-score').value = match.away_score ?? '';
-        $('match-embed').value = match.embed_url || '';
-        $('match-published').checked = match.is_published;
-        $('match-save').textContent = 'حفظ التعديلات';
-        $('match-cancel-edit').hidden = false;
-        $('match-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
-      });
-    });
-
-    host.querySelectorAll('[data-delete-match]').forEach((button) => {
-      button.addEventListener('click', async () => {
-        if (!window.confirm('هل تريد حذف هذه المباراة؟')) return;
-        const { error: deleteError } = await client.from('matches').delete().eq('id', button.dataset.deleteMatch);
-        say('match-message', deleteError ? `تعذّر حذف المباراة: ${deleteError.message}` : 'تم حذف المباراة.');
-        if (!deleteError) await loadMatches();
-      });
-    });
+    host.querySelectorAll('[data-edit-match]').forEach((b) => b.addEventListener('click', () => {
+      const m = data.find((x) => x.id === b.dataset.editMatch); if (!m) return;
+      $('match-edit-id').value = m.id; $('match-home').value = m.home_team; $('match-away').value = m.away_team; $('match-league').value = m.league || '';
+      $('match-kickoff').value = localDT(m.kickoff); $('match-status').value = m.status; $('match-home-score').value = m.home_score ?? ''; $('match-away-score').value = m.away_score ?? '';
+      $('match-embed').value = m.embed_url || ''; $('match-published').checked = m.is_published; $('match-save').textContent = 'حفظ التعديلات'; $('match-cancel-edit').hidden = false;
+      $('match-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }));
+    host.querySelectorAll('[data-delete-match]').forEach((b) => b.addEventListener('click', async () => {
+      if (!window.confirm('هل تريد حذف هذه المباراة؟')) return;
+      const { error: e } = await client.from('matches').delete().eq('id', b.dataset.deleteMatch);
+      say('match-message', e ? `تعذّر حذف المباراة: ${e.message}` : 'تم حذف المباراة.'); if (!e) await loadMatches();
+    }));
   }
 
+  /* ======================== قوائم مباريات المزوّد (للمشغّلات والتشكيلات) ======================== */
+  const fixtureCache = new Map();
+  async function loadApiFixtures(kind) {
+    const select = $(kind === 'stream' ? 'stream-fixture-id' : 'lineup-fixture-select');
+    const dayEl = $(kind === 'stream' ? 'stream-fixture-day' : 'lineup-fixture-day');
+    const statusId = kind === 'stream' ? 'stream-fixture-status' : 'lineup-fixture-status';
+    const offsets = { yesterday: -1, today: 0, tomorrow: 1 };
+    select.innerHTML = '<option value="">جارٍ تحميل المباريات...</option>'; say(statusId, '');
+    try {
+      const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(offsets[dayEl.value] ?? 0) });
+      const fixtures = Array.isArray(data?.fixtures) ? data.fixtures : [];
+      fixtures.forEach((f) => fixtureCache.set(String(f.fixture_id), f));
+      select.innerHTML = '<option value="">اختر مباراة</option>' + fixtures.map((f) => `<option value="${esc(f.fixture_id)}">${esc(`${f.home_team} × ${f.away_team} · ${f.league_label || f.league} · #${f.fixture_id}`)}</option>`).join('');
+      if (!fixtures.length) say(statusId, 'لا توجد مباريات متاحة لهذا اليوم.');
+    } catch (error) {
+      console.error('fixtures list:', error);
+      select.innerHTML = '<option value="">تعذّر تحميل قائمة المباريات</option>';
+      say(statusId, `${error.message} — يمكنك كتابة رقم المباراة يدويًا.`);
+    }
+  }
+  $('stream-fixture-day').addEventListener('change', () => loadApiFixtures('stream'));
+  $('lineup-fixture-day').addEventListener('change', () => loadApiFixtures('lineup'));
+
+  /* ======================== المشغّلات ======================== */
   $('stream-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!currentUser) return;
-
     const fixtureId = Number($('stream-fixture-id').value);
     const embedUrl = $('stream-embed-url').value.trim();
-    if (!Number.isSafeInteger(fixtureId) || fixtureId < 1) {
-      say('stream-message', 'أدخل رقم مباراة صحيحًا من API-Football.');
-      return;
-    }
-    if (!validHttpsUrl(embedUrl)) {
-      say('stream-message', 'يجب أن يكون رابط المشغّل آمنًا ويبدأ بـ https://');
-      return;
-    }
-
+    if (!Number.isSafeInteger(fixtureId) || fixtureId < 1) { say('stream-message', 'اختر مباراة صحيحة.'); return; }
+    if (!httpsOk(embedUrl)) { say('stream-message', 'يجب أن يكون رابط المشغّل آمنًا ويبدأ بـ https://'); return; }
     say('stream-message', 'جارٍ حفظ المشغّل...');
-    const previousId = $('stream-edit-id').value;
-    const row = {
-      fixture_id: fixtureId,
-      embed_url: embedUrl,
-      updated_by: currentUser.id,
-      updated_at: new Date().toISOString(),
-    };
-    const result = previousId && Number(previousId) !== fixtureId
-      ? await client.from('fixture_streams').update(row).eq('fixture_id', Number(previousId))
-      : await client.from('fixture_streams').upsert(row, { onConflict: 'fixture_id' });
-    if (result.error) {
-      say('stream-message', `تعذّر حفظ المشغّل: ${result.error.message}. تأكد من تشغيل تحديث قاعدة البيانات في README.`);
-      return;
-    }
-
-    resetStreamForm();
-    say('stream-message', 'تم ربط المشغّل بالمباراة. سيظهر في صفحة تفاصيلها.');
-    await loadStreams();
+    const prev = $('stream-edit-id').value;
+    const row = { fixture_id: fixtureId, embed_url: embedUrl, updated_by: currentUser.id, updated_at: new Date().toISOString() };
+    const res = prev && Number(prev) !== fixtureId ? await client.from('fixture_streams').update(row).eq('fixture_id', Number(prev)) : await client.from('fixture_streams').upsert(row, { onConflict: 'fixture_id' });
+    if (res.error) { say('stream-message', `تعذّر حفظ المشغّل: ${res.error.message}. شغّل ملف supabase-admin-upgrade.sql لو الجدول غير موجود.`); return; }
+    resetStreamForm(); say('stream-message', 'تم ربط المشغّل بالمباراة.'); await loadStreams();
   });
-
-  function resetStreamForm() {
-    $('stream-form').reset();
-    $('stream-edit-id').value = '';
-    $('stream-save').textContent = 'حفظ المشغّل';
-    $('stream-cancel-edit').hidden = true;
-  }
-
+  function resetStreamForm() { $('stream-form').reset(); $('stream-edit-id').value = ''; $('stream-save').textContent = 'حفظ المشغّل'; $('stream-cancel-edit').hidden = true; }
   $('stream-cancel-edit').addEventListener('click', resetStreamForm);
-  $('stream-fixture-day').addEventListener('change', loadApiFixtures);
-
-  function cairoDate(offset) {
-    const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Africa/Cairo',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).formatToParts(new Date());
-    const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
-    return new Date(Date.UTC(
-      Number(values.year),
-      Number(values.month) - 1,
-      Number(values.day) + offset,
-    )).toISOString().slice(0, 10);
-  }
-
-  async function loadApiFixtures() {
-    const select = $('stream-fixture-id');
-    const offsets = { yesterday: -1, today: 0, tomorrow: 1 };
-    const day = $('stream-fixture-day').value;
-    select.innerHTML = '<option value="">جارٍ تحميل المباريات...</option>';
-    say('stream-fixture-status', '');
-    try {
-      const { data, error } = await client.functions.invoke('football-matches', {
-        body: { action: 'fixtures', date: cairoDate(offsets[day] ?? 0) },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      const fixtures = Array.isArray(data?.fixtures) ? data.fixtures : [];
-      select.innerHTML = '<option value="">اختر مباراة</option>' + fixtures.map((fixture) => {
-        const label = `${fixture.home_team} × ${fixture.away_team} · ${fixture.league} · #${fixture.fixture_id}`;
-        return `<option value="${escapeHtml(fixture.fixture_id)}">${escapeHtml(label)}</option>`;
-      }).join('');
-      if (!fixtures.length) say('stream-fixture-status', 'لا توجد مباريات متاحة لهذا اليوم.');
-    } catch (error) {
-      console.error('Could not load fixtures for the admin player selector:', error);
-      select.innerHTML = '<option value="">تعذّر تحميل قائمة المباريات</option>';
-      say('stream-fixture-status', `تأكد من نشر football-matches وضبط API_FOOTBALL_KEY: ${error.message}`);
-    }
-  }
-
   async function loadStreams() {
     const host = $('admin-streams');
-    const { data, error } = await client
-      .from('fixture_streams')
-      .select('fixture_id,embed_url,updated_at')
-      .order('updated_at', { ascending: false })
-      .limit(100);
-    if (error) {
-      host.textContent = `تعذّر تحميل المشغّلات: ${error.message}. شغّل ترحيل قاعدة البيانات الموضح في README.`;
-      return;
-    }
-
-    host.innerHTML = (data || []).map((stream) => `<article class="admin-list-item">
-      <div><strong>رقم المباراة: ${escapeHtml(stream.fixture_id)}</strong><small>مشغّل رسمي مضاف</small></div>
-      <div class="row">
-        <button type="button" class="btn outline" data-edit-stream="${escapeHtml(stream.fixture_id)}">تعديل</button>
-        <button type="button" class="btn outline" data-delete-stream="${escapeHtml(stream.fixture_id)}">حذف</button>
-      </div>
-    </article>`).join('') || '<p class="note">لم تتم إضافة مشغّلات بعد.</p>';
-
-    host.querySelectorAll('[data-edit-stream]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const stream = data.find((item) => item.fixture_id === Number(button.dataset.editStream));
-        if (!stream) return;
-        $('stream-edit-id').value = stream.fixture_id;
-        if (![...$('stream-fixture-id').options].some((option) => Number(option.value) === stream.fixture_id)) {
-          const option = document.createElement('option');
-          option.value = String(stream.fixture_id);
-          option.textContent = `المباراة #${stream.fixture_id} (غير موجودة ضمن قائمة الأيام الحالية)`;
-          $('stream-fixture-id').append(option);
-        }
-        $('stream-fixture-id').value = stream.fixture_id;
-        $('stream-embed-url').value = stream.embed_url;
-        $('stream-save').textContent = 'حفظ التعديلات';
-        $('stream-cancel-edit').hidden = false;
-        $('stream-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
-      });
-    });
-
-    host.querySelectorAll('[data-delete-stream]').forEach((button) => {
-      button.addEventListener('click', async () => {
-        if (!window.confirm('هل تريد إزالة المشغّل من هذه المباراة؟')) return;
-        const { error: deleteError } = await client
-          .from('fixture_streams')
-          .delete()
-          .eq('fixture_id', Number(button.dataset.deleteStream));
-        say('stream-message', deleteError ? `تعذّر حذف المشغّل: ${deleteError.message}` : 'تم حذف المشغّل.');
-        if (!deleteError) await loadStreams();
-      });
-    });
+    const { data, error } = await client.from('fixture_streams').select('fixture_id,embed_url,updated_at').order('updated_at', { ascending: false }).limit(100);
+    if (error) { host.textContent = `تعذّر تحميل المشغّلات: ${error.message}. شغّل ملف supabase-admin-upgrade.sql.`; return; }
+    host.innerHTML = (data || []).map((s) => {
+      const f = fixtureCache.get(String(s.fixture_id));
+      return `<article class="admin-list-item"><div><strong>${esc(f ? `${f.home_team} × ${f.away_team}` : `مباراة #${s.fixture_id}`)}</strong><small>#${esc(s.fixture_id)} · ${esc(fmt(s.updated_at))}</small></div>
+      <div class="row"><button type="button" class="btn outline" data-edit-stream="${esc(s.fixture_id)}">تعديل</button><button type="button" class="btn outline" data-delete-stream="${esc(s.fixture_id)}">حذف</button></div></article>`;
+    }).join('') || '<p class="note">لم تتم إضافة مشغّلات بعد.</p>';
+    host.querySelectorAll('[data-edit-stream]').forEach((b) => b.addEventListener('click', () => {
+      const s = data.find((x) => x.fixture_id === Number(b.dataset.editStream)); if (!s) return;
+      $('stream-edit-id').value = s.fixture_id;
+      if (![...$('stream-fixture-id').options].some((o) => Number(o.value) === s.fixture_id)) { const o = document.createElement('option'); o.value = String(s.fixture_id); o.textContent = `المباراة #${s.fixture_id}`; $('stream-fixture-id').append(o); }
+      $('stream-fixture-id').value = s.fixture_id; $('stream-embed-url').value = s.embed_url; $('stream-save').textContent = 'حفظ التعديلات'; $('stream-cancel-edit').hidden = false;
+      $('stream-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }));
+    host.querySelectorAll('[data-delete-stream]').forEach((b) => b.addEventListener('click', async () => {
+      if (!window.confirm('هل تريد إزالة المشغّل من هذه المباراة؟')) return;
+      const { error: e } = await client.from('fixture_streams').delete().eq('fixture_id', Number(b.dataset.deleteStream));
+      say('stream-message', e ? `تعذّر حذف المشغّل: ${e.message}` : 'تم حذف المشغّل.'); if (!e) await loadStreams();
+    }));
   }
+
+  /* ======================== التشكيلات اليدوية ======================== */
+  // سطر اللاعب: "10 محمد صلاح" أو "محمد صلاح" — الرقم اختياري
+  const parsePlayers = (text) => String(text || '').split('\n').map((l) => l.trim()).filter(Boolean).map((line) => {
+    const m = line.match(/^(\d{1,2})[\s.\-)]+(.+)$/);
+    return m ? { number: Number(m[1]), name: m[2].trim().slice(0, 80) } : { number: null, name: line.slice(0, 80) };
+  });
+  // يحوّل الخطة 4-3-3 + ترتيب اللاعبين (حارس ثم دفاع...) إلى مواقع "صف:عمود" لرسم الملعب
+  const buildGrid = (formation, count) => {
+    const parts = String(formation || '').trim().split('-').map((n) => Number(n));
+    if (parts.length < 2 || parts.some((n) => !Number.isInteger(n) || n < 1) || 1 + parts.reduce((a, b) => a + b, 0) !== count) return null;
+    const grid = ['1:1'];
+    parts.forEach((n, i) => { for (let c = 1; c <= n; c += 1) grid.push(`${i + 2}:${c}`); });
+    return grid;
+  };
+  const teamPayload = (side) => {
+    const formation = $(`lineup-${side}-formation`).value.trim();
+    const start = parsePlayers($(`lineup-${side}-start`).value);
+    const grid = buildGrid(formation, start.length);
+    return {
+      name: $(`lineup-${side}-name`).value.trim(), formation, coach: $(`lineup-${side}-coach`).value.trim(),
+      start: start.map((p, i) => ({ ...p, grid: grid ? grid[i] : null })),
+      subs: parsePlayers($(`lineup-${side}-subs`).value),
+      gridOk: !!grid,
+    };
+  };
+  const fillTeam = (side, t = {}) => {
+    $(`lineup-${side}-name`).value = t.name || ''; $(`lineup-${side}-formation`).value = t.formation || ''; $(`lineup-${side}-coach`).value = t.coach || '';
+    const line = (p) => `${p.number ?? ''} ${p.name}`.trim();
+    $(`lineup-${side}-start`).value = (t.start || []).map(line).join('\n'); $(`lineup-${side}-subs`).value = (t.subs || []).map(line).join('\n');
+  };
+  $('lineup-fixture-select').addEventListener('change', (e) => {
+    if (!e.target.value) return;
+    $('lineup-fixture-id').value = e.target.value;
+    const f = fixtureCache.get(e.target.value);
+    if (f) { if (!$('lineup-home-name').value) $('lineup-home-name').value = f.home_team; if (!$('lineup-away-name').value) $('lineup-away-name').value = f.away_team; }
+  });
+  $('lineup-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!currentUser) return;
+    const fixtureId = Number($('lineup-fixture-id').value);
+    if (!Number.isSafeInteger(fixtureId) || fixtureId < 1) { say('lineup-message', 'اكتب رقم مباراة صحيحًا أو اخترها من القائمة.'); return; }
+    const home = teamPayload('home'); const away = teamPayload('away');
+    if (home.start.length !== 11 || away.start.length !== 11) { say('lineup-message', `الأساسيون لازم يكونوا 11 لكل فريق (الآن ${home.start.length} و${away.start.length}).`); return; }
+    const warn = !home.gridOk || !away.gridOk ? ' (الخطة غير مطابقة لعدد اللاعبين فسيُعرض الفريق كقائمة بدل الملعب)' : '';
+    say('lineup-message', 'جارٍ الحفظ...');
+    const f = fixtureCache.get(String(fixtureId));
+    const row = {
+      fixture_id: fixtureId, title: `${home.name || f?.home_team || 'الأول'} × ${away.name || f?.away_team || 'الثاني'}`,
+      lineups: { home: { name: home.name, formation: home.formation, coach: home.coach, start: home.start, subs: home.subs }, away: { name: away.name, formation: away.formation, coach: away.coach, start: away.start, subs: away.subs } },
+      updated_by: currentUser.id, updated_at: new Date().toISOString(),
+    };
+    const { error } = await client.from('fixture_manual').upsert(row, { onConflict: 'fixture_id' });
+    if (error) { say('lineup-message', `تعذّر الحفظ: ${error.message}. شغّل ملف supabase-admin-upgrade.sql لو الجدول غير موجود.`); return; }
+    resetLineupForm(); say('lineup-message', `تم حفظ التشكيلة${warn}.`); await loadLineups();
+  });
+  function resetLineupForm() { $('lineup-form').reset(); $('lineup-edit-id').value = ''; $('lineup-save').textContent = 'حفظ التشكيلة'; $('lineup-cancel-edit').hidden = true; }
+  $('lineup-cancel-edit').addEventListener('click', resetLineupForm);
+  async function loadLineups() {
+    const host = $('admin-lineups');
+    const { data, error } = await client.from('fixture_manual').select('fixture_id,title,lineups,updated_at').order('updated_at', { ascending: false }).limit(100);
+    if (error) { host.textContent = `تعذّر تحميل التشكيلات: ${error.message}. شغّل ملف supabase-admin-upgrade.sql.`; return; }
+    host.innerHTML = (data || []).map((r) => `<article class="admin-list-item"><div><strong>${esc(r.title || `مباراة #${r.fixture_id}`)}</strong><small>#${esc(r.fixture_id)} · ${esc(fmt(r.updated_at))}</small></div>
+      <div class="row"><button type="button" class="btn outline" data-edit-lineup="${esc(r.fixture_id)}">تعديل</button><button type="button" class="btn outline" data-delete-lineup="${esc(r.fixture_id)}">حذف</button></div></article>`).join('') || '<p class="note">لا توجد تشكيلات يدوية.</p>';
+    host.querySelectorAll('[data-edit-lineup]').forEach((b) => b.addEventListener('click', () => {
+      const r = data.find((x) => x.fixture_id === Number(b.dataset.editLineup)); if (!r) return;
+      $('lineup-edit-id').value = r.fixture_id; $('lineup-fixture-id').value = r.fixture_id;
+      fillTeam('home', r.lineups?.home); fillTeam('away', r.lineups?.away);
+      $('lineup-save').textContent = 'حفظ التعديلات'; $('lineup-cancel-edit').hidden = false;
+      $('lineup-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }));
+    host.querySelectorAll('[data-delete-lineup]').forEach((b) => b.addEventListener('click', async () => {
+      if (!window.confirm('حذف التشكيلة اليدوية؟ سيعود الموقع لتشكيلة المزوّد إن وُجدت.')) return;
+      const { error: e } = await client.from('fixture_manual').delete().eq('fixture_id', Number(b.dataset.deleteLineup));
+      say('lineup-message', e ? `تعذّر الحذف: ${e.message}` : 'تم حذف التشكيلة.'); if (!e) await loadLineups();
+    }));
+  }
+
+  /* ======================== المتجر ======================== */
+  async function loadStoreSetting() {
+    const { data, error } = await client.from('site_settings').select('value').eq('key', 'store_enabled').maybeSingle();
+    const box = $('store-enabled');
+    if (error) { say('store-message', `تعذّر قراءة الإعداد: ${error.message}. شغّل ملف supabase-admin-upgrade.sql.`); box.disabled = true; return; }
+    box.disabled = false; box.checked = data?.value === true;
+    paintStoreState();
+  }
+  const paintStoreState = () => { $('store-state-text').textContent = $('store-enabled').checked ? 'المتجر ظاهر الآن للزوار.' : 'المتجر مغلق ويظهر للزوار «قريبًا».'; };
+  $('store-enabled').addEventListener('change', async (e) => {
+    const on = e.target.checked; paintStoreState(); say('store-message', 'جارٍ الحفظ...');
+    const { error } = await client.from('site_settings').upsert({ key: 'store_enabled', value: on, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    if (error) { e.target.checked = !on; paintStoreState(); say('store-message', `تعذّر الحفظ: ${error.message}`); return; }
+    say('store-message', on ? 'تم فتح المتجر للزوار.' : 'تم إغلاق المتجر.');
+  });
 
   $('product-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!currentUser) return;
+    const image = $('product-image').value.trim(); const buy = $('product-buy').value.trim();
+    if ((image && !httpsOk(image)) || (buy && !httpsOk(buy))) { say('product-message', 'روابط الصورة والشراء لازم تبدأ بـ https://'); return; }
     say('product-message', 'جارٍ حفظ المنتج...');
     const row = {
-      name: $('product-name').value.trim(),
-      description: $('product-description').value.trim(),
-      price: $('product-price').value === '' ? null : Number($('product-price').value),
-      image_url: $('product-image').value.trim(),
-      buy_url: $('product-buy').value.trim(),
-      is_published: $('product-published').checked,
+      name: $('product-name').value.trim(), category: $('product-category').value.trim(), description: $('product-description').value.trim(),
+      price: $('product-price').value === '' ? null : Number($('product-price').value), image_url: image, buy_url: buy, is_published: $('product-published').checked,
     };
-    const { error } = await client.from('products').insert(row);
-    if (error) {
-      say('product-message', `تعذّر حفظ المنتج: ${error.message}`);
-      return;
-    }
-    event.currentTarget.reset();
-    $('product-published').checked = true;
-    say('product-message', 'تمت إضافة المنتج.');
-    await loadProducts();
+    const id = $('product-edit-id').value;
+    const { error } = await (id ? client.from('products').update(row).eq('id', id) : client.from('products').insert(row));
+    if (error) { say('product-message', `تعذّر حفظ المنتج: ${error.message}`); return; }
+    resetProductForm(); say('product-message', id ? 'تم تحديث المنتج.' : 'تمت إضافة المنتج.'); await loadProducts();
   });
-
+  function resetProductForm() { $('product-form').reset(); $('product-edit-id').value = ''; $('product-published').checked = true; $('product-save').textContent = 'إضافة المنتج'; $('product-cancel-edit').hidden = true; }
+  $('product-cancel-edit').addEventListener('click', resetProductForm);
   async function loadProducts() {
     const host = $('admin-products');
-    const { data, error } = await client
-      .from('products')
-      .select('id,name,is_published')
-      .order('created_at', { ascending: false })
-      .limit(50);
-    if (error) {
-      host.textContent = `تعذّر تحميل المنتجات: ${error.message}`;
-      return;
-    }
-    host.innerHTML = (data || []).map((product) => `<article class="admin-list-item">
-      <div><strong>${escapeHtml(product.name)}</strong><small>${product.is_published ? 'جاهز للنشر' : 'مخفي'}</small></div>
-      <button type="button" class="btn outline" data-delete-product="${escapeHtml(product.id)}">حذف</button>
-    </article>`).join('') || '<p class="note">لا توجد منتجات.</p>';
-
-    host.querySelectorAll('[data-delete-product]').forEach((button) => {
-      button.addEventListener('click', async () => {
-        if (!window.confirm('هل تريد حذف هذا المنتج؟')) return;
-        const { error: deleteError } = await client.from('products').delete().eq('id', button.dataset.deleteProduct);
-        say('product-message', deleteError ? `تعذّر حذف المنتج: ${deleteError.message}` : 'تم حذف المنتج.');
-        if (!deleteError) await loadProducts();
-      });
-    });
+    const { data, error } = await client.from('products').select('id,name,category,description,price,image_url,buy_url,is_published').order('created_at', { ascending: false }).limit(100);
+    if (error) { host.textContent = `تعذّر تحميل المنتجات: ${error.message}`; return; }
+    host.innerHTML = (data || []).map((p) => `<article class="admin-list-item"><div><strong>${esc(p.name)}</strong><small>${p.price != null ? `${esc(p.price)} · ` : ''}${esc(p.category || 'بدون تصنيف')} · ${p.is_published ? 'ظاهر' : 'مخفي'}</small></div>
+      <div class="row"><button type="button" class="btn outline" data-toggle-product="${esc(p.id)}">${p.is_published ? 'إخفاء' : 'إظهار'}</button><button type="button" class="btn outline" data-edit-product="${esc(p.id)}">تعديل</button><button type="button" class="btn outline" data-delete-product="${esc(p.id)}">حذف</button></div></article>`).join('') || '<p class="note">لا توجد منتجات.</p>';
+    host.querySelectorAll('[data-toggle-product]').forEach((b) => b.addEventListener('click', async () => {
+      const p = data.find((x) => x.id === b.dataset.toggleProduct); if (!p) return;
+      const { error: e } = await client.from('products').update({ is_published: !p.is_published }).eq('id', p.id);
+      say('product-message', e ? `تعذّر التحديث: ${e.message}` : 'تم التحديث.'); if (!e) await loadProducts();
+    }));
+    host.querySelectorAll('[data-edit-product]').forEach((b) => b.addEventListener('click', () => {
+      const p = data.find((x) => x.id === b.dataset.editProduct); if (!p) return;
+      $('product-edit-id').value = p.id; $('product-name').value = p.name; $('product-category').value = p.category || ''; $('product-description').value = p.description || '';
+      $('product-price').value = p.price ?? ''; $('product-image').value = p.image_url || ''; $('product-buy').value = p.buy_url || ''; $('product-published').checked = p.is_published;
+      $('product-save').textContent = 'حفظ التعديلات'; $('product-cancel-edit').hidden = false; $('product-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }));
+    host.querySelectorAll('[data-delete-product]').forEach((b) => b.addEventListener('click', async () => {
+      if (!window.confirm('هل تريد حذف هذا المنتج؟')) return;
+      const { error: e } = await client.from('products').delete().eq('id', b.dataset.deleteProduct);
+      say('product-message', e ? `تعذّر حذف المنتج: ${e.message}` : 'تم حذف المنتج.'); if (!e) await loadProducts();
+    }));
   }
+
+  /* ======================== الأخبار ======================== */
+  $('news-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!currentUser) return;
+    const image = $('news-image').value.trim(); const source = $('news-source').value.trim();
+    if ((image && !httpsOk(image)) || (source && !httpsOk(source))) { say('news-message', 'الروابط لازم تبدأ بـ https://'); return; }
+    say('news-message', 'جارٍ الحفظ...');
+    const row = { title: $('news-title').value.trim(), body: $('news-body').value.trim(), image_url: image, source_url: source, is_published: $('news-published').checked };
+    const id = $('news-edit-id').value;
+    const { error } = await (id ? client.from('news').update(row).eq('id', id) : client.from('news').insert(row));
+    if (error) { say('news-message', `تعذّر الحفظ: ${error.message}. شغّل ملف supabase-admin-upgrade.sql لو العمود source_url ناقص.`); return; }
+    resetNewsForm(); say('news-message', id ? 'تم تحديث الخبر.' : 'تم نشر الخبر.'); await loadNews();
+  });
+  function resetNewsForm() { $('news-form').reset(); $('news-edit-id').value = ''; $('news-published').checked = true; $('news-save').textContent = 'نشر الخبر'; $('news-cancel-edit').hidden = true; }
+  $('news-cancel-edit').addEventListener('click', resetNewsForm);
+  async function loadNews() {
+    const host = $('admin-news');
+    const { data, error } = await client.from('news').select('id,title,body,image_url,source_url,is_published,created_at').order('created_at', { ascending: false }).limit(100);
+    if (error) { host.textContent = `تعذّر تحميل الأخبار: ${error.message}`; return; }
+    host.innerHTML = (data || []).map((n) => `<article class="admin-list-item"><div><strong>${esc(n.title)}</strong><small>${esc(fmt(n.created_at))} · ${n.is_published ? 'منشور' : 'مخفي'}</small></div>
+      <div class="row"><button type="button" class="btn outline" data-toggle-news="${esc(n.id)}">${n.is_published ? 'إخفاء' : 'نشر'}</button><button type="button" class="btn outline" data-edit-news="${esc(n.id)}">تعديل</button><button type="button" class="btn outline" data-delete-news="${esc(n.id)}">حذف</button></div></article>`).join('') || '<p class="note">لا توجد أخبار.</p>';
+    host.querySelectorAll('[data-toggle-news]').forEach((b) => b.addEventListener('click', async () => {
+      const n = data.find((x) => x.id === b.dataset.toggleNews); if (!n) return;
+      const { error: e } = await client.from('news').update({ is_published: !n.is_published }).eq('id', n.id);
+      say('news-message', e ? `تعذّر التحديث: ${e.message}` : 'تم التحديث.'); if (!e) await loadNews();
+    }));
+    host.querySelectorAll('[data-edit-news]').forEach((b) => b.addEventListener('click', () => {
+      const n = data.find((x) => x.id === b.dataset.editNews); if (!n) return;
+      $('news-edit-id').value = n.id; $('news-title').value = n.title; $('news-body').value = n.body || ''; $('news-image').value = n.image_url || ''; $('news-source').value = n.source_url || ''; $('news-published').checked = n.is_published;
+      $('news-save').textContent = 'حفظ التعديلات'; $('news-cancel-edit').hidden = false; $('news-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }));
+    host.querySelectorAll('[data-delete-news]').forEach((b) => b.addEventListener('click', async () => {
+      if (!window.confirm('حذف هذا الخبر؟')) return;
+      const { error: e } = await client.from('news').delete().eq('id', b.dataset.deleteNews);
+      say('news-message', e ? `تعذّر الحذف: ${e.message}` : 'تم الحذف.'); if (!e) await loadNews();
+    }));
+  }
+
+  /* ======================== المستخدمون ======================== */
+  let users = []; let usersPage = 1; let usersTotal = 0; let selected = null;
+  const dialog = $('user-dialog');
+  async function loadUsers(reset = false) {
+    if (reset) { users = []; usersPage = 1; }
+    say('users-message', 'جارٍ تحميل المستخدمين…');
+    try {
+      const data = await callFn('admin-users', { action: 'list', page: usersPage, perPage: 100 });
+      users = users.concat(data.users || []); usersTotal = data.total ?? users.length;
+      say('users-message', '');
+      $('users-more').hidden = users.length >= usersTotal || !(data.users || []).length;
+      renderUsers();
+    } catch (error) {
+      $('admin-users').innerHTML = '';
+      say('users-message', `${error.message}${/الدالة|admin-users/.test(error.message) ? '' : ''} — تأكد من نشر دالة admin-users (الخطوات في README).`);
+    }
+  }
+  function renderUsers() {
+    const q = $('users-search').value.trim().toLowerCase(); const f = $('users-filter').value;
+    const rows = users.filter((u) => (!q || `${u.name} ${u.email}`.toLowerCase().includes(q)) && (f === 'all' || (f === 'admin' && u.role === 'admin') || (f === 'banned' && u.banned) || (f === 'user' && u.role !== 'admin')));
+    $('admin-users').innerHTML = rows.map((u) => `<article class="user-row${u.banned ? ' is-banned' : ''}" data-uid="${esc(u.id)}">
+      <span class="u-avatar">${u.avatar && httpsOk(u.avatar) ? `<img src="${esc(u.avatar)}" alt="" referrerpolicy="no-referrer">` : esc((u.name || u.email || '?').trim().charAt(0).toUpperCase())}</span>
+      <div class="u-main"><strong>${esc(u.name || 'بدون اسم')}</strong><small dir="ltr">${esc(u.email)}</small>
+        <small>انضم ${esc(fmt(u.created_at))} · آخر دخول ${esc(fmt(u.last_sign_in_at))}</small></div>
+      <div class="u-badges">${u.role === 'admin' ? '<span class="tag">مسؤول</span>' : ''}${u.banned ? '<span class="tag danger">محظور</span>' : ''}<span class="tag muted">${esc(u.provider.includes('google') ? 'Google' : 'بريد')}</span></div>
+      <button type="button" class="btn outline" data-manage="${esc(u.id)}">إدارة</button></article>`).join('') || '<p class="note">لا يوجد مستخدمون مطابقون.</p>';
+  }
+  $('users-search').addEventListener('input', renderUsers);
+  $('users-filter').addEventListener('change', renderUsers);
+  $('users-refresh').addEventListener('click', () => loadUsers(true));
+  $('users-more').addEventListener('click', () => { usersPage += 1; loadUsers(false); });
+  $('admin-users').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-manage]'); if (!b) return;
+    selected = users.find((u) => u.id === b.dataset.manage); if (!selected) return;
+    paintDialog(); say('ud-message', ''); dialog.showModal();
+  });
+  function paintDialog() {
+    const u = selected; const self = u.id === currentUser?.id;
+    $('ud-title').textContent = u.name || u.email;
+    $('ud-meta').textContent = `${u.email} · ${u.role === 'admin' ? 'مسؤول' : 'مستخدم'} · ${u.banned ? `محظور حتى ${fmt(u.banned_until)}` : 'نشط'}`;
+    $('ud-name').value = u.name || '';
+    $('ud-ban').hidden = u.banned || self || u.role === 'admin'; $('ud-ban-days').hidden = $('ud-ban').hidden; $('ud-ban-days').parentElement.hidden = $('ud-ban').hidden;
+    $('ud-unban').hidden = !u.banned;
+    $('ud-role').hidden = self; $('ud-role').textContent = u.role === 'admin' ? 'سحب صلاحية المسؤول' : 'جعله مسؤولًا';
+    $('ud-delete').hidden = self || u.role === 'admin';
+  }
+  async function userAction(payload, okMessage, confirmText) {
+    if (confirmText && !window.confirm(confirmText)) return;
+    say('ud-message', 'جارٍ التنفيذ…');
+    try {
+      await callFn('admin-users', { id: selected.id, ...payload });
+      say('ud-message', okMessage);
+      loaded.delete('audit');
+      const keep = selected.id; await loadUsers(true); selected = users.find((u) => u.id === keep) || null;
+      if (selected) paintDialog(); else dialog.close();
+    } catch (error) { say('ud-message', `تعذّر التنفيذ: ${error.message}`); }
+  }
+  $('ud-save-name').addEventListener('click', () => userAction({ action: 'update', display_name: $('ud-name').value }, 'تم حفظ الاسم.'));
+  $('ud-ban').addEventListener('click', () => userAction({ action: 'ban', days: $('ud-ban-days').value }, 'تم حظر الحساب.', `حظر ${selected.email}؟ لن يستطيع تسجيل الدخول.`));
+  $('ud-unban').addEventListener('click', () => userAction({ action: 'unban' }, 'تم فك الحظر.'));
+  $('ud-role').addEventListener('click', () => userAction({ action: 'set_role', role: selected.role === 'admin' ? 'user' : 'admin' }, 'تم تغيير الدور.', selected.role === 'admin' ? 'سحب صلاحية المسؤول من هذا الحساب؟' : 'سيصبح هذا الحساب مسؤولًا بكامل الصلاحيات. متأكد؟'));
+  $('ud-reset').addEventListener('click', () => userAction({ action: 'reset_password', redirectTo: new URL('password-reset.html', location.href).href }, 'تم إرسال رابط تغيير كلمة المرور لبريد المستخدم.'));
+  $('ud-delete').addEventListener('click', () => userAction({ action: 'delete' }, 'تم حذف الحساب.', `حذف ${selected.email} نهائيًا؟ لا يمكن التراجع.`));
+
+  /* ======================== السجل ======================== */
+  const AUDIT = { ban: 'حظر مستخدم', unban: 'فك حظر', set_role: 'تغيير دور', update_name: 'تعديل اسم', reset_password: 'إرسال رابط كلمة المرور', delete_user: 'حذف حساب' };
+  async function loadAudit() {
+    const host = $('admin-audit');
+    const { data, error } = await client.from('admin_audit').select('id,actor_email,action,target,detail,created_at').order('created_at', { ascending: false }).limit(100);
+    if (error) { host.textContent = `تعذّر تحميل السجل: ${error.message}. شغّل ملف supabase-admin-upgrade.sql.`; return; }
+    const emailOf = (id) => users.find((u) => u.id === id)?.email || String(id || '').slice(0, 8);
+    host.innerHTML = (data || []).map((r) => `<article class="admin-list-item"><div><strong>${esc(AUDIT[r.action] || r.action)}</strong><small dir="auto">${esc(r.actor_email || '')} ← ${esc(emailOf(r.target))}${r.detail && Object.keys(r.detail).length ? ` · ${esc(JSON.stringify(r.detail))}` : ''}</small></div><small>${esc(fmt(r.created_at))}</small></article>`).join('') || '<p class="note">لا توجد عمليات مسجّلة بعد.</p>';
+  }
+  $('audit-refresh').addEventListener('click', loadAudit);
 
   checkSession();
 })();

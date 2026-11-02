@@ -24,7 +24,7 @@
   bar.setAttribute('role', 'region');
   bar.setAttribute('aria-label', 'تثبيت التطبيق');
   bar.hidden = true;
-  bar.innerHTML = '<img src="assets/brand/icon-192.png" alt="" width="40" height="40"><div class="install-text"><strong>ثبّت تطبيق يلا رياضة</strong><span id="install-sub">افتحه من شاشتك الرئيسية مثل أي تطبيق.</span></div><button type="button" class="btn primary install-go" id="install-go">تثبيت</button><button type="button" class="install-x" id="install-x" aria-label="إغلاق">×</button>';
+  bar.innerHTML = '<img src="icon-192.png" alt="" width="40" height="40"><div class="install-text"><strong>ثبّت تطبيق يلا رياضة</strong><span id="install-sub">افتحه من شاشتك الرئيسية مثل أي تطبيق.</span></div><button type="button" class="btn primary install-go" id="install-go">تثبيت</button><button type="button" class="install-x" id="install-x" aria-label="إغلاق">×</button>';
 
   const show = () => { if (!bar.isConnected) document.body.prepend(bar); bar.hidden = false; };
   const hide = (remember) => { bar.hidden = true; if (remember) write(DISMISS_KEY, String(Date.now())); };

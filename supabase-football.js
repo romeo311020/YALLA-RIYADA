@@ -5,7 +5,7 @@
 
   const db = window.yrSupabase;
   const $ = (id) => document.getElementById(id);
-  const page = location.pathname.split('/').pop() || 'index.html';
+  const page = location.pathname.split('/').pop() || 'matches.html';
 
   /* ---------- أدوات ---------- */
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -194,7 +194,18 @@
     }).join('');
   };
 
-  function renderDetails(m, res) {
+  const manualSide = (s, teamId) => ({
+    team_id: teamId, formation: s.formation || '', coach: s.coach || '',
+    start: (s.start || []).map((p) => ({ id: null, name: p.name, number: p.number, pos: null, grid: p.grid || null })),
+    subs: (s.subs || []).map((p) => ({ id: null, name: p.name, number: p.number, pos: null, grid: null })),
+  });
+
+  function renderDetails(m0, res0, manual) {
+    let m = m0; let res = res0;
+    if (manual?.home?.start?.length && manual?.away?.start?.length) {
+      m = { ...m0, home_id: m0.home_id ?? -1, away_id: m0.away_id ?? -2 };
+      res = { ...res0, lineups: [manualSide(manual.home, m.home_id), manualSide(manual.away, m.away_id)] };
+    }
     const body = $('match-body');
     $('tab-summary').innerHTML = renderSummary(m, res);
     $('tab-lineup').innerHTML = renderLineup(m, res);
@@ -320,26 +331,6 @@
   }
 
   /* ======================================================================
-     الصفحة الرئيسية: مباريات اليوم المهمة
-     ====================================================================== */
-  if (page === 'index.html' || page === '') {
-    const host = $('home-matches');
-    if (!host) return;
-    const note = host.nextElementSibling;
-    host.innerHTML = '<p class="note">جارٍ تحميل مباريات اليوم…</p>';
-    (async () => {
-      const [api, manual] = await Promise.allSettled([request({ action: 'fixtures', sport: 'football', date: localDate(0) }), loadManualMatches('today')]);
-      const fixtures = api.status === 'fulfilled' ? (api.value?.fixtures || []).slice().sort((a, b) => (a.status === 'live' ? 0 : 1) - (b.status === 'live' ? 0 : 1) || new Date(a.kickoff || 0) - new Date(b.kickoff || 0)).slice(0, 3) : [];
-      await markStreams(fixtures);
-      const manuals = manual.status === 'fulfilled' ? manual.value : [];
-      if (api.status === 'rejected') console.error('home matches:', api.reason);
-      const cards = [...fixtures.map((m) => fixtureCard(m, { day: 'today' })), ...manuals.map(manualCard)].join('');
-      host.innerHTML = cards || '<p class="note">لا توجد مباريات في البطولات المهمة اليوم.</p>';
-      if (note) note.textContent = api.status === 'rejected' ? `تعذّر تحميل المباريات: ${api.reason?.message || 'خطأ غير معروف'}` : 'أهم مباريات اليوم، بتوقيت القاهرة.';
-    })();
-  }
-
-  /* ======================================================================
      تفاصيل المباراة
      ====================================================================== */
   if (page === 'match.html') {
@@ -367,7 +358,15 @@
         document.title = `${H} × ${A} | يلا رياضة`;
         score.innerHTML = `${teamMarkup(m.home_team, m.home_logo, sport)}${centerMarkup(m)}${teamMarkup(m.away_team, m.away_logo, sport)}`;
         if (note) note.textContent = `${m.league_label || m.league} · ${formatDate(m.kickoff)} · ${m.status === 'live' ? 'مباشرة' : m.status === 'finished' ? 'انتهت' : m.status_note || 'قادمة'}`;
-        if (sport === 'football' && body) renderDetails(m, res);
+        if (sport === 'football' && body) {
+          // تشكيلة يدوية من لوحة الأدمن (إن وُجدت) تتفوق على تشكيلة المزوّد
+          let manual = null;
+          try {
+            const { data: row } = await db.from('fixture_manual').select('lineups').eq('fixture_id', Number(fixtureId)).maybeSingle();
+            manual = row?.lineups || null;
+          } catch (e) { console.error('manual lineup lookup:', e); }
+          renderDetails(m, res, manual);
+        }
 
         // المشغّل: لكرة القدم فقط حاليًا (جدول fixture_streams مفتاحه رقم المباراة)، ولا يظهر إلا لو يوجد رابط
         if (sport === 'football' && player && frameBox) {

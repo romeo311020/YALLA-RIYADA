@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#000000">
   <title>المتجر | يلا رياضة</title>
-  <link rel="icon" type="image/svg+xml" href="assets/brand/favicon.svg">
-  <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
   <meta property="og:site_name" content="يلا رياضة | YALLA RIYADA">
   <meta property="og:type" content="website">
-  <meta property="og:image" content="assets/brand/og-image.png">
+  <meta property="og:image" content="og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script>try{if(localStorage.getItem("yr-theme")==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}</script>
   <link rel="stylesheet" href="styles.css">
@@ -18,14 +18,19 @@
 <body>
   <div id="shared-header"></div>
   <main class="wrap page">
-    <section class="panel" style="max-width:680px;margin:48px auto;text-align:center;padding:clamp(32px,8vw,72px)">
+    <div id="store-root" aria-live="polite" aria-busy="true"><p class="note">جارٍ التحميل…</p></div>
+    <section class="panel soon" id="coming-soon" style="max-width:680px;margin:48px auto;text-align:center;padding:clamp(32px,8vw,72px)" hidden>
       <span class="kicker">COMING SOON</span>
       <h1>المتجر الرياضي</h1>
-      <p class="sub">سيتم فتح هذا القسم قريبًا. نعمل على تجهيز تجربة تسوق رياضية مميزة لكم.</p>
-      <a class="btn primary" href="index.html">العودة للرئيسية</a>
+      <p class="sub">سيتم فتح هذا القسم قريبًا. نجهّز تجربة تسوق رياضية مع علامات شريكة.</p>
+      <a class="btn primary" href="matches.html">تابع المباريات</a>
     </section>
   </main>
   <div id="shared-footer"></div>
   <script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+  <script src="supabase-config.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="store.js"></script>
 <script src="install.js" defer></script></body>
 </html>
