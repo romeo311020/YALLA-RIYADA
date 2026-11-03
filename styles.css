@@ -556,3 +556,24 @@ a.match:hover .crest{transform:scale(1.1) rotate(-4deg)}
   *,*::before,*::after{animation:none!important;transition:none!important}
   .skeleton-list div{animation:sk 1.2s infinite linear!important}
 }
+
+/* ===== الطلبات ===== */
+.back-link{display:inline-block;margin-bottom:12px;color:var(--muted);font-weight:700}
+.back-link:hover{color:var(--acc)}
+.product-ph.big{display:grid;place-items:center;aspect-ratio:1;border-radius:12px;background:var(--panel2);font-size:64px;color:var(--muted)}
+.order-form{margin-top:18px;padding-top:18px;border-top:1px solid var(--line);max-width:none}
+.order-form textarea{width:100%;resize:vertical}
+.order-form .row>label{flex:1;min-width:130px}
+.order-total{font-weight:900;color:var(--acc)}
+.order-done{display:grid;gap:10px;justify-items:center;text-align:center;padding:18px 0}
+.order-done span{display:grid;place-items:center;width:64px;height:64px;border-radius:50%;background:var(--acc);color:var(--on-acc);font-size:32px;font-weight:900;animation:pop2 .5s var(--ease) both}
+@keyframes pop2{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
+.badge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-inline-start:4px;border-radius:9px;background:var(--acc);color:var(--on-acc);font-size:11px}
+.order-item{display:grid;gap:6px;padding:14px;margin-top:10px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
+.order-item.st-new{border-color:color-mix(in srgb,var(--acc) 70%,var(--line))}
+.order-item.st-cancelled{opacity:.6}
+.order-head{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.order-meta{margin:0;font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.order-meta a{color:var(--acc);font-weight:700}
+.order-item .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.order-item .row input{flex:1;min-width:140px}

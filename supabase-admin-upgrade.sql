@@ -92,3 +92,5 @@ create policy "name_translations_admin_write" on public.name_translations for al
   using (public.is_admin()) with check (public.is_admin());
 
 notify pgrst, 'reload schema';
+
+-- ملاحظة: نظام الطلبات في ملف منفصل: supabase-orders.sql

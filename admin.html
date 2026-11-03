@@ -41,6 +41,7 @@
         <button type="button" class="atab" role="tab" data-atab="streams" aria-selected="false">المشغّلات</button>
         <button type="button" class="atab" role="tab" data-atab="lineups" aria-selected="false">التشكيلات</button>
         <button type="button" class="atab" role="tab" data-atab="store" aria-selected="false">المتجر</button>
+        <button type="button" class="atab" role="tab" data-atab="orders" aria-selected="false">الطلبات <b id="orders-badge" class="badge" hidden></b></button>
         <button type="button" class="atab" role="tab" data-atab="news" aria-selected="false">الأخبار</button>
         <button type="button" class="atab" role="tab" data-atab="users" aria-selected="false">المستخدمون</button>
         <button type="button" class="atab" role="tab" data-atab="audit" aria-selected="false">السجل</button>
@@ -185,6 +186,17 @@
       </section>
 
       <!-- الأخبار -->
+      <section class="admin-pane" id="pane-orders" role="tabpanel" hidden>
+        <div class="panel admin-section">
+          <div class="admin-section-heading"><div><span class="tag">الطلبات</span><h2>طلبات العملاء</h2></div>
+            <p class="note">كل طلب من صفحة المنتج بيوصل هنا. غيّر الحالة بعد التواصل مع العميل.</p></div>
+          <div class="league-chips" id="order-filter" role="group" aria-label="تصفية الطلبات">
+            <button type="button" class="chip active" data-of="all">الكل</button><button type="button" class="chip" data-of="new">جديد</button><button type="button" class="chip" data-of="confirmed">مؤكد</button><button type="button" class="chip" data-of="shipped">في الشحن</button><button type="button" class="chip" data-of="delivered">تم التسليم</button><button type="button" class="chip" data-of="cancelled">ملغي</button>
+          </div>
+          <div id="admin-orders" class="admin-list"><p class="note">جارٍ التحميل…</p></div>
+          <p class="note" id="orders-message" role="status"></p>
+        </div>
+      </section>
       <section class="admin-pane" id="pane-news" role="tabpanel" hidden>
         <div class="panel admin-section">
           <div class="admin-section-heading">

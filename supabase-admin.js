@@ -60,6 +60,7 @@
     currentUser = user;
     loginPanel.hidden = true; workspace.hidden = false; logoutButton.hidden = false;
     say('admin-auth-message', '');
+    refreshOrdersBadge();
     openTab(new URLSearchParams(location.search).get('tab') || 'overview');
   }
 
@@ -84,6 +85,7 @@
     streams: () => Promise.all([loadStreams(), loadApiFixtures('stream')]),
     lineups: () => Promise.all([loadLineups(), loadApiFixtures('lineup')]),
     store: () => Promise.all([loadStoreSetting(), loadProducts()]),
+    orders: () => loadOrders(),
     news: () => loadNews(),
     users: () => loadUsers(true),
     audit: () => loadAudit(),
@@ -105,8 +107,8 @@
   async function loadOverview() {
     const host = $('overview-cards');
     host.innerHTML = '<p class="note">جارٍ التحميل…</p>';
-    const [matches, streams, lineups, products, news, storeRow, usersRes] = await Promise.all([
-      count('matches'), count('fixture_streams'), count('fixture_manual'), count('products'), count('news'),
+    const [matches, streams, lineups, products, news, newOrders, storeRow, usersRes] = await Promise.all([
+      count('matches'), count('fixture_streams'), count('fixture_manual'), count('products'), count('news'), client.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'new'),
       client.from('site_settings').select('value').eq('key', 'store_enabled').maybeSingle(),
       callFn('admin-users', { action: 'list', perPage: 200 }).catch((e) => ({ error: e.message })),
     ]);
@@ -119,6 +121,7 @@
       ['مشغّلات', streams ?? '—', 'مباريات عليها زر شاهد'],
       ['تشكيلات يدوية', lineups ?? '—', ''],
       ['منتجات', products ?? '—', ''],
+      ['طلبات جديدة', newOrders.error ? '—' : (newOrders.count ?? 0), newOrders.error ? 'شغّل supabase-orders.sql' : 'بانتظار التأكيد'],
       ['أخبار', news ?? '—', 'كتبتها بنفسك'],
     ];
     host.innerHTML = cards.map(([t, n, s]) => `<div class="stat-card"><span>${esc(t)}</span><b>${esc(n)}</b><small>${esc(s)}</small></div>`).join('');
@@ -373,6 +376,49 @@
       if (!window.confirm('هل تريد حذف هذا المنتج؟')) return;
       const { error: e } = await client.from('products').delete().eq('id', b.dataset.deleteProduct);
       say('product-message', e ? `تعذّر حذف المنتج: ${e.message}` : 'تم حذف المنتج.'); if (!e) await loadProducts();
+    }));
+  }
+
+  /* ======================== الطلبات ======================== */
+  const ORDER_STATUS = { new: 'جديد', confirmed: 'مؤكد', shipped: 'في الشحن', delivered: 'تم التسليم', cancelled: 'ملغي' };
+  let orderFilter = 'all';
+  async function refreshOrdersBadge() {
+    const { count: n, error } = await client.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'new');
+    const b = $('orders-badge'); if (!b) return;
+    b.hidden = error || !n; b.textContent = n || '';
+  }
+  $('order-filter').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-of]'); if (!b) return;
+    orderFilter = b.dataset.of;
+    document.querySelectorAll('#order-filter .chip').forEach((c) => c.classList.toggle('active', c === b));
+    loadOrders();
+  });
+  async function loadOrders() {
+    const host = $('admin-orders');
+    let q = client.from('orders').select('*').order('created_at', { ascending: false }).limit(200);
+    if (orderFilter !== 'all') q = q.eq('status', orderFilter);
+    const { data, error } = await q;
+    if (error) { host.innerHTML = `<p class="note">تعذّر تحميل الطلبات: ${esc(error.message)}. شغّل ملف supabase-orders.sql في Supabase.</p>`; return; }
+    refreshOrdersBadge();
+    host.innerHTML = (data || []).map((o) => `<article class="order-item st-${esc(o.status)}">
+      <div class="order-head"><strong>#${esc(o.order_no)} · ${esc(o.product_name)} × ${esc(o.quantity)}</strong><span class="tag">${esc(ORDER_STATUS[o.status] || o.status)}</span></div>
+      <p class="order-meta">${esc(o.customer_name)} · <a dir="ltr" href="tel:${esc(o.phone)}">${esc(o.phone)}</a> · <a href="https://wa.me/${esc(String(o.phone).replace(/^0/, '20').replace(/\D/g, ''))}" target="_blank" rel="noopener noreferrer">واتساب</a></p>
+      <p class="order-meta">${esc([o.city, o.address].filter(Boolean).join('، '))}</p>
+      ${o.notes ? `<p class="order-meta">ملاحظات العميل: ${esc(o.notes)}</p>` : ''}
+      <p class="order-meta">${o.total != null ? `الإجمالي: ${esc(Number(o.total).toLocaleString('ar-EG'))} ج.م · ` : ''}${esc(fmt(o.created_at))}</p>
+      <div class="row"><select data-order-status="${esc(o.id)}" aria-label="حالة الطلب">${Object.entries(ORDER_STATUS).map(([k, v]) => `<option value="${k}"${k === o.status ? ' selected' : ''}>${v}</option>`).join('')}</select>
+      <input data-order-note="${esc(o.id)}" value="${esc(o.admin_note)}" maxlength="300" placeholder="ملاحظة داخلية" aria-label="ملاحظة داخلية">
+      <button type="button" class="btn outline" data-save-order="${esc(o.id)}">حفظ</button><button type="button" class="btn outline" data-delete-order="${esc(o.id)}">حذف</button></div></article>`).join('') || '<p class="note">لا توجد طلبات.</p>';
+    host.querySelectorAll('[data-save-order]').forEach((b) => b.addEventListener('click', async () => {
+      const id = b.dataset.saveOrder;
+      const status = host.querySelector(`[data-order-status="${id}"]`).value; const admin_note = host.querySelector(`[data-order-note="${id}"]`).value.trim();
+      const { error: e } = await client.from('orders').update({ status, admin_note }).eq('id', id);
+      say('orders-message', e ? `تعذّر الحفظ: ${e.message}` : 'تم حفظ الطلب.'); if (!e) await loadOrders();
+    }));
+    host.querySelectorAll('[data-delete-order]').forEach((b) => b.addEventListener('click', async () => {
+      if (!window.confirm('هل تريد حذف هذا الطلب نهائيًا؟')) return;
+      const { error: e } = await client.from('orders').delete().eq('id', b.dataset.deleteOrder);
+      say('orders-message', e ? `تعذّر الحذف: ${e.message}` : 'تم حذف الطلب.'); if (!e) await loadOrders();
     }));
   }
 
