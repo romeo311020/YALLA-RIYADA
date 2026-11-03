@@ -1,0 +1,8 @@
+[build]
+  publish = "."
+
+# ملف الـ Service Worker لازم يتجدد دايمًا عشان التحديثات توصل للزوار فورًا
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"

@@ -1,6 +1,7 @@
 // يلا رياضة — Service Worker: يجعل الموقع قابلًا للتثبيت كتطبيق، ويعرض آخر نسخة محفوظة لو انقطع الإنترنت.
 // الاستراتيجية: الشبكة أولًا (تحديثاتك تظهر فورًا)، والنسخة المحفوظة احتياطية فقط. لا نحفظ طلبات Supabase أو المباريات.
-const CACHE = 'yalla-riyada-v2';
+const CACHE = 'yalla-riyada-v3';
+const NET_TIMEOUT = 5000; // لو الشبكة بطيئة أكثر من 5 ثواني نعرض النسخة المحفوظة بدل شاشة تحميل لا تنتهي
 const SHELL = ['./', 'matches.html', 'news.html', 'store.html', 'about.html', 'styles.css', 'app.js', 'icon-192.png', 'favicon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -17,10 +18,14 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // Supabase وCDN والخطوط: بدون تدخل
   event.respondWith((async () => {
-    try {
-      const fresh = await fetch(req);
-      if (fresh.ok) { const c = await caches.open(CACHE); c.put(req, fresh.clone()); }
+    const network = fetch(req).then((fresh) => {
+      if (fresh.ok) { const copy = fresh.clone(); caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {}); }
       return fresh;
+    });
+    try {
+      const cached = await caches.match(req, { ignoreSearch: req.mode === 'navigate' });
+      if (!cached) return await network; // لا توجد نسخة محفوظة: ننتظر الشبكة عادي
+      return await Promise.race([network, new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), NET_TIMEOUT))]);
     } catch (error) {
       const hit = await caches.match(req, { ignoreSearch: req.mode === 'navigate' });
       if (hit) return hit;
