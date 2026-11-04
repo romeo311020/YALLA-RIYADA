@@ -70,9 +70,16 @@
     const ids = fixtures.filter((m) => m.sport !== 'basketball' && Number.isSafeInteger(Number(m.fixture_id))).map((m) => Number(m.fixture_id));
     if (!db || !ids.length) return;
     try {
-      const { data, error } = await db.from('fixture_streams').select('fixture_id,embed_url').in('fixture_id', ids);
-      if (error) throw error;
-      const ok = new Set((data || []).filter((r) => safeUrl(r.embed_url)).map((r) => Number(r.fixture_id)));
+      // الزائر يعرف فقط أي مباراة عليها مشغّل (بدون الرابط). الرابط نفسه للأعضاء المسجّلين فقط.
+      let have = null;
+      const r = await db.rpc('stream_fixture_ids', { p_ids: ids });
+      if (!r.error && Array.isArray(r.data)) have = new Set(r.data.map(Number));
+      if (!have) { // دالة غير منشورة بعد → نرجع للقراءة المباشرة (تعمل للمسجّلين فقط)
+        const { data, error } = await db.from('fixture_streams').select('fixture_id,embed_url').in('fixture_id', ids);
+        if (error) throw error;
+        have = new Set((data || []).filter((x) => safeUrl(x.embed_url)).map((x) => Number(x.fixture_id)));
+      }
+      const ok = have;
       fixtures.forEach((m) => { if (ok.has(Number(m.fixture_id)) && m.sport !== 'basketball') m.has_stream = true; });
     } catch (e) { console.error('streams lookup:', e); }
   };
@@ -370,10 +377,23 @@
 
         // المشغّل: لكرة القدم فقط حاليًا (جدول fixture_streams مفتاحه رقم المباراة)، ولا يظهر إلا لو يوجد رابط
         if (sport === 'football' && player && frameBox) {
-          const { data: stream, error } = await db.from('fixture_streams').select('embed_url').eq('fixture_id', Number(fixtureId)).maybeSingle();
-          if (error) { console.error('stream lookup:', error); return; }
-          const url = safeUrl(stream?.embed_url);
-          if (!url) return;
+          const { data: sess } = await db.auth.getSession();
+          const signedIn = Boolean(sess?.session?.user);
+          let url = '';
+          if (signedIn) {
+            const { data: stream, error } = await db.from('fixture_streams').select('embed_url').eq('fixture_id', Number(fixtureId)).maybeSingle();
+            if (error) { console.error('stream lookup:', error); return; }
+            url = safeUrl(stream?.embed_url);
+            if (!url) return;
+          } else {
+            // زائر غير مسجّل: نعرف فقط إن كان في مشغّل، ونعرض قفل الدخول بدل الرابط
+            const r = await db.rpc('stream_fixture_ids', { p_ids: [Number(fixtureId)] });
+            if (r.error || !(r.data || []).map(Number).includes(Number(fixtureId))) return;
+          }
+          if (!signedIn) {
+            frameBox.innerHTML = window.yrLockBox ? window.yrLockBox('المشغّل للأعضاء فقط', 'سجّل دخولك بحسابك لمشاهدة هذه المباراة.') : '';
+            player.hidden = false;
+          } else {
           const frame = document.createElement('iframe');
           frame.src = url;
           frame.title = `مشغّل مباراة ${H} ضد ${A}`;
@@ -383,6 +403,7 @@
           frame.sandbox = 'allow-scripts allow-same-origin allow-presentation';
           frameBox.replaceChildren(frame);
           player.hidden = false;
+          }
           if (note && !$('watch-btn')) {
             const btn = document.createElement('button');
             btn.type = 'button'; btn.id = 'watch-btn'; btn.className = 'btn primary watch-btn'; btn.textContent = '▶ شاهد المباراة';

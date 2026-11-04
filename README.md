@@ -1,3 +1,4 @@
+# (v19: المشغّل والطلبات للأعضاء فقط — شغّل supabase-members-only.sql)
 # (v15: وسيط VPS — مجلد relay)
 # (v14: جاهز لـ Vercel — اقرأ VERCEL-نقل-الموقع.md)
 # (v13: كاش وحصة مشتركة — شغّل supabase-api-budget.sql ثم انشر football-matches-CODE-v4.ts)

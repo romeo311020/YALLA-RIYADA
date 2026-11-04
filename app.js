@@ -45,6 +45,14 @@
     });
   }
 
+  /* ---------- الدخول المطلوب (مشغّل المباريات والطلبات للأعضاء فقط) ---------- */
+  window.yrLogin = (label) => {
+    try { localStorage.setItem('yr-next', location.pathname.split('/').pop() + location.search); } catch { /* لا مشكلة */ }
+    location.href = 'account.html';
+  };
+  window.yrLockBox = (title, text) => `<div class="lock-box"><span class="lock-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="3"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg></span><h3>${title}</h3><p>${text}</p><button type="button" class="btn primary" data-yr-login>سجّل دخولك الآن</button><small>التسجيل مجاني ويستغرق ثواني.</small></div>`;
+  document.addEventListener('click', (e) => { if (e.target.closest('[data-yr-login]')) window.yrLogin(); });
+
   /* ---------- روابط التواصل الاجتماعي (تظهر في الفوتر وصفحة حسابي) ---------- */
   const SOCIALS = [
     { id: 'whatsapp', name: 'قناة واتساب', note: 'أخبار ومباريات أول بأول', url: 'https://whatsapp.com/channel/0029VbDWnn24dTnGwIUrTz0G', c: '#25d366',

@@ -83,6 +83,10 @@
     document.querySelector('.account-card')?.classList.toggle('signed-in', isSignedIn);
     if (!user) { shownUserId = null; currentUser = null; setEditing(false); return; }
     currentUser = user;
+    try { // العودة للصفحة اللي جاء منها المستخدم (مشغّل/منتج) بعد تسجيل الدخول
+      const next = localStorage.getItem('yr-next');
+      if (next) { localStorage.removeItem('yr-next'); if (/^[\w.\-]+\.html(\?[\w=&%.\-]*)?$/.test(next) && next !== 'account.html') { location.replace(next); return; } }
+    } catch { /* لا مشكلة */ }
     if (shownUserId !== user.id) { shownUserId = user.id; setEditing(false); setMessage($('profile-message'), ''); }
 
     const name = displayNameOf(user);
@@ -252,9 +256,21 @@
     }
   });
 
+  // طلباتي
+  const ST = { new: 'جديد', confirmed: 'مؤكد', shipped: 'في الشحن', delivered: 'تم التسليم', cancelled: 'ملغي' };
+  const loadMyOrders = async () => {
+    const host = $('my-orders'); if (!host) return;
+    const { data, error } = await db.from('orders').select('order_no,product_name,quantity,total,status,created_at').order('created_at', { ascending: false }).limit(20);
+    if (error || !data?.length) { host.innerHTML = ''; return; }
+    host.innerHTML = `<div class="follow-box my-orders"><div class="follow-head"><span class="kicker">MY ORDERS</span><h3>طلباتي</h3></div>${data.map((o) => `<div class="my-order st-${o.status}"><div><b>#${o.order_no} · ${escapeHtml(o.product_name)} × ${o.quantity}</b><small>${new Date(o.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' })}${o.total != null ? ` · ${Number(o.total).toLocaleString('ar-EG')} ج.م` : ''}</small></div><span class="tag">${ST[o.status] || o.status}</span></div>`).join('')}</div>`;
+  };
+  const escapeHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  db.auth.onAuthStateChange((_e, session) => { if (session?.user) setTimeout(loadMyOrders, 0); });
+
   db.auth.getSession().then(({ data, error }) => {
     if (error) setMessage(message, `تعذّر التحقق من حالة الحساب: ${error.message}`, true);
     showUser(data?.session?.user || null);
+    if (data?.session?.user) loadMyOrders();
   }).catch((error) => {
     setMessage(message, `تعذّر التحقق من حالة الحساب: ${error.message}`, true);
   });

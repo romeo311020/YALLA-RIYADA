@@ -46,11 +46,13 @@
     root.removeAttribute('aria-busy');
     if (error || !p) { root.innerHTML = '<p class="note">المنتج غير متاح. <a href="store.html">العودة للمتجر</a></p>'; return; }
     document.title = `${p.name} | يلا رياضة`;
+    const { data: sess } = await db.auth.getSession();
+    const signedIn = Boolean(sess?.session?.user);
     const img = https(p.image_url);
     root.innerHTML = `<article class="product-detail panel">${img ? `<img src="${esc(img)}" alt="${esc(p.name)}">` : '<div class="product-ph big" aria-hidden="true">◈</div>'}
       <div><span class="kicker">${esc(p.category || 'STORE')}</span><h1>${esc(p.name)}</h1><p class="product-price">${esc(price(p.price))}</p>
       ${p.description ? `<p class="product-desc">${esc(p.description)}</p>` : ''}
-      <form id="order-form" class="form-stack order-form" novalidate>
+      ${signedIn ? `<form id="order-form" class="form-stack order-form" novalidate>
         <h2>اطلب الآن</h2>
         <label>الاسم بالكامل<input id="o-name" required minlength="2" maxlength="100" autocomplete="name"></label>
         <label>رقم الهاتف<input id="o-phone" required type="tel" inputmode="tel" dir="ltr" maxlength="20" autocomplete="tel" placeholder="01xxxxxxxxx"></label>
@@ -61,7 +63,10 @@
         <p class="order-total" id="o-total" aria-live="polite"></p>
         <button class="btn primary" id="o-submit" type="submit">تأكيد الطلب</button>
         <p class="note" id="o-msg" role="status"></p>
-      </form></div></article>`;
+      </form>` : window.yrLockBox('سجّل دخولك لتطلب', 'الطلب متاح للأعضاء المسجّلين فقط.')}</div></article>`;
+    if (!signedIn) return;
+    const meta = sess.session.user.user_metadata || {};
+    $('o-name').value = meta.full_name || meta.name || meta.display_name || '';
     const total = () => { const q = Math.min(20, Math.max(1, parseInt($('o-qty').value, 10) || 1)); $('o-total').textContent = p.price == null ? '' : `الإجمالي: ${price(p.price * q)} (الدفع عند الاستلام)`; };
     $('o-qty').addEventListener('input', total); total();
     $('order-form').addEventListener('submit', async (e) => {
@@ -77,6 +82,7 @@
       const { error: err } = await db.from('orders').insert({ product_id: p.id, quantity: qty, customer_name: name, phone, city: $('o-city').value.trim(), address, notes: $('o-notes').value.trim() });
       if (err) {
         btn.disabled = false;
+        if (/row-level security|JWT|permission|سجّل/i.test(err.message || '')) { msg.textContent = 'سجّل دخولك أولًا لإتمام الطلب.'; return; }
         msg.textContent = /orders/.test(err.message || '') && /(find|exist|schema)/i.test(err.message || '') ? 'نظام الطلبات غير مفعّل بعد.' : 'تعذّر إرسال الطلب. حاول مرة أخرى.';
         return;
       }

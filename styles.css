@@ -606,3 +606,12 @@ a.match:hover .crest{transform:scale(1.1) rotate(-4deg)}
 .follow-dot svg{width:21px;height:21px}
 .follow-dot:hover{transform:translateY(-4px) scale(1.08);background:var(--c);color:#000;box-shadow:0 10px 24px -8px var(--c)}
 .follow-dot:active{transform:scale(.92)}
+
+/* ===== قفل الأعضاء + طلباتي ===== */
+.lock-box{display:grid;justify-items:center;gap:8px;text-align:center;padding:26px 16px;border:1px dashed color-mix(in srgb,var(--acc) 50%,var(--line));border-radius:18px;background:radial-gradient(90% 120% at 50% 0%,color-mix(in srgb,var(--acc) 10%,transparent),transparent 70%)}
+.lock-box h3{margin:0;font-size:20px}.lock-box p{margin:0;color:var(--muted)}.lock-box small{color:var(--muted)}
+.lock-ico{display:grid;place-items:center;width:62px;height:62px;border-radius:50%;background:color-mix(in srgb,var(--acc) 16%,transparent);color:var(--acc);border:1px solid color-mix(in srgb,var(--acc) 45%,transparent);animation:floatY 2.6s ease-in-out infinite}
+.lock-ico svg{width:30px;height:30px}
+.my-order{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+.my-order>div{display:grid;gap:2px;min-width:0}.my-order small{color:var(--muted)}
+.my-order.st-cancelled{opacity:.6}
