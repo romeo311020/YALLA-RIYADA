@@ -7,9 +7,10 @@ const KEY = process.env.API_FOOTBALL_KEY || '';
 const SECRET = process.env.RELAY_SECRET || '';
 const PORT = Number(process.env.PORT || 3000);
 const UPSTREAM = {
-  football: process.env.UPSTREAM_FOOTBALL || 'https://v3.football.api-sports.io/fixtures',
-  basketball: process.env.UPSTREAM_BASKETBALL || 'https://v1.basketball.api-sports.io/games',
+  football: process.env.UPSTREAM_FOOTBALL || 'https://v3.football.api-sports.io',
+  basketball: process.env.UPSTREAM_BASKETBALL || 'https://v1.basketball.api-sports.io',
 };
+const PATHS = { football: ['fixtures', 'teams', 'players/squads', 'players', 'coachs'], basketball: ['games'] };
 if (!KEY || SECRET.length < 16) { console.error('اضبط API_FOOTBALL_KEY و RELAY_SECRET (16 حرفًا على الأقل).'); process.exit(1); }
 
 const safeEq = (a, b) => { const x = Buffer.from(a), y = Buffer.from(b); return x.length === y.length && crypto.timingSafeEqual(x, y); };
@@ -22,13 +23,15 @@ http.createServer(async (req, res) => {
   let raw = ''; for await (const c of req) { raw += c; if (raw.length > 2000) return send(res, 413, { error: 'too large' }); }
   let b; try { b = JSON.parse(raw); } catch { return send(res, 400, { error: 'bad json' }); }
   if (!UPSTREAM[b.sport]) return send(res, 400, { error: 'bad sport' });
+  const path = b.path || (b.sport === 'football' ? 'fixtures' : 'games'); // يقبل الدالة القديمة بدون path
+  if (!PATHS[b.sport].includes(path)) return send(res, 400, { error: 'bad path' });
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(b.params || {})) {
-    if (!['timezone', 'date', 'id'].includes(k) || !/^[\w:+\/-]{1,40}$/.test(String(v))) return send(res, 400, { error: 'bad param' });
+    if (!['timezone', 'date', 'id', 'team', 'season'].includes(k) || !/^[\w:+\/-]{1,40}$/.test(String(v))) return send(res, 400, { error: 'bad param' });
     q.set(k, String(v));
   }
   try {
-    const r = await fetch(`${UPSTREAM[b.sport]}?${q}`, { headers: { 'x-apisports-key': KEY }, signal: AbortSignal.timeout(10000) });
+    const r = await fetch(`${UPSTREAM[b.sport]}/${path}?${q}`, { headers: { 'x-apisports-key': KEY }, signal: AbortSignal.timeout(10000) });
     res.writeHead(r.status, { 'content-type': 'application/json; charset=utf-8' });
     res.end(await r.text());
   } catch (e) { console.error('upstream:', e.message); send(res, 502, { error: 'upstream failed' }); }

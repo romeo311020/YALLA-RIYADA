@@ -34,6 +34,21 @@ const PROVIDERS: Record<Sport, string> = {
   football: 'https://v3.football.api-sports.io/fixtures',
   basketball: 'https://v1.basketball.api-sports.io/games',
 };
+const FOOTBALL_BASE = 'https://v3.football.api-sports.io';
+
+// طلب واحد للمزوّد (مباشر أو عبر الوسيط لو RELAY_URL مضبوط). path: fixtures | teams | players/squads | players | coachs | games
+async function providerFetch(sport: Sport, path: string, params: URLSearchParams, apiKey: string, relayUrl?: string, relaySecret?: string) {
+  if (relayUrl && relaySecret) {
+    return await fetch(`${relayUrl.replace(/\/$/, '')}/fetch`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-relay-secret': relaySecret },
+      body: JSON.stringify({ sport, path, params: Object.fromEntries(params) }),
+      signal: AbortSignal.timeout(12000),
+    });
+  }
+  const url = sport === 'football' && path !== 'fixtures' ? `${FOOTBALL_BASE}/${path}` : PROVIDERS[sport];
+  return await fetch(`${url}?${params}`, { headers: { 'x-apisports-key': apiKey }, signal: AbortSignal.timeout(10000) });
+}
 
 const leaguesFor = (sport: Sport) =>
   sport === 'football'
@@ -176,7 +191,13 @@ function extractDetails(item: any) {
     // deno-lint-ignore no-explicit-any
     stats[String(t.team?.id)] = Object.fromEntries((t.statistics ?? []).map((s: any) => [s.type, s.value]));
   }
-  return { events, lineups, stats };
+  const info = {
+    venue: item.fixture?.venue?.name ?? '',
+    city: item.fixture?.venue?.city ?? '',
+    referee: item.fixture?.referee ?? '',
+    round: item.league?.round ?? '',
+  };
+  return { events, lineups, stats, info };
 }
 
 // deno-lint-ignore no-explicit-any
@@ -254,13 +275,91 @@ Deno.serve(async (request) => {
   const relayUrl = Deno.env.get('RELAY_URL'); // لو مضبوط، الطلبات تمر عبر سيرفر بعنوان IP ثابت بدل الاتصال المباشر
   const relaySecret = Deno.env.get('RELAY_SECRET') ?? '';
   const apiKey = Deno.env.get('API_FOOTBALL_KEY') ?? '';
-  if (!apiKey && !(relayUrl && relaySecret)) return jsonResponse({ error: 'مفتاح API-Football غير مضبوط في إعدادات الخادم.' }, 503);
+  if (!apiKey && !(relayUrl && relaySecret)) return jsonResponse({ error: 'الخدمة غير مهيأة بعد.' }, 503);
 
-  let body: { action?: string; date?: string; fixtureId?: number; sport?: string };
+  let body: { action?: string; date?: string; fixtureId?: number; teamId?: number; playerId?: number; sport?: string };
   try {
     body = await request.json();
   } catch {
     return jsonResponse({ error: 'صيغة الطلب غير صالحة.' }, 400);
+  }
+
+
+  // ---------- الفريق واللاعب (كرة القدم): كاش طويل لتوفير الحصة ----------
+  if (body.action === 'team' || body.action === 'player') {
+    const id = Number(body.action === 'team' ? body.teamId : body.playerId);
+    if (!Number.isSafeInteger(id) || id < 1) return jsonResponse({ error: 'الرقم المطلوب غير صالح.' }, 400);
+    const key = `football:${body.action}:${id}`;
+    const mem = cache.get(key);
+    if (mem && mem.expires > Date.now()) return jsonResponse(mem.payload);
+    const shared = await dbGet(key);
+    if (shared && shared.expires > Date.now()) { cache.set(key, shared); return jsonResponse(shared.payload); }
+    const stale = mem ?? shared;
+    const call = async (path: string, q: Record<string, string>) => {
+      if ((await takeSharedBudget('football')) !== 'ok') throw new Error('budget');
+      const r = await providerFetch('football', path, new URLSearchParams(q), apiKey, relayUrl, relaySecret);
+      if (!r.ok) throw new Error(`http ${r.status}`);
+      const j = await r.json();
+      return Array.isArray(j.response) ? j.response : [];
+    };
+    try {
+      let out: Record<string, unknown>;
+      if (body.action === 'team') {
+        const [t, squad, coach] = [
+          await call('teams', { id: String(id) }),
+          await call('players/squads', { team: String(id) }).catch(() => []),
+          await call('coachs', { team: String(id) }).catch(() => []),
+        ];
+        const row = t[0];
+        if (!row) return jsonResponse({ error: 'الفريق غير متاح.' }, 404);
+        out = {
+          team: { id, name: row.team?.name ?? '', logo: row.team?.logo ?? null, country: row.team?.country ?? '', founded: row.team?.founded ?? null, national: Boolean(row.team?.national) },
+          venue: { name: row.venue?.name ?? '', city: row.venue?.city ?? '', capacity: row.venue?.capacity ?? null, image: row.venue?.image ?? null, surface: row.venue?.surface ?? '' },
+          coach: (() => {
+            // deno-lint-ignore no-explicit-any
+            const cur = (coach as any[]).find((c) => (c.career ?? []).some((x: any) => x.team?.id === id && !x.end)) ?? (coach as any[])[0];
+            return cur ? { name: cur.name ?? '', photo: cur.photo ?? null, nationality: cur.nationality ?? '', age: cur.age ?? null } : null;
+          })(),
+          // deno-lint-ignore no-explicit-any
+          squad: ((squad as any[])[0]?.players ?? []).map((p: any) => ({ id: p.id, name: p.name ?? '', age: p.age ?? null, number: p.number ?? null, position: p.position ?? '', photo: p.photo ?? `https://media.api-sports.io/football/players/${p.id}.png` })),
+        };
+      } else {
+        const c = cairoDate(); const y = Number(c.slice(0, 4)); const m = Number(c.slice(5, 7));
+        const season = m >= 8 ? y : y - 1;
+        let rows = await call('players', { id: String(id), season: String(season) });
+        if (!rows.length) rows = await call('players', { id: String(id), season: String(season - 1) });
+        const row = rows[0];
+        if (!row) return jsonResponse({ error: 'بيانات اللاعب غير متاحة.' }, 404);
+        const st = Array.isArray(row.statistics) ? row.statistics : [];
+        const sum = (f: (x: any) => number | null | undefined) => st.reduce((a: number, x: any) => a + (Number(f(x)) || 0), 0);
+        const first = st[0] ?? {};
+        const ratings = st.map((x: any) => Number(x.games?.rating)).filter((n: number) => n > 0);
+        out = {
+          player: {
+            id, name: row.player?.name ?? '', firstname: row.player?.firstname ?? '', lastname: row.player?.lastname ?? '',
+            age: row.player?.age ?? null, birth: row.player?.birth?.date ?? null, birth_country: row.player?.birth?.country ?? '',
+            nationality: row.player?.nationality ?? '', height: row.player?.height ?? '', weight: row.player?.weight ?? '',
+            photo: row.player?.photo ?? `https://media.api-sports.io/football/players/${id}.png`,
+          },
+          team: { id: first.team?.id ?? null, name: first.team?.name ?? '', logo: first.team?.logo ?? null },
+          position: first.games?.position ?? '', number: first.games?.number ?? null, season,
+          stats: {
+            appearances: sum((x) => x.games?.appearences), minutes: sum((x) => x.games?.minutes),
+            goals: sum((x) => x.goals?.total), assists: sum((x) => x.goals?.assists),
+            yellow: sum((x) => x.cards?.yellow), red: sum((x) => x.cards?.red),
+            rating: ratings.length ? Number((ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length).toFixed(1)) : null,
+          },
+        };
+      }
+      const exp = Date.now() + 24 * 60 * MIN;
+      cache.set(key, { payload: out, expires: exp });
+      await dbSet(key, out, exp);
+      return jsonResponse(out);
+    } catch (error) {
+      console.error('team/player failed:', error);
+      if (stale) return jsonResponse(stale.payload);
+      return jsonResponse({ error: (error as Error).message === 'budget' ? 'الخدمة مشغولة حاليًا. حاول بعد قليل.' : 'تعذّر تحميل البيانات.' }, 502);
+    }
   }
 
   const sport: Sport = body.sport === 'basketball' ? 'basketball' : 'football';
@@ -299,30 +398,20 @@ Deno.serve(async (request) => {
       const verdict = await takeSharedBudget(sport);
       if (verdict !== 'ok') {
         if (hit) { cache.set(cacheKey, { payload: hit.payload, expires: Date.now() + 30_000 }); return { payload: hit.payload }; }
-        return { error: verdict === 'minute' ? 'الخدمة مشغولة لحظات. حاول بعد دقيقة.' : 'تم الوصول للحد اليومي لطلبات المزوّد. حاول غدًا.', status: 429 };
+        return { error: verdict === 'minute' ? 'الخدمة مشغولة لحظات. حاول بعد دقيقة.' : 'الخدمة مشغولة حاليًا. حاول لاحقًا.', status: 429 };
       }
       try {
-        const response = relayUrl && relaySecret
-          ? await fetch(`${relayUrl.replace(/\/$/, '')}/fetch`, {
-              method: 'POST',
-              headers: { 'content-type': 'application/json', 'x-relay-secret': relaySecret },
-              body: JSON.stringify({ sport, params: Object.fromEntries(params) }),
-              signal: AbortSignal.timeout(12000),
-            })
-          : await fetch(`${PROVIDERS[sport]}?${params}`, {
-              headers: { 'x-apisports-key': apiKey },
-              signal: AbortSignal.timeout(10000),
-            });
+        const response = await providerFetch(sport, sport === 'football' ? 'fixtures' : 'games', params, apiKey, relayUrl, relaySecret);
         if (!response.ok) {
           if (hit) return { payload: hit.payload };
           return {
-            error: response.status === 429 ? 'تم تجاوز حد الطلبات في المزوّد. حاول لاحقًا.' : 'تعذّر جلب البيانات من المزوّد.',
+            error: response.status === 429 ? 'الخدمة مشغولة حاليًا. حاول لاحقًا.' : 'تعذّر جلب البيانات حاليًا.',
             status: response.status === 429 ? 429 : 502,
           };
         }
         const payload = await response.json();
         const hasErrors = Array.isArray(payload.errors) ? payload.errors.length > 0 : payload.errors && Object.keys(payload.errors).length > 0;
-        if (hasErrors) return { error: 'رفض المزوّد الطلب. تحقق من صلاحية المفتاح والباقة.', status: 502 };
+        if (hasErrors) return { error: 'تعذّر تحميل البيانات حاليًا.', status: 502 };
 
         const normalize = sport === 'football' ? normalizeFootball : normalizeBasketball;
         const rows = Array.isArray(payload.response) ? payload.response : [];
@@ -346,7 +435,7 @@ Deno.serve(async (request) => {
       } catch (error) {
         console.error('Sports provider request failed:', error);
         if (hit) return { payload: hit.payload };
-        return { error: 'تعذّر الاتصال بالمزوّد. حاول مرة أخرى.', status: 502 };
+        return { error: 'تعذّر تحميل البيانات. حاول مرة أخرى.', status: 502 };
       }
     })().finally(() => inflight.delete(cacheKey));
     inflight.set(cacheKey, job);

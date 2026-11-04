@@ -17,10 +17,13 @@
   const mark = '<svg class="mark" viewBox="0 0 128 128" aria-hidden="true"><rect class="m-bg" width="128" height="128" rx="30"/><path class="m-fg" d="M32 40L64 78M96 40L64 78M64 78V106" fill="none" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/><circle class="m-ball" cx="64" cy="37" r="12.5"/></svg>';
   const brand = `<a class="brand" href="matches.html" aria-label="يلا رياضة — المباريات">${mark}<span><b>يلا رياضة</b><small>YALLA RIYADA</small></span></a>`;
 
-  /* ---------- الثيم: داكن (افتراضي) / فاتح ---------- */
+  /* ---------- الثيم: فاتح (افتراضي) / داكن ---------- */
   const root = document.documentElement;
-  const applyTheme = (t) => { if (t === 'light') root.setAttribute('data-theme', 'light'); else root.removeAttribute('data-theme'); };
-  applyTheme(store.get('yr-theme'));
+  const applyTheme = (t) => {
+    if (t === 'dark') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', 'light');
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', t === 'dark' ? '#000000' : '#ffffff'));
+  };
+  applyTheme(store.get('yr-theme') === 'dark' ? 'dark' : 'light'); // الافتراضي: الوضع الفاتح
 
   /* ---------- الهيدر ---------- */
   const nav = [

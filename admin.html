@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
   
-  <script>try{if(localStorage.getItem("yr-theme")==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}</script>
+  <script>(function(){var d=document.documentElement,t="light";try{if(localStorage.getItem("yr-theme")==="dark")t="dark"}catch(e){}if(t==="light")d.setAttribute("data-theme","light")})()</script>
   <link rel="stylesheet" href="styles.css">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="يلا رياضة"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="robots" content="noindex,nofollow"></head>
 <body>
@@ -118,8 +118,8 @@
       <section class="admin-pane" id="pane-lineups" role="tabpanel" hidden>
         <div class="panel admin-section">
           <div class="admin-section-heading">
-            <div><span class="tag">التشكيلة</span><h2>إضافة تشكيلة يدويًا</h2></div>
-            <p class="note">التشكيلة اليدوية تُعرض في صفحة المباراة بدل تشكيلة المزوّد (مفيدة للدوريات التي لا يغطيها).</p>
+            <div><span class="tag">التشكيلة</span><h2>تشكيلة وتفاصيل المباراة</h2></div>
+            <p class="note">اختر المباراة وسيتحمّل ما حفظته قبل كده. التشكيلة اليدوية تحل محل التلقائية، وتفاصيل القناة والمعلق تظهر في تبويب «التفاصيل» داخل المباراة. كل قسم اختياري.</p>
           </div>
           <form id="lineup-form" class="form-stack admin-form">
             <input id="lineup-edit-id" type="hidden">
@@ -127,6 +127,11 @@
             <label>اختر المباراة<select id="lineup-fixture-select"><option value="">جارٍ تحميل المباريات...</option></select></label>
             <label>أو اكتب رقم المباراة<input id="lineup-fixture-id" type="number" min="1" inputmode="numeric" placeholder="مثال: 1234567" required></label>
             <p id="lineup-fixture-status" class="note" role="status" aria-live="polite"></p>
+            <fieldset class="lineup-team info-fields"><legend>تفاصيل المباراة (اختياري)</legend>
+              <label>القناة الناقلة<input id="info-channel" maxlength="120" placeholder="مثال: beIN Sports 1 HD"></label>
+              <label>المعلّق<input id="info-commentator" maxlength="120" placeholder="مثال: عصام الشوالي"></label>
+              <label>ملاحظات<textarea id="info-notes" rows="2" maxlength="400" placeholder="أي معلومة إضافية للمشاهد"></textarea></label>
+            </fieldset>
             <div class="lineup-edit-grid">
               <fieldset class="lineup-team"><legend id="lineup-home-title">الفريق الأول (صاحب الأرض)</legend>
                 <label>اسم الفريق<input id="lineup-home-name" maxlength="80"></label>
@@ -144,7 +149,7 @@
               </fieldset>
             </div>
             <div class="row">
-              <button class="btn primary" id="lineup-save" type="submit">حفظ التشكيلة</button>
+              <button class="btn primary" id="lineup-save" type="submit">حفظ</button>
               <button class="btn outline" id="lineup-cancel-edit" type="button" hidden>إلغاء التعديل</button>
             </div>
           </form>
@@ -165,15 +170,25 @@
           <p id="store-message" class="note" role="status" aria-live="polite"></p>
         </div>
         <div class="panel admin-section">
+          <h2>الفئات</h2>
+          <p class="note">الفئات المحفوظة بتظهر لك كقائمة عند إضافة أي منتج. تقدر تضيف فئة جديدة أو تعيد تسميتها.</p>
+          <form id="category-form" class="row category-add"><input id="category-name" maxlength="60" placeholder="فئة جديدة…" aria-label="اسم الفئة"><button class="btn primary" type="submit">إضافة فئة</button></form>
+          <div id="category-list" class="category-list"></div>
+          <p id="category-message" class="note" role="status" aria-live="polite"></p>
+        </div>
+        <div class="panel admin-section">
           <h2>المنتجات</h2>
           <form id="product-form" class="form-stack admin-form">
             <input id="product-edit-id" type="hidden">
             <label>اسم المنتج<input id="product-name" required maxlength="160"></label>
-            <label>التصنيف (اختياري)<input id="product-category" maxlength="60" placeholder="قمصان، أحذية، إكسسوارات"></label>
+            <label>الفئة
+              <select id="product-category-select"></select>
+            </label>
+            <label id="product-category-new-wrap" hidden>اسم الفئة الجديدة<input id="product-category-new" maxlength="60" placeholder="مثال: قمصان، أحذية، إكسسوارات"></label>
             <label>الوصف<textarea id="product-description" rows="3"></textarea></label>
             <label>السعر<input id="product-price" type="number" min="0" step="0.01"></label>
             <label>رابط صورة المنتج<input id="product-image" type="url" inputmode="url"></label>
-            <label>رابط الشراء (موقع الشريك)<input id="product-buy" type="url" inputmode="url"></label>
+            <label>رابط خارجي (اختياري — لم يعد مستخدمًا، الطلب بيتم من الموقع)<input id="product-buy" type="url" inputmode="url"></label>
             <label class="admin-checkbox"><input id="product-published" type="checkbox" checked> ظاهر للزوار</label>
             <div class="row">
               <button class="btn primary" id="product-save" type="submit">إضافة المنتج</button>

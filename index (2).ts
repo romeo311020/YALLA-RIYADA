@@ -47,7 +47,7 @@ async function fetchNews(apiKey: string) {
     if (!response.ok || payload.errors) {
       console.error('GNews request rejected:', response.status, payload.errors ?? payload.message);
       return {
-        error: response.status === 429 ? 'تم تجاوز حد طلبات الأخبار. حاول لاحقًا.' : 'تعذّر جلب الأخبار من المزوّد.',
+        error: response.status === 429 ? 'تم تجاوز حد طلبات الأخبار. حاول لاحقًا.' : 'تعذّر جلب الأخبار حاليًا.',
         status: response.status === 429 ? 429 : 502,
       };
     }
