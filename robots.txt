@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /account.html
+Disallow: /password-reset.html
+
+Sitemap: https://yalla-riyada-embd.vercel.app/sitemap.xml

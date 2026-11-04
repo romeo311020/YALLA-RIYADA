@@ -615,3 +615,5 @@ a.match:hover .crest{transform:scale(1.1) rotate(-4deg)}
 .my-order{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
 .my-order>div{display:grid;gap:2px;min-width:0}.my-order small{color:var(--muted)}
 .my-order.st-cancelled{opacity:.6}
+.seo-intro{margin:26px 0 8px;padding:16px 18px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+.seo-intro h2{margin:0 0 6px;font-size:17px}.seo-intro p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.9}
