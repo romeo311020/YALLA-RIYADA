@@ -24,18 +24,45 @@
     if (error) { root.innerHTML = `<p class="note">تعذّر تحميل المنتجات: ${esc(error.message)}</p>`; return; }
     const items = data || [];
     const cats = [...new Set(items.map((p) => p.category).filter(Boolean))];
-    let active = 'all';
+    // تطبيع عربي للبحث: يتجاهل التشكيل والهمزات والتاء المربوطة
+    const norm = (v) => String(v ?? '').toLowerCase().replace(/[\u064B-\u0652\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).trim();
+    const state = { cat: 'all', q: '', sort: 'new' };
+    const max = Math.max(0, ...items.map((p) => Number(p.price) || 0));
+    root.innerHTML = `<span class="kicker">STORE</span><h1>المتجر الرياضي</h1><p class="sub">اختر منتجك واطلبه مباشرة — الدفع عند الاستلام.</p>
+      <div class="store-toolbar">
+        <div class="search-box" role="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="store-search" type="search" placeholder="ابحث عن منتج… (مثال: قميص، حذاء)" autocomplete="off" enterkeyhint="search" aria-label="ابحث عن منتج">
+          <button id="store-clear" type="button" hidden aria-label="مسح البحث">✕</button></div>
+        <label class="sort-box"><span>ترتيب</span><select id="store-sort" aria-label="ترتيب المنتجات"><option value="new">الأحدث</option><option value="low">السعر: الأقل</option><option value="high">السعر: الأعلى</option><option value="name">الاسم</option></select></label>
+      </div>
+      ${cats.length ? `<div class="league-chips" id="store-cats" role="group" aria-label="الفئات"><button type="button" class="chip active" data-cat="all">الكل <small>${items.length}</small></button>${cats.map((c) => `<button type="button" class="chip" data-cat="${esc(c)}">${esc(c)} <small>${items.filter((p) => p.category === c).length}</small></button>`).join('')}</div>` : ''}
+      <p class="results-count" id="store-count" aria-live="polite"></p>
+      <div class="product-grid" id="store-grid"></div>`;
+    const grid = $('store-grid'); const count = $('store-count');
     const draw = () => {
-      const rows = items.filter((p) => active === 'all' || p.category === active);
-      root.innerHTML = `<span class="kicker">STORE</span><h1>المتجر الرياضي</h1><p class="sub">اختر منتجك واطلبه مباشرة — الدفع عند الاستلام.</p>
-        ${cats.length ? `<div class="league-chips" role="group" aria-label="التصنيفات"><button type="button" class="chip${active === 'all' ? ' active' : ''}" data-cat="all">الكل</button>${cats.map((c) => `<button type="button" class="chip${active === c ? ' active' : ''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('')}</div>` : ''}
-        <div class="product-grid">${rows.map((p) => {
-          const img = https(p.image_url);
-          return `<a class="product-card" href="product.html?id=${encodeURIComponent(p.id)}">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<div class="product-ph" aria-hidden="true">◈</div>'}
-            <div class="product-info"><strong>${esc(p.name)}</strong>${p.category ? `<small>${esc(p.category)}</small>` : ''}<b>${esc(price(p.price))}</b></div></a>`;
-        }).join('') || '<p class="note">لا توجد منتجات حاليًا.</p>'}</div>`;
+      const q = norm(state.q);
+      let rows = items.filter((p) => (state.cat === 'all' || p.category === state.cat) && (!q || q.split(/\s+/).every((w) => norm(`${p.name} ${p.category} ${p.description}`).includes(w))));
+      const priceOf = (p) => (p.price == null ? Infinity : Number(p.price));
+      if (state.sort === 'low') rows = rows.slice().sort((x, y) => priceOf(x) - priceOf(y));
+      else if (state.sort === 'high') rows = rows.slice().sort((x, y) => (y.price == null ? -1 : Number(y.price)) - (x.price == null ? -1 : Number(x.price)));
+      else if (state.sort === 'name') rows = rows.slice().sort((x, y) => String(x.name).localeCompare(String(y.name), 'ar'));
+      count.textContent = rows.length ? `${rows.length.toLocaleString('ar-EG')} منتج` : '';
+      grid.innerHTML = rows.map((p, i) => {
+        const img = https(p.image_url);
+        return `<a class="product-card" style="--i:${Math.min(i, 11)}" href="product.html?id=${encodeURIComponent(p.id)}">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<div class="product-ph" aria-hidden="true">◈</div>'}
+          <div class="product-info"><strong>${esc(p.name)}</strong>${p.category ? `<small>${esc(p.category)}</small>` : ''}<b>${esc(price(p.price))}</b></div></a>`;
+      }).join('') || `<div class="empty-state"><span aria-hidden="true">🔍</span><h3>${items.length ? 'لا توجد نتائج مطابقة' : 'لا توجد منتجات حاليًا'}</h3>${items.length ? '<p class="note">جرّب كلمة تانية أو امسح الفلاتر.</p><button type="button" class="btn outline" id="store-reset">مسح الفلاتر</button>' : ''}</div>`;
     };
-    root.addEventListener('click', (e) => { const b = e.target.closest('[data-cat]'); if (!b) return; active = b.dataset.cat; draw(); });
+    const input = $('store-search'); const clear = $('store-clear'); let timer;
+    input.addEventListener('input', () => { clear.hidden = !input.value; clearTimeout(timer); timer = setTimeout(() => { state.q = input.value; draw(); }, 150); });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Escape') clear.click(); });
+    clear.addEventListener('click', () => { input.value = ''; clear.hidden = true; state.q = ''; draw(); input.focus(); });
+    $('store-sort').addEventListener('change', (e) => { state.sort = e.target.value; draw(); });
+    root.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-cat]');
+      if (b) { state.cat = b.dataset.cat; root.querySelectorAll('[data-cat]').forEach((x) => x.classList.toggle('active', x === b)); draw(); }
+      if (e.target.closest('#store-reset')) { state.cat = 'all'; state.q = ''; input.value = ''; clear.hidden = true; root.querySelectorAll('[data-cat]').forEach((x) => x.classList.toggle('active', x.dataset.cat === 'all')); draw(); }
+    });
     draw();
   }
 

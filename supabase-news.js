@@ -33,16 +33,16 @@
           <div class="news-meta"><span class="tag">يلا رياضة</span><time>${escapeHtml(formatDate(n.created_at))}</time></div>
           <h2>${escapeHtml(n.title)}</h2>
           ${n.body ? `<p style="white-space:pre-wrap">${escapeHtml(n.body)}</p>` : ''}
-          ${n.safeSource ? `<a class="news-read-more" href="${escapeHtml(n.safeSource)}" target="_blank" rel="noopener noreferrer">المصدر ↗</a>` : ''}
+          ${n.safeSource ? `<a class="news-read-more" href="${escapeHtml(n.safeSource)}" target="_blank" rel="noopener noreferrer">اقرأ المزيد ↗</a>` : ''}
         </div>
       </article>`;
   const apiCard = (article) => `<article class="news-card">
         ${article.safeImage ? `<a class="news-card-image" href="${escapeHtml(article.safeUrl)}" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true"><img src="${escapeHtml(article.safeImage)}" alt="" loading="lazy"></a>` : ''}
         <div class="news-card-content">
-          <div class="news-meta"><span class="tag">${escapeHtml(article.source)}</span><time>${escapeHtml(formatDate(article.publishedAt))}</time></div>
+          <div class="news-meta"><span class="tag">يلا رياضة</span><time>${escapeHtml(formatDate(article.publishedAt))}</time></div>
           <h2><a href="${escapeHtml(article.safeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(article.title)}</a></h2>
           ${article.description ? `<p>${escapeHtml(article.description)}</p>` : ''}
-          <a class="news-read-more" href="${escapeHtml(article.safeUrl)}" target="_blank" rel="noopener noreferrer">اقرأ الخبر من المصدر ↗</a>
+          <a class="news-read-more" href="${escapeHtml(article.safeUrl)}" target="_blank" rel="noopener noreferrer">اقرأ المزيد ↗</a>
         </div>
       </article>`;
 
@@ -77,7 +77,7 @@
 
     const html = manual.map(manualCard).join('') + articles.map(apiCard).join('');
     host.innerHTML = html || `<p class="note">${feedError ? `تعذّر تحميل الأخبار: ${escapeHtml(feedError)}` : 'لا توجد أخبار رياضية متاحة حاليًا.'}</p>`;
-    if (html && feedError) host.insertAdjacentHTML('beforeend', `<p class="note">تعذّر تحميل أخبار GNews: ${escapeHtml(feedError)}</p>`);
+    if (html && feedError) host.insertAdjacentHTML('beforeend', `<p class="note">تعذّر تحميل بعض الأخبار حاليًا. حاول لاحقًا.</p>`);
     host.removeAttribute('aria-busy');
   }
 

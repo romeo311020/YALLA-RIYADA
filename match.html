@@ -12,7 +12,7 @@
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://yalla-riyada-embd.vercel.app/og-image.png">
   
-  <script>try{if(localStorage.getItem("yr-theme")==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}</script>
+  <script>(function(){var d=document.documentElement,t="light";try{if(localStorage.getItem("yr-theme")==="dark")t="dark"}catch(e){}if(t==="light")d.setAttribute("data-theme","light")})()</script>
   <link rel="stylesheet" href="styles.css">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="يلا رياضة"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="description" content="تفاصيل المباراة على يلا رياضة: الملخص والتشكيلة والإحصائيات."><meta property="og:title" content="تفاصيل المباراة | يلا رياضة"><meta property="og:description" content="تفاصيل المباراة على يلا رياضة: الملخص والتشكيلة والإحصائيات."><meta property="og:locale" content="ar_AR"><meta name="twitter:card" content="summary_large_image"><meta name="robots" content="index,follow"></head>
 <body>
@@ -27,17 +27,19 @@
     <section class="panel match-player" id="match-player" hidden>
       <h2>مشغّل المباراة</h2>
       <div class="match-player-frame" id="match-player-frame"></div>
-      <p class="note">المشغّل مقدم من جهة خارجية. تابع المباراة عبر مصدر رسمي ومصرّح به فقط.</p>
+      <p class="note">استمتع بالمشاهدة.</p>
     </section>
     <div id="match-body" hidden>
       <div class="tabs" role="tablist" aria-label="أقسام المباراة">
         <button type="button" class="tab active" role="tab" data-tab="summary" aria-selected="true">الملخص</button>
         <button type="button" class="tab" role="tab" data-tab="lineup" aria-selected="false">التشكيلة</button>
         <button type="button" class="tab" role="tab" data-tab="stats" aria-selected="false">الإحصائيات</button>
+        <button type="button" class="tab" role="tab" data-tab="info" aria-selected="false">التفاصيل</button>
       </div>
       <section class="panel tab-panel" id="tab-summary" role="tabpanel"></section>
       <section class="panel tab-panel" id="tab-lineup" role="tabpanel" hidden></section>
       <section class="panel tab-panel" id="tab-stats" role="tabpanel" hidden></section>
+      <section class="panel tab-panel" id="tab-info" role="tabpanel" hidden></section>
     </div>
   </main>
   <div id="shared-footer"></div>

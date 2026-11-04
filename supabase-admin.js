@@ -84,7 +84,7 @@
     matches: () => loadMatches(),
     streams: () => Promise.all([loadStreams(), loadApiFixtures('stream')]),
     lineups: () => Promise.all([loadLineups(), loadApiFixtures('lineup')]),
-    store: () => Promise.all([loadStoreSetting(), loadProducts()]),
+    store: () => Promise.all([loadStoreSetting(), loadProducts(), loadCategories()]),
     orders: () => loadOrders(),
     news: () => loadNews(),
     users: () => loadUsers(true),
@@ -275,9 +275,19 @@
     const line = (p) => `${p.number ?? ''} ${p.name}`.trim();
     $(`lineup-${side}-start`).value = (t.start || []).map(line).join('\n'); $(`lineup-${side}-subs`).value = (t.subs || []).map(line).join('\n');
   };
+  async function loadExistingManual(id) {
+    const n = Number(id); if (!Number.isSafeInteger(n) || n < 1) return;
+    let q = await client.from('fixture_manual').select('lineups,info').eq('fixture_id', n).maybeSingle();
+    if (q.error) q = await client.from('fixture_manual').select('lineups').eq('fixture_id', n).maybeSingle();
+    const r = q.data; if (!r) return;
+    fillTeam('home', r.lineups?.home); fillTeam('away', r.lineups?.away);
+    const i = r.info || {}; $('info-channel').value = i.channel || ''; $('info-commentator').value = i.commentator || ''; $('info-notes').value = i.notes || '';
+    say('lineup-message', 'تم تحميل البيانات المحفوظة لهذه المباراة — عدّلها واحفظ.');
+  }
+  $('lineup-fixture-id').addEventListener('change', (e) => loadExistingManual(e.target.value));
   $('lineup-fixture-select').addEventListener('change', (e) => {
     if (!e.target.value) return;
-    $('lineup-fixture-id').value = e.target.value;
+    $('lineup-fixture-id').value = e.target.value; loadExistingManual(e.target.value);
     const f = fixtureCache.get(e.target.value);
     if (f) { if (!$('lineup-home-name').value) $('lineup-home-name').value = f.home_team; if (!$('lineup-away-name').value) $('lineup-away-name').value = f.away_team; }
   });
@@ -287,20 +297,24 @@
     const fixtureId = Number($('lineup-fixture-id').value);
     if (!Number.isSafeInteger(fixtureId) || fixtureId < 1) { say('lineup-message', 'اكتب رقم مباراة صحيحًا أو اخترها من القائمة.'); return; }
     const home = teamPayload('home'); const away = teamPayload('away');
-    if (home.start.length !== 11 || away.start.length !== 11) { say('lineup-message', `الأساسيون لازم يكونوا 11 لكل فريق (الآن ${home.start.length} و${away.start.length}).`); return; }
-    const warn = !home.gridOk || !away.gridOk ? ' (الخطة غير مطابقة لعدد اللاعبين فسيُعرض الفريق كقائمة بدل الملعب)' : '';
+    const info = { channel: $('info-channel').value.trim(), commentator: $('info-commentator').value.trim(), notes: $('info-notes').value.trim() };
+    const hasInfo = Object.values(info).some(Boolean);
+    const hasLineup = home.start.length > 0 || away.start.length > 0;
+    if (!hasLineup && !hasInfo) { say('lineup-message', 'اكتب تشكيلة أو تفاصيل (قناة/معلق) على الأقل.'); return; }
+    if (hasLineup && (home.start.length !== 11 || away.start.length !== 11)) { say('lineup-message', `الأساسيون لازم يكونوا 11 لكل فريق (الآن ${home.start.length} و${away.start.length}).`); return; }
+    const warn = hasLineup && (!home.gridOk || !away.gridOk) ? ' (الخطة غير مطابقة لعدد اللاعبين فسيُعرض الفريق كقائمة بدل الملعب)' : '';
     say('lineup-message', 'جارٍ الحفظ...');
     const f = fixtureCache.get(String(fixtureId));
     const row = {
       fixture_id: fixtureId, title: `${home.name || f?.home_team || 'الأول'} × ${away.name || f?.away_team || 'الثاني'}`,
-      lineups: { home: { name: home.name, formation: home.formation, coach: home.coach, start: home.start, subs: home.subs }, away: { name: away.name, formation: away.formation, coach: away.coach, start: away.start, subs: away.subs } },
-      updated_by: currentUser.id, updated_at: new Date().toISOString(),
+      info, updated_by: currentUser.id, updated_at: new Date().toISOString(),
     };
+    if (hasLineup) row.lineups = { home: { name: home.name, formation: home.formation, coach: home.coach, start: home.start, subs: home.subs }, away: { name: away.name, formation: away.formation, coach: away.coach, start: away.start, subs: away.subs } };
     const { error } = await client.from('fixture_manual').upsert(row, { onConflict: 'fixture_id' });
-    if (error) { say('lineup-message', `تعذّر الحفظ: ${error.message}. شغّل ملف supabase-admin-upgrade.sql لو الجدول غير موجود.`); return; }
-    resetLineupForm(); say('lineup-message', `تم حفظ التشكيلة${warn}.`); await loadLineups();
+    if (error) { say('lineup-message', `تعذّر الحفظ: ${error.message}. ${/info/.test(error.message) ? 'شغّل ملف supabase-store-upgrade.sql.' : 'شغّل ملف supabase-admin-upgrade.sql لو الجدول غير موجود.'}`); return; }
+    resetLineupForm(); say('lineup-message', `تم الحفظ${warn}.`); await loadLineups();
   });
-  function resetLineupForm() { $('lineup-form').reset(); $('lineup-edit-id').value = ''; $('lineup-save').textContent = 'حفظ التشكيلة'; $('lineup-cancel-edit').hidden = true; }
+  function resetLineupForm() { $('lineup-form').reset(); $('lineup-edit-id').value = ''; $('lineup-save').textContent = 'حفظ'; $('lineup-cancel-edit').hidden = true; }
   $('lineup-cancel-edit').addEventListener('click', resetLineupForm);
   async function loadLineups() {
     const host = $('admin-lineups');
@@ -311,7 +325,7 @@
     host.querySelectorAll('[data-edit-lineup]').forEach((b) => b.addEventListener('click', () => {
       const r = data.find((x) => x.fixture_id === Number(b.dataset.editLineup)); if (!r) return;
       $('lineup-edit-id').value = r.fixture_id; $('lineup-fixture-id').value = r.fixture_id;
-      fillTeam('home', r.lineups?.home); fillTeam('away', r.lineups?.away);
+      fillTeam('home', r.lineups?.home); fillTeam('away', r.lineups?.away); loadExistingManual(r.fixture_id);
       $('lineup-save').textContent = 'حفظ التعديلات'; $('lineup-cancel-edit').hidden = false;
       $('lineup-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }));
@@ -345,15 +359,70 @@
     if ((image && !httpsOk(image)) || (buy && !httpsOk(buy))) { say('product-message', 'روابط الصورة والشراء لازم تبدأ بـ https://'); return; }
     say('product-message', 'جارٍ حفظ المنتج...');
     const row = {
-      name: $('product-name').value.trim(), category: $('product-category').value.trim(), description: $('product-description').value.trim(),
+      name: $('product-name').value.trim(), category: currentCategory(), description: $('product-description').value.trim(),
       price: $('product-price').value === '' ? null : Number($('product-price').value), image_url: image, buy_url: buy, is_published: $('product-published').checked,
     };
     const id = $('product-edit-id').value;
+    if ($('product-category-select').value === '__new' && !row.category) { say('product-message', 'اكتب اسم الفئة الجديدة أو اختر فئة من القائمة.'); return; }
     const { error } = await (id ? client.from('products').update(row).eq('id', id) : client.from('products').insert(row));
     if (error) { say('product-message', `تعذّر حفظ المنتج: ${error.message}`); return; }
-    resetProductForm(); say('product-message', id ? 'تم تحديث المنتج.' : 'تمت إضافة المنتج.'); await loadProducts();
+    if (row.category) await client.from('product_categories').upsert({ name: row.category }, { onConflict: 'name', ignoreDuplicates: true }); // تُحفظ الفئة لاستخدامها لاحقًا (اختياري لو الجدول غير موجود)
+    resetProductForm(); await loadCategories(); say('product-message', id ? 'تم تحديث المنتج.' : 'تمت إضافة المنتج.'); await loadProducts();
   });
-  function resetProductForm() { $('product-form').reset(); $('product-edit-id').value = ''; $('product-published').checked = true; $('product-save').textContent = 'إضافة المنتج'; $('product-cancel-edit').hidden = true; }
+  /* ---- الفئات المحفوظة ---- */
+  let categoryCache = [];
+  const catSel = () => $('product-category-select');
+  const currentCategory = () => (catSel().value === '__new' ? $('product-category-new').value.trim() : catSel().value);
+  function paintCategorySelect(selected = '') {
+    const sel = catSel(); const keep = selected || (sel.value && sel.value !== '__new' ? sel.value : '');
+    sel.innerHTML = `<option value="">بدون فئة</option>${categoryCache.map((c) => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('')}<option value="__new">＋ فئة جديدة…</option>`;
+    if (keep && !categoryCache.some((c) => c.name === keep)) sel.insertAdjacentHTML('afterbegin', `<option value="${esc(keep)}">${esc(keep)}</option>`);
+    sel.value = keep;
+    $('product-category-new-wrap').hidden = sel.value !== '__new';
+  }
+  function setCategory(name) { paintCategorySelect(name); $('product-category-new').value = ''; }
+  catSel().addEventListener('change', () => { const isNew = catSel().value === '__new'; $('product-category-new-wrap').hidden = !isNew; if (isNew) $('product-category-new').focus(); });
+  async function loadCategories() {
+    const [reg, prods] = await Promise.all([
+      client.from('product_categories').select('name').order('name'),
+      client.from('products').select('category'),
+    ]);
+    const counts = new Map();
+    (prods.data || []).forEach((p) => { const c = (p.category || '').trim(); if (c) counts.set(c, (counts.get(c) || 0) + 1); });
+    const names = new Set([...(reg.data || []).map((r) => r.name), ...counts.keys()]);
+    categoryCache = [...names].sort((a, b) => a.localeCompare(b, 'ar')).map((name) => ({ name, count: counts.get(name) || 0 }));
+    paintCategorySelect();
+    const host = $('category-list');
+    if (reg.error) say('category-message', 'جدول الفئات غير موجود — شغّل ملف supabase-store-upgrade.sql (الفئات المستخدمة في المنتجات لسه بتظهر في القائمة).');
+    host.innerHTML = categoryCache.map((c) => `<span class="cat-chip"><b>${esc(c.name)}</b><small>${esc(c.count)} منتج</small><button type="button" data-rename-cat="${esc(c.name)}" aria-label="إعادة تسمية">✎</button><button type="button" data-delete-cat="${esc(c.name)}" aria-label="حذف">✕</button></span>`).join('') || '<p class="note">لا توجد فئات بعد. أضف أول فئة من الأعلى.</p>';
+  }
+  $('category-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = $('category-name').value.trim(); if (!name) return;
+    const { error } = await client.from('product_categories').upsert({ name }, { onConflict: 'name', ignoreDuplicates: true });
+    say('category-message', error ? `تعذّر الحفظ: ${error.message}. شغّل ملف supabase-store-upgrade.sql.` : 'تمت إضافة الفئة.');
+    if (!error) { $('category-name').value = ''; await loadCategories(); }
+  });
+  $('category-list').addEventListener('click', async (e) => {
+    const ren = e.target.closest('[data-rename-cat]'); const del = e.target.closest('[data-delete-cat]');
+    if (ren) {
+      const old = ren.dataset.renameCat; const name = (window.prompt('الاسم الجديد للفئة:', old) || '').trim();
+      if (!name || name === old) return;
+      const a = await client.from('products').update({ category: name }).eq('category', old);
+      const b = await client.from('product_categories').update({ name }).eq('name', old);
+      if (b.error) await client.from('product_categories').upsert({ name }, { onConflict: 'name', ignoreDuplicates: true });
+      say('category-message', a.error ? `تعذّرت إعادة التسمية: ${a.error.message}` : 'تمت إعادة التسمية على كل منتجاتها.'); await loadCategories(); await loadProducts();
+    }
+    if (del) {
+      const name = del.dataset.deleteCat; const used = categoryCache.find((c) => c.name === name)?.count || 0;
+      if (used) { say('category-message', `الفئة «${name}» مستخدمة في ${used} منتج. انقل المنتجات لفئة تانية الأول (أو أعد تسمية الفئة).`); return; }
+      if (!window.confirm(`حذف الفئة «${name}»؟`)) return;
+      const { error } = await client.from('product_categories').delete().eq('name', name);
+      say('category-message', error ? `تعذّر الحذف: ${error.message}` : 'تم حذف الفئة.'); await loadCategories();
+    }
+  });
+
+  function resetProductForm() { $('product-form').reset(); $('product-edit-id').value = ''; paintCategorySelect(''); $('product-category-new').value = ''; $('product-published').checked = true; $('product-save').textContent = 'إضافة المنتج'; $('product-cancel-edit').hidden = true; }
   $('product-cancel-edit').addEventListener('click', resetProductForm);
   async function loadProducts() {
     const host = $('admin-products');
@@ -368,7 +437,7 @@
     }));
     host.querySelectorAll('[data-edit-product]').forEach((b) => b.addEventListener('click', () => {
       const p = data.find((x) => x.id === b.dataset.editProduct); if (!p) return;
-      $('product-edit-id').value = p.id; $('product-name').value = p.name; $('product-category').value = p.category || ''; $('product-description').value = p.description || '';
+      $('product-edit-id').value = p.id; $('product-name').value = p.name; setCategory(p.category || ''); $('product-description').value = p.description || '';
       $('product-price').value = p.price ?? ''; $('product-image').value = p.image_url || ''; $('product-buy').value = p.buy_url || ''; $('product-published').checked = p.is_published;
       $('product-save').textContent = 'حفظ التعديلات'; $('product-cancel-edit').hidden = false; $('product-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }));

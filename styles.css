@@ -617,3 +617,79 @@ a.match:hover .crest{transform:scale(1.1) rotate(-4deg)}
 .my-order.st-cancelled{opacity:.6}
 .seo-intro{margin:26px 0 8px;padding:16px 18px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
 .seo-intro h2{margin:0 0 6px;font-size:17px}.seo-intro p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.9}
+
+/* ===== صور اللاعبين + نافذة اللاعب + الفريق + التفاصيل ===== */
+button.pl{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit}
+.pl-img,.sq-img,.pm-photo{position:relative;display:block;overflow:hidden;border-radius:50%;background:linear-gradient(160deg,#cbd5e1,#94a3b8);border:2px solid #fff;box-shadow:0 6px 14px -6px rgba(0,0,0,.7)}
+.pl-img{width:46px;height:46px}
+.pl-img img,.sq-img img,.pm-photo img{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;object-position:top}
+.pl-img::before,.sq-img::before,.pm-photo::before,.pm-ph{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 36%,#64748b 0 22%,transparent 23%),radial-gradient(ellipse at 50% 100%,#64748b 0 46%,transparent 47%)}
+.pm-ph{display:block}
+.pl{gap:0}
+.pl .pl-no{position:absolute;top:-4px;inset-inline-end:4px;z-index:2;width:21px;height:21px;font-size:10.5px;border:1.5px solid #fff}
+.pl .pl-name{margin-top:3px}
+.pl:hover .pl-img{transform:scale(1.08)}.pl-img{transition:transform .25s var(--ease)}
+.pl:focus-visible{outline:2px solid var(--acc);outline-offset:3px;border-radius:12px}
+.pl-away .pl-img{border-color:#e2e8f0}.pl-home .pl-img{border-color:var(--acc)}
+@media(max-width:600px){.pl-img{width:40px;height:40px}.pl .pl-no{width:19px;height:19px;font-size:10px}}
+.bench li,.starters li{display:flex;align-items:center;gap:8px}
+.bench li.clickable{cursor:pointer;border-radius:10px;padding:3px 4px;transition:background .2s}
+.bench li.clickable:hover{background:color-mix(in srgb,var(--text) 7%,transparent)}
+.sq-img.sm{width:28px;height:28px;border-width:1.5px;flex:none}
+.bench .pl-no.sm{margin-inline-end:0}
+
+.team-link{color:inherit;text-decoration:none;transition:transform .25s var(--ease)}
+.team-link:hover{transform:translateY(-3px)}.team-link:hover .team-name{color:var(--acc)}
+
+body.modal-open{overflow:hidden}
+.pmodal{position:fixed;inset:0;z-index:100;display:grid;place-items:end center;animation:fadeIn .2s both}
+.pmodal-back{position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
+.pmodal-card{position:relative;width:min(520px,100%);max-height:88vh;overflow:auto;padding:22px 18px calc(22px + env(safe-area-inset-bottom));border-radius:24px 24px 0 0;background:var(--bg);border:1px solid var(--line);box-shadow:0 -20px 60px -20px #000;animation:sheetUp .4s var(--ease) both}
+@media(min-width:700px){.pmodal{place-items:center}.pmodal-card{border-radius:24px}}
+@keyframes sheetUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.pmodal-x{position:absolute;top:12px;inset-inline-start:12px;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--text);cursor:pointer;font-size:14px}
+.pm-head{display:flex;align-items:center;gap:14px;margin:6px 0 16px;padding-inline-start:40px}
+.pm-photo{flex:none;width:84px;height:84px}
+.pm-head h3{margin:0 0 6px;font-size:20px}
+.pm-team{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-weight:700}.pm-team img{width:20px;height:20px;object-fit:contain}
+.pm-chips{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted)}
+.pm-facts{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:0 0 14px}
+.pm-facts div{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.pm-facts dt{font-size:11.5px;color:var(--muted)}.pm-facts dd{margin:2px 0 0;font-weight:800}
+.pm-sub{margin:6px 0 10px}
+.pm-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pm-stats div{display:grid;gap:2px;justify-items:center;padding:10px 4px;border-radius:12px;background:var(--panel2);text-align:center}
+.pm-stats b{font-size:18px;color:var(--acc)}.pm-stats span{font-size:11px;color:var(--muted)}
+@media(max-width:420px){.pm-stats{grid-template-columns:repeat(3,1fr)}}
+
+.team-hero{display:flex;align-items:center;gap:18px}
+.crest.big{width:84px;height:84px;font-size:36px}.crest.big img{width:70px;height:70px;object-fit:contain}
+.info-list{display:grid;gap:0;margin:0}
+.info-list div{display:flex;justify-content:space-between;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line)}
+.info-list div:last-child{border-bottom:0}
+.info-list dt{color:var(--muted)}.info-list dd{margin:0;font-weight:800;text-align:end}
+.info-note{margin:12px 0 0;padding:12px;border-radius:12px;background:var(--panel2);color:var(--muted)}
+.venue-img{width:100%;margin-top:14px;border-radius:14px;max-height:220px;object-fit:cover}
+.sq-title{margin:18px 0 10px;font-size:15px;color:var(--acc)}
+.squad-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+.sq{display:grid;justify-items:center;gap:4px;padding:12px 6px;border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--text);cursor:pointer;text-align:center;font:inherit;transition:transform .25s var(--ease),border-color .2s}
+.sq:hover{transform:translateY(-3px);border-color:var(--acc)}
+.sq .sq-img{width:62px;height:62px}.sq b{font-size:12.5px;line-height:1.3}.sq small{color:var(--muted);font-size:11px}
+
+/* ===== فئات الأدمن + تفاصيل المباراة ===== */
+.category-add{gap:8px;margin:6px 0 12px}.category-add input{flex:1;min-width:160px}
+.category-list{display:flex;flex-wrap:wrap;gap:8px}
+.cat-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 6px 6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel2)}
+.cat-chip small{color:var(--muted)}
+.cat-chip button{width:26px;height:26px;border-radius:50%;border:0;background:var(--panel);color:var(--muted);cursor:pointer}
+.cat-chip button:hover{background:var(--acc);color:var(--on-acc)}
+.info-fields{margin-bottom:14px}
+
+/* ===== بحث المتجر ===== */
+.store-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0 12px}
+.store-toolbar .search-box{flex:1;min-width:220px}
+.sort-box{display:flex;align-items:center;gap:8px;color:var(--muted);font-weight:700}
+.sort-box select{min-height:48px;padding:0 12px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:inherit;font-weight:700}
+.chip small{margin-inline-start:4px;opacity:.7;font-weight:700}
+.empty-state{grid-column:1/-1;display:grid;justify-items:center;gap:8px;padding:40px 12px;text-align:center}
+.empty-state span{font-size:42px}.empty-state h3{margin:0}
