@@ -1,3 +1,4 @@
+# (v21: صفحة الفريق واللاعب، صور اللاعبين، تفاصيل المباراة، بحث المتجر، فئات، وضع فاتح — شغّل supabase-store-upgrade.sql وانشر football-matches v6 و sports-news v3)
 # (v19: المشغّل والطلبات للأعضاء فقط — شغّل supabase-members-only.sql)
 # (v15: وسيط VPS — مجلد relay)
 # (v14: جاهز لـ Vercel — اقرأ VERCEL-نقل-الموقع.md)
