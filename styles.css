@@ -577,3 +577,32 @@ a.match:hover .crest{transform:scale(1.1) rotate(-4deg)}
 .order-meta a{color:var(--acc);font-weight:700}
 .order-item .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .order-item .row input{flex:1;min-width:140px}
+
+/* ===== تابعنا ===== */
+@keyframes followIn{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-10deg) scale(1.08)}75%{transform:rotate(10deg) scale(1.08)}}
+@keyframes sheen{from{transform:translateX(120%)}to{transform:translateX(-120%)}}
+.follow-box{margin:22px 0 6px;padding:18px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(160deg,var(--panel),var(--panel2))}
+.follow-head h3{margin:2px 0 4px;font-size:20px}
+.follow-head .note{margin:0 0 14px}
+.follow-grid{display:grid;gap:10px;grid-template-columns:repeat(3,1fr)}
+.follow-card{position:relative;overflow:hidden;display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;border:1px solid var(--line);background:var(--panel);color:var(--text);animation:followIn .6s var(--ease) both;animation-delay:calc(var(--i) * 90ms + 120ms);transition:transform .3s var(--ease),border-color .25s,box-shadow .3s}
+.follow-card::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,color-mix(in srgb,var(--c) 22%,transparent) 50%,transparent 70%);transform:translateX(120%);pointer-events:none}
+.follow-card:hover{transform:translateY(-4px);border-color:var(--c);box-shadow:0 14px 30px -14px var(--c)}
+.follow-card:hover::after{animation:sheen .9s var(--ease)}
+.follow-card:active{transform:scale(.97)}
+.follow-ico{display:grid;place-items:center;flex:none;width:46px;height:46px;border-radius:14px;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
+.follow-ico svg{width:24px;height:24px}
+.follow-card:hover .follow-ico{animation:wiggle .6s var(--ease)}
+.follow-txt{display:grid;gap:2px;min-width:0}
+.follow-txt b{font-size:15px}
+.follow-txt small{color:var(--muted);font-size:11.5px;text-align:start;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.follow-go{margin-inline-start:auto;color:var(--muted);font-weight:900;transition:transform .3s var(--ease),color .2s}
+.follow-card:hover .follow-go{color:var(--c);transform:translate(-3px,-3px)}
+@media(max-width:700px){.follow-grid{grid-template-columns:1fr}}
+.follow-foot{display:flex;align-items:center;justify-content:center;gap:12px;margin:14px 0 4px;color:var(--muted);font-weight:800}
+.follow-dots{display:flex;gap:10px}
+.follow-dot{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;color:var(--c);border:1px solid color-mix(in srgb,var(--c) 45%,var(--line));background:color-mix(in srgb,var(--c) 10%,transparent);animation:followIn .5s var(--ease) both;animation-delay:calc(var(--i) * 80ms);transition:transform .3s var(--ease),background .25s,color .25s,box-shadow .3s}
+.follow-dot svg{width:21px;height:21px}
+.follow-dot:hover{transform:translateY(-4px) scale(1.08);background:var(--c);color:#000;box-shadow:0 10px 24px -8px var(--c)}
+.follow-dot:active{transform:scale(.92)}
