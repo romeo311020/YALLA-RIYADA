@@ -117,3 +117,29 @@
     main?.prepend(a);
   }
 })();
+
+/* مشغّل المباراة المشترك (للمباريات اليدوية ومباريات الـ API) */
+window.yrMountPlayer = function (url, title) {
+  const player = document.getElementById('match-player'); const box = document.getElementById('match-player-frame'); const bar = document.getElementById('match-player-bar');
+  if (!player || !box) return null;
+  const frame = document.createElement('iframe');
+  frame.src = url; frame.title = title || 'مشغّل المباراة';
+  frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+  frame.allowFullscreen = true; frame.referrerPolicy = 'strict-origin-when-cross-origin';
+  frame.sandbox = 'allow-scripts allow-same-origin allow-presentation';
+  box.replaceChildren(frame); player.hidden = false;
+  if (bar && !bar.dataset.on) {
+    bar.dataset.on = '1';
+    const mk = (t, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'pbtn'; b.textContent = t; b.addEventListener('click', fn); return b; };
+    const th = mk('🎬 وضع السينما', () => { const on = player.classList.toggle('theater'); th.textContent = on ? '✕ إغلاق السينما' : '🎬 وضع السينما'; document.body.style.overflow = on ? 'hidden' : ''; });
+    const fs = mk('⛶ ملء الشاشة', async () => {
+      try {
+        await (box.requestFullscreen ? box.requestFullscreen() : box.webkitRequestFullscreen());
+        if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+      } catch (e) { player.classList.add('theater'); }
+    });
+    bar.append(th, fs);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && player.classList.contains('theater')) th.click(); });
+  }
+  return frame;
+};

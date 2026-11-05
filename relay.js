@@ -27,7 +27,7 @@ http.createServer(async (req, res) => {
   if (!PATHS[b.sport].includes(path)) return send(res, 400, { error: 'bad path' });
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(b.params || {})) {
-    if (!['timezone', 'date', 'id', 'team', 'season'].includes(k) || !/^[\w:+\/-]{1,40}$/.test(String(v))) return send(res, 400, { error: 'bad param' });
+    if (!['timezone', 'date', 'id', 'team', 'season', 'last'].includes(k) || !/^[\w:+\/-]{1,40}$/.test(String(v))) return send(res, 400, { error: 'bad param' });
     q.set(k, String(v));
   }
   try {

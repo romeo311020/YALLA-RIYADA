@@ -24,18 +24,36 @@
   const tn = (name) => (window.YR_NAMES ? window.YR_NAMES.team(name) : name);
   const pn = (name) => (window.YR_NAMES ? window.YR_NAMES.player(name) : name);
 
+  /* كاش في المتصفح لتقليل طلبات الـ API: نفس الطلب لا يتكرر خلال مدة صلاحيته، وعند الفشل نعرض آخر نسخة محفوظة */
+  const TTL = { fixtures: (b) => (b.date === localDate(0) ? 3 : 30) * 60e3, fixture: () => 2 * 60e3, team: () => 12 * 3600e3, form: () => 2 * 3600e3, player: () => 12 * 3600e3 };
+  const cacheRead = (k) => { try { return JSON.parse(localStorage.getItem(`yr-c:${k}`) || 'null'); } catch { return null; } };
+  const cacheWrite = (k, v) => {
+    const put = () => localStorage.setItem(`yr-c:${k}`, JSON.stringify({ t: Date.now(), v }));
+    try { put(); } catch { try { Object.keys(localStorage).filter((x) => x.startsWith('yr-c:')).forEach((x) => localStorage.removeItem(x)); put(); } catch { /* التخزين غير متاح */ } }
+  };
+  const inflight = new Map();
   const request = async (body) => {
     if (!db) throw new Error('إعدادات Supabase غير مكتملة.');
-    const { data, error } = await db.functions.invoke('football-matches', { body });
-    if (error) {
-      if (/failed to send a request to the edge function/i.test(error.message || '')) {
-        console.error('football-matches function unreachable:', error); throw new Error('الخدمة غير متاحة حاليًا. حاول لاحقًا.');
+    const key = JSON.stringify(body); const ttl = TTL[body.action]?.(body) || 0;
+    const hit = cacheRead(key);
+    if (hit && ttl && Date.now() - hit.t < ttl) { try { await window.YR_NAMES?.ready; } catch { /* اختياري */ } return hit.v; }
+    if (inflight.has(key)) return inflight.get(key);
+    const job = (async () => {
+      const { data, error } = await db.functions.invoke('football-matches', { body });
+      if (error || data?.error) {
+        if (hit) return hit.v; // خدمة مشغولة أو الحد اليومي خلص: نعرض آخر نسخة بدل الخطأ
+        if (error) {
+          if (/failed to send a request to the edge function/i.test(error.message || '')) { console.error('football-matches function unreachable:', error); throw new Error('الخدمة غير متاحة حاليًا. حاول لاحقًا.'); }
+          throw error;
+        }
+        throw new Error(data.error);
       }
-      throw error;
-    }
-    if (data?.error) throw new Error(data.error);
-    try { await window.YR_NAMES?.ready; } catch { /* الأسماء الإضافية اختيارية */ }
-    return data;
+      if (ttl) cacheWrite(key, data);
+      try { await window.YR_NAMES?.ready; } catch { /* الأسماء الإضافية اختيارية */ }
+      return data;
+    })().finally(() => inflight.delete(key));
+    inflight.set(key, job);
+    return job;
   };
 
   const teamMarkup = (name, logo, sport = 'football', id = null) => {
@@ -64,8 +82,8 @@
     </a>`;
   const manualCard = (m) => `<a class="match" href="match.html?id=${encodeURIComponent(m.id)}">
       <div class="match-meta"><span>${escapeHtml(m.league || 'كرة القدم')}</span>${statusTag(m)}</div>
-      <div class="teams">${teamMarkup(m.home_team)}${centerMarkup(m)}${teamMarkup(m.away_team)}</div>
-      <div class="match-foot"><span>${escapeHtml(formatDate(m.kickoff))}</span><span>التفاصيل ←</span></div>
+      <div class="teams">${teamMarkup(m.home_team, m.home_logo)}${centerMarkup(m)}${teamMarkup(m.away_team, m.away_logo)}</div>
+      <div class="match-foot"><span>${escapeHtml(formatDate(m.kickoff))}</span><span>${m.has_embed ? '<b class="watch-tag">▶ شاهد</b> ' : ''}التفاصيل ←</span></div>
     </a>`;
 
 
@@ -89,9 +107,12 @@
   };
 
   const loadManualMatches = async (day) => {
-    const { data, error } = await db.from('matches')
-      .select('id,home_team,away_team,league,kickoff,status,home_score,away_score')
+    let { data, error } = await db.from('matches')
+      .select('id,home_team,away_team,league,kickoff,status,home_score,away_score,home_logo,away_logo')
       .eq('is_published', true).order('kickoff', { ascending: true }).limit(100);
+    if (error) ({ data, error } = await db.from('matches') // أعمدة اللوجو غير مضافة بعد
+      .select('id,home_team,away_team,league,kickoff,status,home_score,away_score')
+      .eq('is_published', true).order('kickoff', { ascending: true }).limit(100));
     if (error) throw error;
     const target = localDate({ yesterday: -1, today: 0, tomorrow: 1 }[day] ?? 0);
     return (data || []).filter((m) => {
@@ -469,24 +490,7 @@
             frameBox.innerHTML = window.yrLockBox ? window.yrLockBox('المشغّل للأعضاء فقط', 'سجّل دخولك بحسابك لمشاهدة هذه المباراة.') : '';
             player.hidden = false;
           } else {
-          const frame = document.createElement('iframe');
-          frame.src = url;
-          frame.title = `مشغّل مباراة ${H} ضد ${A}`;
-          frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
-          frame.allowFullscreen = true;
-          frame.referrerPolicy = 'strict-origin-when-cross-origin';
-          frame.sandbox = 'allow-scripts allow-same-origin allow-presentation';
-          frameBox.replaceChildren(frame);
-          player.hidden = false;
-          const bar = $('match-player-bar');
-          if (bar && !bar.dataset.on) {
-            bar.dataset.on = '1';
-            const fs = document.createElement('button'); fs.type = 'button'; fs.className = 'pbtn'; fs.textContent = '⛶ ملء الشاشة';
-            fs.addEventListener('click', () => { const el = frameBox; (el.requestFullscreen || el.webkitRequestFullscreen || (() => frame.requestFullscreen && frame.requestFullscreen())).call(el); });
-            const th = document.createElement('button'); th.type = 'button'; th.className = 'pbtn'; th.textContent = '🎬 وضع السينما';
-            th.addEventListener('click', () => { const on = player.classList.toggle('theater'); th.textContent = on ? '✕ إغلاق السينما' : '🎬 وضع السينما'; });
-            bar.append(th, fs);
-          }
+          window.yrMountPlayer(url, `مشغّل مباراة ${H} ضد ${A}`);
           }
           if (note && !$('watch-btn')) {
             const btn = document.createElement('button');
@@ -520,10 +524,35 @@
         const facts = [['الدولة', countryAr(t.country)], ['سنة التأسيس', t.founded], ['الملعب', v.name ? tn(v.name) : ''], ['المدينة', v.city], ['سعة الملعب', v.capacity ? Number(v.capacity).toLocaleString('ar-EG') : ''], ['الأرضية', v.surface === 'grass' ? 'عشب طبيعي' : v.surface === 'artificial turf' ? 'عشب صناعي' : '']].filter(([, x]) => x);
         const vimg = safeUrl(v.image);
         root.removeAttribute('aria-busy');
+        window.__teamId = id;
         root.innerHTML = `<a class="back-link" href="javascript:history.back()">← رجوع</a>
           <section class="panel team-hero"><span class="crest big">${logo ? `<img src="${escapeHtml(logo)}" alt="">` : '⚽'}</span><div><span class="kicker">${t.national ? 'منتخب' : 'نادي'}</span><h1>${escapeHtml(tn(t.name))}</h1></div></section>
+          <section class="panel" id="team-form"><h2>آخر 10 مباريات</h2><p class="note">جارٍ تحميل النتائج…</p></section>
           <section class="panel"><h2>معلومات الفريق</h2><dl class="info-list">${facts.map(([k, x]) => `<div><dt>${k}</dt><dd>${escapeHtml(x)}</dd></div>`).join('')}${c?.name ? `<div><dt>المدرب</dt><dd>${escapeHtml(pn(c.name))}</dd></div>` : ''}</dl>${vimg ? `<img class="venue-img" src="${escapeHtml(vimg)}" alt="" loading="lazy">` : ''}</section>
           ${(r.squad || []).length ? `<section class="panel"><h2>التشكيلة الحالية</h2>${groups.map(([k, label]) => { const list = r.squad.filter((p) => p.position === k); return list.length ? `<h3 class="sq-title">${label}</h3><div class="squad-grid">${list.map((p) => `<button type="button" class="sq" data-pid="${p.id}" data-pname="${escapeHtml(p.name)}" data-pno="${escapeHtml(p.number ?? '')}" data-ppos="${escapeHtml(p.position)}"><span class="sq-img">${photoImg(p.id)}</span><b>${escapeHtml(pn(p.name))}</b><small>${p.number ? `#${escapeHtml(p.number)} · ` : ''}${p.age ? `${escapeHtml(p.age)} سنة` : ''}</small></button>`).join('')}</div>` : ''; }).join('')}</section>` : ''}`;
+        // آخر 10 مباريات: طلب منفصل وكاش 6 ساعات، وفشله لا يؤثر على باقي الصفحة
+        (async () => {
+          const box = $('team-form'); if (!box) return;
+          try {
+            const f = await request({ action: 'form', sport: 'football', teamId: id });
+            const list = f.matches || [];
+            if (!list.length) { box.innerHTML = '<h2>آخر 10 مباريات</h2><p class="note">لا توجد نتائج متاحة حاليًا.</p>'; return; }
+            const L = { W: 'فوز', D: 'تعادل', L: 'خسارة' };
+            const w = list.filter((x) => x.result === 'W').length; const d = list.filter((x) => x.result === 'D').length; const l = list.length - w - d;
+            const gf = list.reduce((n, x) => n + (x.is_home ? x.home_goals : x.away_goals), 0); const ga = list.reduce((n, x) => n + (x.is_home ? x.away_goals : x.home_goals), 0);
+            const day = (v) => new Date(v).toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short' });
+            box.innerHTML = `<h2>آخر ${list.length} مباريات</h2>
+              <div class="form-strip" dir="rtl" aria-label="سلسلة النتائج">${list.map((x) => `<span class="fm fm-${x.result}" title="${L[x.result]}">${x.result === 'W' ? 'ف' : x.result === 'D' ? 'ت' : 'خ'}</span>`).join('')}</div>
+              <p class="form-sum"><b>${w}</b> فوز · <b>${d}</b> تعادل · <b>${l}</b> خسارة <span>— سجّل ${gf} واستقبل ${ga}</span></p>
+              <div class="form-list">${list.map((x) => {
+                const opp = x.is_home ? x.away : x.home; const oppLogo = safeUrl(x.is_home ? x.away_logo : x.home_logo);
+                return `<a class="form-row" href="match.html?fixture=${encodeURIComponent(x.fixture_id)}&sport=football">
+                  <span class="fm fm-${x.result}">${x.result === 'W' ? 'ف' : x.result === 'D' ? 'ت' : 'خ'}</span>
+                  <span class="fr-opp">${oppLogo ? `<img src="${escapeHtml(oppLogo)}" alt="" loading="lazy">` : ''}<b>${escapeHtml(tn(opp))}</b><small>${x.is_home ? 'على أرضه' : 'خارج أرضه'} · ${escapeHtml(x.league)}</small></span>
+                  <span class="fr-score" dir="ltr">${x.is_home ? x.home_goals : x.away_goals} - ${x.is_home ? x.away_goals : x.home_goals}</span><small class="fr-date">${day(x.date)}</small></a>`;
+              }).join('')}</div>`;
+          } catch (e) { console.error('team form:', e); box.innerHTML = '<h2>آخر 10 مباريات</h2><p class="note">النتائج غير متاحة حاليًا. حاول بعد قليل.</p>'; }
+        })();
       } catch (e) {
         console.error('team:', e);
         root.removeAttribute('aria-busy');

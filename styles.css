@@ -725,3 +725,29 @@ body.modal-open{overflow:hidden}
 .pitch-wrap .pl-name{font-size:13px;max-width:92px;margin-top:4px}
 @media(max-width:600px){.pitch-wrap .pitch{aspect-ratio:2/3}.pitch-wrap .pl-img{width:50px;height:50px}.pitch-wrap .pl-name{font-size:11px;max-width:62px}.pitch-wrap .pl .pl-no{width:21px;height:21px;font-size:11px}.pitch-wrap .pl{width:64px}}
 @media(min-width:601px){.pitch-wrap .pl{width:92px}}
+@media(max-width:600px){.match-player{margin-inline:-16px;border-radius:0;padding:12px 0;border-inline:0}.match-player .player-top,.match-player .note{padding-inline:16px}.match-player-frame{border-radius:0;aspect-ratio:16/10;min-height:260px}}
+.order-account{margin:0;padding:10px 12px;border-radius:10px;background:var(--panel2);border:1px dashed var(--line);font-size:13px}.order-account b{color:var(--acc);overflow-wrap:anywhere}
+
+/* ===== v24: مشغّل كبير جدًا + آخر 10 مباريات + استيراد المباريات ===== */
+.wrap.wide{width:min(1480px,calc(100% - 24px))}
+.match-player{padding:clamp(10px,1.6vw,22px)}
+.match-player-frame{aspect-ratio:16/9;min-height:min(78vh,420px);width:100%;max-height:82vh}
+@media(min-width:900px){.match-player-frame{min-height:0;height:auto}}
+.match-player.theater .match-player-frame{max-height:none}
+@media(max-width:600px){.match-player-frame{aspect-ratio:16/10;min-height:300px}}
+.form-strip{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 6px}
+.fm{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;font-weight:900;font-size:13px;color:#fff}
+.fm-W{background:#16a34a}.fm-D{background:#94a3b8}.fm-L{background:#dc2626}
+.form-sum{margin:6px 0 12px;font-size:14px}.form-sum span{color:var(--muted)}
+.form-list{display:grid;gap:8px}
+.form-row{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);transition:transform .2s var(--ease),border-color .2s}
+.form-row:hover{transform:translateX(-3px);border-color:var(--acc)}
+.fr-opp{display:flex;align-items:center;gap:10px;min-width:0}
+.fr-opp img{width:30px;height:30px;object-fit:contain}
+.fr-opp b{display:block;font-size:14px}.fr-opp small{display:block;color:var(--muted);font-size:11.5px}
+.fr-opp>*:not(img){min-width:0}
+.fr-score{font-weight:900;font-size:17px}.fr-date{color:var(--muted);font-size:12px;white-space:nowrap}
+@media(max-width:600px){.form-row{grid-template-columns:auto 1fr auto;gap:10px}.fr-date{grid-column:2/4;text-align:end}}
+.import-box{display:grid;gap:8px;padding:12px;border:1px dashed var(--line);border-radius:12px;background:var(--panel2)}
+@media(max-width:600px){.match-player{margin-inline:calc(50% - 50vw)}}
+@media(max-width:600px){.match-player{padding:12px 0}.match-player .player-top,.match-player .note{padding-inline:14px}}

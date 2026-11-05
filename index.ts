@@ -286,8 +286,8 @@ Deno.serve(async (request) => {
 
 
   // ---------- الفريق واللاعب (كرة القدم): كاش طويل لتوفير الحصة ----------
-  if (body.action === 'team' || body.action === 'player') {
-    const id = Number(body.action === 'team' ? body.teamId : body.playerId);
+  if (body.action === 'team' || body.action === 'player' || body.action === 'form') {
+    const id = Number(body.action === 'player' ? body.playerId : body.teamId);
     if (!Number.isSafeInteger(id) || id < 1) return jsonResponse({ error: 'الرقم المطلوب غير صالح.' }, 400);
     const key = `football:${body.action}:${id}`;
     const mem = cache.get(key);
@@ -304,7 +304,33 @@ Deno.serve(async (request) => {
     };
     try {
       let out: Record<string, unknown>;
-      if (body.action === 'team') {
+      if (body.action === 'form') {
+        // آخر 10 مباريات منتهية للفريق (طلب واحد). لو الخطة ما بتدعم last نجرب الموسم ونرتّب.
+        // deno-lint-ignore no-explicit-any
+        let rows: any[] = []; let failed: unknown = null;
+        try { rows = await call('fixtures', { team: String(id), last: '10', timezone: 'Africa/Cairo' }); } catch (e) { failed = e; }
+        if (!rows.length && !(failed instanceof Error && failed.message === 'budget')) {
+          const c = cairoDate(); const yy = Number(c.slice(0, 4)); const mm = Number(c.slice(5, 7));
+          try { rows = await call('fixtures', { team: String(id), season: String(mm >= 8 ? yy : yy - 1), timezone: 'Africa/Cairo' }); failed = null; } catch (e) { failed = e; }
+        }
+        if (!rows.length && failed) throw failed; // لا نخزّن قائمة فاضية بسبب خطأ مؤقت
+        const done = new Set(['FT', 'AET', 'PEN']);
+        const matches = rows
+          .filter((r) => done.has(r.fixture?.status?.short) && r.goals?.home != null && r.goals?.away != null)
+          .sort((a, b) => new Date(b.fixture.date).getTime() - new Date(a.fixture.date).getTime())
+          .slice(0, 10)
+          .map((r) => {
+            const isHome = r.teams?.home?.id === id;
+            const gf = isHome ? r.goals.home : r.goals.away; const ga = isHome ? r.goals.away : r.goals.home;
+            return {
+              fixture_id: r.fixture.id, date: r.fixture.date, league: r.league?.name ?? '',
+              home: r.teams?.home?.name ?? '', away: r.teams?.away?.name ?? '', home_logo: r.teams?.home?.logo ?? null, away_logo: r.teams?.away?.logo ?? null,
+              home_goals: r.goals.home, away_goals: r.goals.away, is_home: isHome,
+              result: gf > ga ? 'W' : gf < ga ? 'L' : 'D',
+            };
+          });
+        out = { matches };
+      } else if (body.action === 'team') {
         const [t, squad, coach] = [
           await call('teams', { id: String(id) }),
           await call('players/squads', { team: String(id) }).catch(() => []),
@@ -351,7 +377,8 @@ Deno.serve(async (request) => {
           },
         };
       }
-      const exp = Date.now() + 24 * 60 * MIN;
+      // كاش طويل لتوفير الحصة: الفريق أسبوع، اللاعب 3 أيام، آخر المباريات 6 ساعات
+      const exp = Date.now() + (body.action === 'form' ? 6 * 60 : body.action === 'team' ? 7 * 24 * 60 : 3 * 24 * 60) * MIN;
       cache.set(key, { payload: out, expires: exp });
       await dbSet(key, out, exp);
       return jsonResponse(out);
@@ -422,12 +449,12 @@ Deno.serve(async (request) => {
           const fixture = raw ? normalize(raw) : null;
           out = fixture && sport === 'football' ? { fixture, ...extractDetails(raw) } : { fixture };
           const soon = fixture?.kickoff ? new Date(fixture.kickoff).getTime() - Date.now() < 2 * 60 * MIN : false;
-          ttl = fixture?.status === 'live' ? 3 * MIN : fixture?.status === 'finished' ? 6 * 60 * MIN : soon ? 10 * MIN : 60 * MIN;
+          ttl = fixture?.status === 'live' ? 3 * MIN : fixture?.status === 'finished' ? 6 * 60 * MIN : soon ? 10 * MIN : 3 * 60 * MIN;
         } else {
           const fixtures = rows.filter((item: unknown) => isImportant(sport, item)).map(normalize);
           out = { fixtures, leagues: leaguesFor(sport) };
           const anyLive = fixtures.some((item: Normalized) => item.status === 'live');
-          ttl = anyLive ? 5 * MIN : body.date === cairoDate() ? 10 * MIN : 60 * MIN;
+          ttl = anyLive ? 5 * MIN : body.date === cairoDate() ? 20 * MIN : body.date < cairoDate() ? 12 * 60 * MIN : 3 * 60 * MIN;
         }
         cache.set(cacheKey, { payload: out, expires: Date.now() + ttl });
         await dbSet(cacheKey, out, Date.now() + ttl);

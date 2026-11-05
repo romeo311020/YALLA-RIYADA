@@ -65,8 +65,20 @@
           </div>
           <form id="match-form" class="form-stack admin-form">
             <input id="match-edit-id" type="hidden">
+            <div class="import-box">
+              <strong>تجهيز مباراة احتياطية من الـ API</strong>
+              <p class="note">اختر مباراة من القائمة لتنسخ أسماء الفريقين واللوجوهات والموعد، وبعدها أضف رابط المشغّل. المباراة اليدوية تظهر حتى لو الحد اليومي للـ API خلص.</p>
+              <div class="row"><select id="match-import-day" aria-label="اليوم"><option value="today">اليوم</option><option value="tomorrow">غدًا</option><option value="yesterday">أمس</option></select>
+              <button class="btn outline" id="match-import-load" type="button">تحميل المباريات</button></div>
+              <select id="match-import" aria-label="مباراة للاستيراد"><option value="">— اختر مباراة —</option></select>
+              <p class="note" id="match-import-status" role="status"></p>
+            </div>
             <label>الفريق الأول<input id="match-home" required maxlength="100"></label>
             <label>الفريق الثاني<input id="match-away" required maxlength="100"></label>
+            <div class="row">
+              <label>لوجو الفريق الأول (رابط صورة https، اختياري)<input id="match-home-logo" type="url" inputmode="url" dir="ltr" placeholder="https://..."></label>
+              <label>لوجو الفريق الثاني (رابط صورة https، اختياري)<input id="match-away-logo" type="url" inputmode="url" dir="ltr" placeholder="https://..."></label>
+            </div>
             <label>البطولة<input id="match-league" maxlength="120"></label>
             <label>موعد المباراة<input id="match-kickoff" type="datetime-local"></label>
             <label>حالة المباراة

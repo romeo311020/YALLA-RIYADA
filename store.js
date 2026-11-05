@@ -81,6 +81,7 @@
       ${p.description ? `<p class="product-desc">${esc(p.description)}</p>` : ''}
       ${signedIn ? `<form id="order-form" class="form-stack order-form" novalidate>
         <h2>اطلب الآن</h2>
+        <p class="order-account">سيتم ربط الطلب بحسابك: <b dir="ltr" id="o-email"></b></p>
         <label>الاسم بالكامل<input id="o-name" required minlength="2" maxlength="100" autocomplete="name"></label>
         <label>رقم الهاتف<input id="o-phone" required type="tel" inputmode="tel" dir="ltr" maxlength="20" autocomplete="tel" placeholder="01xxxxxxxxx"></label>
         <div class="row"><label>المدينة / المحافظة<input id="o-city" maxlength="80" autocomplete="address-level2"></label>
@@ -93,6 +94,7 @@
       </form>` : window.yrLockBox('سجّل دخولك لتطلب', 'الطلب متاح للأعضاء المسجّلين فقط.')}</div></article>`;
     if (!signedIn) return;
     const meta = sess.session.user.user_metadata || {};
+    $('o-email').textContent = sess.session.user.email || '';
     $('o-name').value = meta.full_name || meta.name || meta.display_name || '';
     const total = () => { const q = Math.min(20, Math.max(1, parseInt($('o-qty').value, 10) || 1)); $('o-total').textContent = p.price == null ? '' : `الإجمالي: ${price(p.price * q)} (الدفع عند الاستلام)`; };
     $('o-qty').addEventListener('input', total); total();
@@ -101,14 +103,16 @@
       const msg = $('o-msg'); const btn = $('o-submit');
       const name = $('o-name').value.trim(); const phone = $('o-phone').value.trim().replace(/[\s-]/g, '');
       const address = $('o-address').value.trim(); const qty = parseInt($('o-qty').value, 10);
-      if (name.length < 2) { msg.textContent = 'اكتب اسمك بالكامل.'; return; }
-      if (!/^\+?[0-9]{7,15}$/.test(phone)) { msg.textContent = 'رقم الهاتف غير صحيح.'; return; }
+      if (/[0-9@#$%^&*()_+=<>/\\|{}\[\]~`!?؟]/.test(name) || !/\S+\s+\S+/.test(name) || name.length < 5) { msg.textContent = 'اكتب اسمك الحقيقي بالكامل (الاسم الأول والأخير، بدون أرقام أو رموز).'; return; }
+      if (!(/^01[0125][0-9]{8}$/.test(phone) || /^\+[1-9][0-9]{8,14}$/.test(phone))) { msg.textContent = 'رقم الهاتف غير صحيح. مثال: 01012345678 أو +966501234567.'; return; }
       if (address.length < 5) { msg.textContent = 'اكتب العنوان بالتفصيل.'; return; }
       if (!(qty >= 1 && qty <= 20)) { msg.textContent = 'الكمية من 1 إلى 20.'; return; }
       btn.disabled = true; msg.textContent = 'جارٍ إرسال الطلب...';
       const { error: err } = await db.from('orders').insert({ product_id: p.id, quantity: qty, customer_name: name, phone, city: $('o-city').value.trim(), address, notes: $('o-notes').value.trim() });
       if (err) {
         btn.disabled = false;
+        const own = String(err.message || '').match(/ORDER:(.+)/);
+        if (own) { msg.textContent = own[1]; return; }
         if (/row-level security|JWT|permission|سجّل/i.test(err.message || '')) { msg.textContent = 'سجّل دخولك أولًا لإتمام الطلب.'; return; }
         msg.textContent = /orders/.test(err.message || '') && /(find|exist|schema)/i.test(err.message || '') ? 'نظام الطلبات غير مفعّل بعد.' : 'تعذّر إرسال الطلب. حاول مرة أخرى.';
         return;

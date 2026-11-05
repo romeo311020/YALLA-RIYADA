@@ -149,9 +149,16 @@
       home_score: $('match-home-score').value === '' ? null : Number($('match-home-score').value),
       away_score: $('match-away-score').value === '' ? null : Number($('match-away-score').value),
       embed_url: embedUrl, notes: '', is_published: $('match-published').checked,
+      home_logo: $('match-home-logo').value.trim(), away_logo: $('match-away-logo').value.trim(),
     };
+    if ((row.home_logo && !httpsOk(row.home_logo)) || (row.away_logo && !httpsOk(row.away_logo))) { say('match-message', 'رابط اللوجو يجب أن يبدأ بـ https://'); return; }
     const editId = $('match-edit-id').value;
-    const { error } = await (editId ? client.from('matches').update(row).eq('id', editId) : client.from('matches').insert(row));
+    const save = (r) => (editId ? client.from('matches').update(r).eq('id', editId) : client.from('matches').insert(r));
+    let { error } = await save(row);
+    if (error && /home_logo|away_logo/.test(error.message || '')) { // عمود اللوجو غير مضاف: نحفظ بدونه ونُنبّه
+      const { home_logo, away_logo, ...plain } = row; ({ error } = await save(plain));
+      if (!error) say('match-message', 'تم الحفظ بدون اللوجوهات. شغّل ملف supabase-manual-upgrade.sql لتفعيلها.');
+    }
     if (error) { say('match-message', `تعذّر حفظ المباراة: ${error.message}`); return; }
     resetMatchForm(); say('match-message', editId ? 'تم تحديث المباراة.' : 'تمت إضافة المباراة.'); await loadMatches();
   });
@@ -162,7 +169,7 @@
   $('match-cancel-edit').addEventListener('click', resetMatchForm);
   async function loadMatches() {
     const host = $('admin-matches');
-    const { data, error } = await client.from('matches').select('id,home_team,away_team,league,kickoff,status,home_score,away_score,embed_url,is_published').order('created_at', { ascending: false }).limit(50);
+    const { data, error } = await client.from('matches').select('*').order('created_at', { ascending: false }).limit(50);
     if (error) { host.textContent = `تعذّر تحميل المباريات: ${error.message}`; return; }
     host.innerHTML = (data || []).map((m) => `<article class="admin-list-item">
       <div><strong>${esc(m.home_team)} × ${esc(m.away_team)}</strong><small>${esc(m.league || 'كرة القدم')} · ${m.is_published ? 'منشورة' : 'مخفية'}</small></div>
@@ -172,6 +179,7 @@
       const m = data.find((x) => x.id === b.dataset.editMatch); if (!m) return;
       $('match-edit-id').value = m.id; $('match-home').value = m.home_team; $('match-away').value = m.away_team; $('match-league').value = m.league || '';
       $('match-kickoff').value = localDT(m.kickoff); $('match-status').value = m.status; $('match-home-score').value = m.home_score ?? ''; $('match-away-score').value = m.away_score ?? '';
+      $('match-home-logo').value = m.home_logo || ''; $('match-away-logo').value = m.away_logo || '';
       $('match-embed').value = m.embed_url || ''; $('match-published').checked = m.is_published; $('match-save').textContent = 'حفظ التعديلات'; $('match-cancel-edit').hidden = false;
       $('match-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }));
@@ -202,6 +210,23 @@
       say(statusId, `${error.message} — يمكنك كتابة رقم المباراة يدويًا.`);
     }
   }
+  $('match-import-load').addEventListener('click', async () => {
+    const sel = $('match-import'); sel.innerHTML = '<option value="">جارٍ التحميل...</option>'; say('match-import-status', '');
+    try {
+      const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate({ yesterday: -1, today: 0, tomorrow: 1 }[$('match-import-day').value] ?? 0) });
+      const fx = Array.isArray(data?.fixtures) ? data.fixtures : []; fx.forEach((f) => fixtureCache.set(String(f.fixture_id), f));
+      sel.innerHTML = '<option value="">— اختر مباراة —</option>' + fx.map((f) => `<option value="${esc(f.fixture_id)}">${esc(`${f.home_team} × ${f.away_team} · ${f.league_label || f.league}`)}</option>`).join('');
+      if (!fx.length) say('match-import-status', 'لا توجد مباريات لهذا اليوم.');
+    } catch (e) { sel.innerHTML = '<option value="">— اختر مباراة —</option>'; say('match-import-status', `${e.message} — أضف المباراة يدويًا بالأسفل.`); }
+  });
+  $('match-import').addEventListener('change', () => {
+    const f = fixtureCache.get($('match-import').value); if (!f) return;
+    $('match-home').value = f.home_team || ''; $('match-away').value = f.away_team || ''; $('match-league').value = f.league_label || f.league || '';
+    $('match-home-logo').value = httpsOk(f.home_logo || '') ? f.home_logo : ''; $('match-away-logo').value = httpsOk(f.away_logo || '') ? f.away_logo : '';
+    $('match-kickoff').value = localDT(f.kickoff); $('match-status').value = ['live', 'finished'].includes(f.status) ? f.status : 'scheduled';
+    $('match-home-score').value = f.home_score ?? ''; $('match-away-score').value = f.away_score ?? '';
+    say('match-import-status', 'تم نسخ البيانات. أضف رابط المشغّل واحفظ.');
+  });
   $('stream-fixture-day').addEventListener('change', () => loadApiFixtures('stream'));
   $('lineup-fixture-day').addEventListener('change', () => loadApiFixtures('lineup'));
 
@@ -471,6 +496,7 @@
     refreshOrdersBadge();
     host.innerHTML = (data || []).map((o) => `<article class="order-item st-${esc(o.status)}">
       <div class="order-head"><strong>#${esc(o.order_no)} · ${esc(o.product_name)} × ${esc(o.quantity)}</strong><span class="tag">${esc(ORDER_STATUS[o.status] || o.status)}</span></div>
+      <p class="order-meta">حساب العميل: <a dir="ltr" href="mailto:${esc(o.user_email)}">${esc(o.user_email || 'غير متاح')}</a></p>
       <p class="order-meta">${esc(o.customer_name)} · <a dir="ltr" href="tel:${esc(o.phone)}">${esc(o.phone)}</a> · <a href="https://wa.me/${esc(String(o.phone).replace(/^0/, '20').replace(/\D/g, ''))}" target="_blank" rel="noopener noreferrer">واتساب</a></p>
       <p class="order-meta">${esc([o.city, o.address].filter(Boolean).join('، '))}</p>
       ${o.notes ? `<p class="order-meta">ملاحظات العميل: ${esc(o.notes)}</p>` : ''}

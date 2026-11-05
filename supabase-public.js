@@ -1,13 +1,35 @@
 (() => {
  const db=window.yrSupabase;if(!db)return;const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const safeUrl=u=>{try{const x=new URL(u);return x.protocol==='https:'||x.protocol==='http:'?x.href:''}catch{return''}};const httpsUrl=u=>{try{const x=new URL(u);return x.protocol==='https:'?x.href:''}catch{return''}};const date=s=>s?new Date(s).toLocaleString('ar-EG',{dateStyle:'medium',timeStyle:'short'}):'الموعد لم يحدد';
- if(location.pathname.endsWith('matches.html')){
-  const host=document.getElementById('matches-list'); if(!host)return;
-  document.querySelectorAll('[data-day]').forEach(b=>b.addEventListener('click',()=>setTimeout(load,0)));
-  async function load(){const {data,error}=await db.from('matches').select('id,home_team,away_team,league,kickoff,status,home_score,away_score,is_published').eq('is_published',true).order('kickoff',{ascending:true}).limit(100);if(error){host.innerHTML='<p class="note">تعذّر تحميل المباريات من قاعدة البيانات.</p>';return;}const day=document.querySelector('[data-day].active')?.dataset.day||'today';const now=new Date();const rows=(data||[]).filter(m=>{if(!m.kickoff)return day==='today';const d=new Date(m.kickoff);const a=new Date(now);a.setHours(0,0,0,0);const b=new Date(a);b.setDate(b.getDate()+1);const c=new Date(b);c.setDate(c.getDate()+1);return day==='yesterday'?d>=new Date(a.getTime()-86400000)&&d<a:day==='tomorrow'?d>=b&&d<c:d>=a&&d<b;});host.innerHTML=rows.map(m=>`<a class="match" href="match.html?id=${encodeURIComponent(m.id)}"><div class="match-meta"><span>${esc(m.league||'كرة القدم')}</span><span class="tag">${m.status==='live'?'مباشر':m.status==='finished'?'انتهت':'قادمة'}</span></div><div class="teams"><div class="team"><span class="crest">⚽</span>${esc(m.home_team)}</div><div class="score">${m.home_score??'–'} : ${m.away_score??'–'}</div><div class="team"><span class="crest">⚽</span>${esc(m.away_team)}</div></div><div class="match-foot"><span>${date(m.kickoff)}</span><span>التفاصيل ←</span></div></a>`).join('')||'<p class="note">لا توجد مباريات منشورة لهذا اليوم حاليًا.</p>';}
-  load();
- }
  if(location.pathname.endsWith('match.html')){
-  (async()=>{const id=new URLSearchParams(location.search).get('id');if(!id)return;const {data:m,error}=await db.from('matches').select('id,home_team,away_team,league,kickoff,status,home_score,away_score').eq('id',id).eq('is_published',true).maybeSingle();if(error||!m)return;const title=document.getElementById('match-title');if(title)title.textContent=m.home_team+' × '+m.away_team;const score=document.getElementById('match-score');if(score)score.innerHTML=`<div class="team"><span class="crest">⚽</span>${esc(m.home_team)}</div><div class="score">${m.home_score??'–'} : ${m.away_score??'–'}</div><div class="team"><span class="crest">⚽</span>${esc(m.away_team)}</div>`;const panel=document.querySelector('main .panel');if(panel){let p=panel.querySelector('.note');if(p)p.textContent=(m.league?m.league+' · ':'')+date(m.kickoff)+' · '+(m.status==='live'?'مباشر':m.status==='finished'?'انتهت':'لم تبدأ');const {data:sess}=await db.auth.getSession();let embed='';if(sess?.session?.user){const r=await db.from('matches').select('embed_url').eq('id',id).maybeSingle();embed=httpsUrl(r.data?.embed_url||'')}else{const h=await db.rpc('match_has_stream',{p_id:id});if(h.data===true){const lock=document.createElement('section');lock.className='panel';lock.innerHTML=window.yrLockBox?window.yrLockBox('المشغّل للأعضاء فقط','سجّل دخولك بحسابك لمشاهدة هذه المباراة.'):'';panel.after(lock)}}if(embed){const box=document.createElement('section');box.className='panel';box.innerHTML='<h2>المشغّل الرسمي</h2><div style="position:relative;width:100%;aspect-ratio:16/9;background:#05070a;border-radius:12px;overflow:hidden"></div><p class="note">المشغّل مقدم من جهة خارجية ومصرح به من المسؤول.</p>';const frame=document.createElement('iframe');frame.src=embed;frame.title='مشغّل المباراة الرسمي';frame.allow='autoplay; encrypted-media; picture-in-picture; fullscreen';frame.allowFullscreen=true;frame.referrerPolicy='strict-origin-when-cross-origin';frame.sandbox='allow-scripts allow-same-origin allow-presentation';frame.style='position:absolute;inset:0;width:100%;height:100%;border:0';box.querySelector('div').appendChild(frame);panel.after(box);}}})();
+  /* مباراة يدوية (من لوحة الأدمن): لا تحتاج أي طلب API، فتعمل حتى لو الحد اليومي خلص */
+  (async()=>{
+   const id=new URLSearchParams(location.search).get('id'); if(!id)return;
+   const cols='id,home_team,away_team,league,kickoff,status,home_score,away_score';
+   let r=await db.from('matches').select(cols+',home_logo,away_logo').eq('id',id).eq('is_published',true).maybeSingle();
+   if(r.error) r=await db.from('matches').select(cols).eq('id',id).eq('is_published',true).maybeSingle();
+   const m=r.data; if(r.error||!m)return;
+   const tn=n=>window.YR_NAMES?window.YR_NAMES.team(n):n;
+   const crest=(l)=>{const u=httpsUrl(l||'');return u?`<img src="${esc(u)}" alt="" loading="lazy">`:'⚽'};
+   const title=document.getElementById('match-title'); if(title)title.textContent=tn(m.home_team)+' × '+tn(m.away_team);
+   document.title=tn(m.home_team)+' × '+tn(m.away_team)+' | يلا رياضة';
+   const score=document.getElementById('match-score');
+   if(score){const has=m.home_score!=null&&m.away_score!=null;
+    score.innerHTML=`<div class="team"><span class="crest">${crest(m.home_logo)}</span><span class="team-name">${esc(tn(m.home_team))}</span></div>${has?`<div class="score" dir="ltr">${esc(m.away_score)} : ${esc(m.home_score)}</div>`:`<div class="kick">${m.kickoff?new Date(m.kickoff).toLocaleTimeString('ar-EG',{timeZone:'Africa/Cairo',hour:'2-digit',minute:'2-digit'}):'—'}</div>`}<div class="team"><span class="crest">${crest(m.away_logo)}</span><span class="team-name">${esc(tn(m.away_team))}</span></div>`;}
+   const note=document.querySelector('main .panel .note');
+   if(note)note.textContent=(m.league?m.league+' · ':'')+date(m.kickoff)+' · '+(m.status==='live'?'مباشر':m.status==='finished'?'انتهت':'لم تبدأ');
+   const player=document.getElementById('match-player'), box=document.getElementById('match-player-frame');
+   if(!player||!box)return;
+   const {data:sess}=await db.auth.getSession();
+   if(sess?.session?.user){
+    const e=await db.from('matches').select('embed_url').eq('id',id).maybeSingle();
+    const url=httpsUrl(e.data?.embed_url||''); if(!url)return;
+    window.yrMountPlayer(url,'مشغّل مباراة '+tn(m.home_team)+' ضد '+tn(m.away_team));
+    if(note&&!document.getElementById('watch-btn')){const b=document.createElement('button');b.type='button';b.id='watch-btn';b.className='btn primary watch-btn';b.textContent='▶ شاهد المباراة';b.addEventListener('click',()=>player.scrollIntoView({behavior:'smooth',block:'start'}));note.after(b);}
+   }else{
+    const h=await db.rpc('match_has_stream',{p_id:id});
+    if(h.data===true){box.innerHTML=window.yrLockBox?window.yrLockBox('المشغّل للأعضاء فقط','سجّل دخولك بحسابك لمشاهدة هذه المباراة.'):'';player.hidden=false;}
+   }
+  })();
  }
  if(location.pathname.endsWith('product.html')){
   (async()=>{const id=new URLSearchParams(location.search).get('id');if(!id||!id.match(/^[0-9a-f-]{36}$/i))return;const {data:p,error}=await db.from('products').select('*').eq('id',id).eq('is_published',true).maybeSingle();if(error||!p)return;const title=document.getElementById('product-name');if(title)title.textContent=p.name;const art=document.getElementById('product-detail');if(art)art.innerHTML=safeUrl(p.image_url)?`<img src="${esc(safeUrl(p.image_url))}" alt="${esc(p.name)}" style="max-width:100%;max-height:300px;object-fit:contain">`:'🏅';const panel=document.querySelector('main .panel');if(panel){const ps=panel.querySelectorAll('p');if(ps[0])ps[0].textContent=p.description||'لا يوجد وصف متاح.';if(ps[1])ps[1].textContent=p.price==null?'السعر عند التواصل':'السعر: '+p.price+' ج.م';const buy=safeUrl(p.buy_url);if(buy){const a=document.createElement('a');a.className='btn primary';a.href=buy;a.target='_blank';a.rel='noopener noreferrer';a.textContent='الشراء من الموقع الرسمي ↗';panel.insertBefore(a,panel.querySelector('a[href="store.html"]'));}}})();
