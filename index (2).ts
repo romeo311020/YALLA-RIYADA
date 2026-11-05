@@ -1,73 +1,73 @@
-// يلا رياضة — إرسال إشعارات الأخبار للمشتركين (للأدمن فقط).
-// الأسرار المطلوبة في Supabase > Edge Functions > Secrets:
-//   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY  (تولّدهم بالأمر: npx web-push generate-vapid-keys)
-//   VAPID_SUBJECT (اختياري، مثال: mailto:you@example.com)  — ومفتاح الخدمة يضيفه Supabase تلقائيًا.
-// أمان: كل طلب يتحقق من توكن الجلسة ثم من أن profiles.role = 'admin'. اترك Verify JWT مقفولًا (التحقق يدوي هنا).
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
-const json = (body: Record<string, unknown>, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
-// deno-lint-ignore no-explicit-any
-type Any = any;
+
+// الباقة المجانية في GNews = 100 طلب يوميًا، لذلك نحفظ النتيجة 30 دقيقة (حد أقصى 48 طلبًا في اليوم)
+// ونعرض آخر نسخة محفوظة لو فشل المزوّد، ولا نرسل طلبين متزامنين.
+const CACHE_MS = 30 * 60 * 1000;
+let cachedArticles: { expiresAt: number; articles: Record<string, unknown>[] } | null = null;
+let inflight: Promise<{ articles?: Record<string, unknown>[]; error?: string; status?: number }> | null = null;
+
+const respond = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'public, max-age=900',
+    },
+  });
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (request.method !== 'POST') return json({ error: 'طريقة الطلب غير مدعومة.' }, 405);
+  if (request.method !== 'POST') return respond({ error: 'طريقة الطلب غير مدعومة.' }, 405);
 
-  const url = Deno.env.get('SUPABASE_URL');
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('ADMIN_SERVICE_KEY');
-  const pub = Deno.env.get('VAPID_PUBLIC_KEY'); const priv = Deno.env.get('VAPID_PRIVATE_KEY');
-  if (!url || !serviceKey) return json({ error: 'مفتاح الخدمة غير متاح للدالة.' }, 500);
-  if (!pub || !priv) return json({ error: 'مفاتيح الإشعارات (VAPID) غير مضافة في أسرار الدالة.' }, 500);
-
-  // deno-lint-ignore no-explicit-any
-  const make = (globalThis as any).__yrCreateClient ?? (await import('npm:@supabase/supabase-js@2')).createClient;
-  const admin = make(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-
-  const token = (request.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
-  if (!token) return json({ error: 'سجّل الدخول أولًا.' }, 401);
-  const { data: who, error: whoError } = await admin.auth.getUser(token);
-  if (whoError || !who?.user) return json({ error: 'الجلسة غير صالحة. سجّل الدخول من جديد.' }, 401);
-  const { data: prof } = await admin.from('profiles').select('role').eq('id', who.user.id).maybeSingle();
-  if (prof?.role !== 'admin') return json({ error: 'هذه العملية للمسؤولين فقط.' }, 403);
-
-  let body: Any;
-  try { body = await request.json(); } catch { return json({ error: 'صيغة الطلب غير صالحة.' }, 400); }
-
-  const title = String(body?.title ?? '').trim().slice(0, 80);
-  const text = String(body?.body ?? '').trim().slice(0, 200);
-  let link = String(body?.url ?? '').trim();
-  if (!title) return json({ error: 'اكتب عنوان الإشعار.' }, 400);
-  // الرابط: مسار داخل الموقع فقط (يمنع إرسال المشتركين لمواقع خارجية)
-  if (link && !/^\/?[\w\-./?=&%#]*$/.test(link)) return json({ error: 'الرابط لازم يكون صفحة داخل الموقع، مثل news.html' }, 400);
-  link = link.replace(/^\//, '') || 'news.html';
-
-  const webpush = (await import('npm:web-push@3.6.7')).default;
-  webpush.setVapidDetails(Deno.env.get('VAPID_SUBJECT') || 'https://yalla-riyada-embd.vercel.app', pub, priv);
-
-  const { data: subs, error } = await admin.from('push_subscriptions').select('id,endpoint,p256dh,auth').limit(5000);
-  if (error) return json({ error: 'تعذّر قراءة المشتركين. شغّل ملف supabase-push.sql.' }, 500);
-  const payload = JSON.stringify({ title, body: text, url: link, tag: 'yr-news' });
-
-  let sent = 0; let failed = 0; const dead: string[] = [];
-  const list: Any[] = subs ?? [];
-  for (let i = 0; i < list.length; i += 25) {
-    await Promise.all(list.slice(i, i + 25).map(async (s) => {
-      try {
-        await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 60 * 60 * 6 });
-        sent++;
-      } catch (e: Any) {
-        failed++;
-        if (e?.statusCode === 404 || e?.statusCode === 410) dead.push(s.id); // الاشتراك انتهى: نحذفه
-        else console.error('push failed:', e?.statusCode, String(e?.body ?? e?.message ?? '').slice(0, 120));
-      }
-    }));
+  const apiKey = Deno.env.get('GNEWS_API_KEY');
+  if (!apiKey) return respond({ error: 'مفتاح خدمة الأخبار غير مضبوط في إعدادات الخادم.' }, 503);
+  if (cachedArticles && cachedArticles.expiresAt > Date.now()) {
+    return respond({ articles: cachedArticles.articles });
   }
-  if (dead.length) await admin.from('push_subscriptions').delete().in('id', dead);
-  try { await admin.from('push_log').insert({ title, body: text, url: link, sent, failed, sent_by: who.user.id }); } catch (e) { console.error('log:', e); }
-  return json({ ok: true, total: list.length, sent, failed, removed: dead.length });
+
+  if (!inflight) {
+    inflight = fetchNews(apiKey).finally(() => { inflight = null; });
+  }
+  const result = await inflight;
+  if (result.articles) return respond({ articles: result.articles });
+  if (cachedArticles) return respond({ articles: cachedArticles.articles }); // قديمة لكن أفضل من لا شيء
+  return respond({ error: result.error ?? 'خطأ غير معروف.' }, result.status ?? 502);
 });
+
+async function fetchNews(apiKey: string) {
+  const params = new URLSearchParams({ category: 'sports', lang: 'ar', max: '10', apikey: apiKey });
+  try {
+    const response = await fetch(`https://gnews.io/api/v4/top-headlines?${params}`, { signal: AbortSignal.timeout(10000) });
+    const payload = await response.json();
+    if (!response.ok || payload.errors) {
+      console.error('GNews request rejected:', response.status, payload.errors ?? payload.message);
+      return {
+        error: response.status === 429 ? 'تم تجاوز حد طلبات الأخبار. حاول لاحقًا.' : 'تعذّر جلب الأخبار حاليًا.',
+        status: response.status === 429 ? 429 : 502,
+      };
+    }
+    const articles = (Array.isArray(payload.articles) ? payload.articles : [])
+      .filter((article: Record<string, unknown>) => typeof article.title === 'string' && typeof article.url === 'string')
+      .map((article: Record<string, unknown>) => {
+        const source = article.source && typeof article.source === 'object' ? (article.source as Record<string, unknown>).name : null;
+        return {
+          title: article.title,
+          description: typeof article.description === 'string' ? article.description : '',
+          url: article.url,
+          image: typeof article.image === 'string' ? article.image : null,
+          publishedAt: typeof article.publishedAt === 'string' ? article.publishedAt : null,
+          source: typeof source === 'string' ? source : 'مصدر إخباري',
+        };
+      });
+    cachedArticles = { expiresAt: Date.now() + CACHE_MS, articles };
+    return { articles };
+  } catch (error) {
+    console.error('GNews request failed:', error);
+    return { error: 'تعذّر الاتصال بخدمة الأخبار. حاول مرة أخرى.', status: 502 };
+  }
+}

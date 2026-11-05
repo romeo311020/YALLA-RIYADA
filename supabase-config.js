@@ -2,5 +2,3 @@
 window.YR_SUPABASE_URL = 'https://kwezvusicohjcxhekupj.supabase.co';
 window.YR_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_k-P5KK1-w1XnNhgmfQHRyA_XE7OeMF6';
 
-// مفتاح الإشعارات العام (VAPID public key). المفتاح الخاص يوضع في أسرار Supabase فقط. اتركه فاضي لإخفاء زر الإشعارات.
-window.YR_VAPID_PUBLIC_KEY = 'BFSbBIeHiI4tXNKNQYrrAsqIWOJu6H_tNqinImLXApVRDQhGMQSmGnUZ86DYajqqneRRj9TacAaNfHb5z8DnqOU';
