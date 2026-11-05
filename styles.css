@@ -693,3 +693,35 @@ body.modal-open{overflow:hidden}
 .chip small{margin-inline-start:4px;opacity:.7;font-weight:700}
 .empty-state{grid-column:1/-1;display:grid;justify-items:center;gap:8px;padding:40px 12px;text-align:center}
 .empty-state span{font-size:42px}.empty-state h3{margin:0}
+
+/* ===== v22: مشغّل أكبر وتشكيلة بزر لكل فريق ===== */
+.match-player{padding:clamp(12px,2vw,20px);border-radius:18px;background:linear-gradient(180deg,var(--panel),var(--panel2));box-shadow:0 24px 60px -28px rgba(0,0,0,.6)}
+.player-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.player-top h2{margin:0;display:flex;align-items:center;gap:8px;font-size:clamp(17px,2.4vw,22px)}
+.live-dot{width:10px;height:10px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 0 rgba(239,68,68,.6);animation:ldot 1.6s infinite}
+@keyframes ldot{70%{box-shadow:0 0 0 10px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
+.player-bar{display:flex;gap:8px;flex-wrap:wrap}
+.pbtn{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:8px 14px;font-weight:800;font-size:13px;transition:transform .2s var(--ease),background .2s}
+.pbtn:hover{transform:translateY(-2px);background:var(--acc);color:var(--on-acc)}
+.match-player-frame{border-radius:16px;min-height:220px;box-shadow:0 0 0 1px var(--line),0 20px 50px -20px rgba(0,0,0,.8)}
+.match-player-frame:fullscreen{border-radius:0;border:0}
+.match-player.theater{position:fixed;inset:0;z-index:90;margin:0;border-radius:0;display:flex;flex-direction:column;justify-content:center;background:#000;padding:12px}
+.match-player.theater .match-player-frame{width:min(100%,calc((100vh - 110px)*16/9));margin:0 auto}
+.match-player.theater .note{display:none}
+.match-player.theater h2{color:#fff}
+@media(min-width:900px){.match-player{margin-inline:-8px}}
+
+.team-switch{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:620px;margin:0 auto 14px;padding:5px;border-radius:16px;background:var(--panel2);border:1px solid var(--line)}
+.ts-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 8px;border:0;border-radius:12px;background:transparent;font-weight:900;font-size:15px;transition:background .25s var(--ease),transform .2s}
+.ts-btn b{font-size:12px;opacity:.7}
+.ts-btn.active{background:var(--acc);color:var(--on-acc);box-shadow:0 10px 24px -12px var(--acc)}
+.ts-btn.active b{opacity:.9}
+.pitch-stage{max-width:640px;margin:0 auto}
+.pitch-wrap[hidden]{display:none}
+.pitch-wrap .pitch{max-width:none;aspect-ratio:3/4;animation:pitchin .35s var(--ease)}
+@keyframes pitchin{from{opacity:0;transform:scale(.97)}}
+.pitch-wrap .pl-img{width:62px;height:62px}
+.pitch-wrap .pl .pl-no{width:25px;height:25px;font-size:12px;top:-5px}
+.pitch-wrap .pl-name{font-size:13px;max-width:92px;margin-top:4px}
+@media(max-width:600px){.pitch-wrap .pitch{aspect-ratio:2/3}.pitch-wrap .pl-img{width:50px;height:50px}.pitch-wrap .pl-name{font-size:11px;max-width:62px}.pitch-wrap .pl .pl-no{width:21px;height:21px;font-size:11px}.pitch-wrap .pl{width:64px}}
+@media(min-width:601px){.pitch-wrap .pl{width:92px}}

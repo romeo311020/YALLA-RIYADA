@@ -201,6 +201,12 @@
   });
   const pAttrs = (p) => (p.id > 0 ? ` data-pid="${p.id}" data-pname="${escapeHtml(p.name || '')}" data-pno="${escapeHtml(p.number ?? '')}" data-ppos="${escapeHtml(p.pos || '')}"` : '');
 
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('.ts-btn'); if (!b) return;
+    const root = b.closest('#tab-lineup') || document;
+    root.querySelectorAll('.ts-btn').forEach((x) => { const on = x === b; x.classList.toggle('active', on); x.setAttribute('aria-selected', on); });
+    root.querySelectorAll('.pitch-wrap').forEach((w) => { w.hidden = w.dataset.team !== b.dataset.lt; });
+  });
   const shortName = (name) => pn(name);
   const pitchPlayers = (lineup, isHome) => {
     const rows = new Map();
@@ -215,15 +221,15 @@
     rows.forEach((arr, r) => {
       arr.sort((a, b) => a.c - b.c);
       arr.forEach((p, i) => {
-        let x = ((i + 1) / (arr.length + 1)) * 100;
-        if (!isHome) x = 100 - x;
+        const x = arr.length === 1 ? 50 : 15 + (i / (arr.length - 1)) * 70;
         const t = rmax === 1 ? 0 : (r - 1) / (rmax - 1);
-        const y = isHome ? 7 + t * 38 : 93 - t * 38;
+        const y = 88 - t * 76; // الحارس أسفل والمهاجمون أعلى، والملعب كله لفريق واحد
         out.push(`<${p.id > 0 ? 'button type="button"' : 'div'} class="pl ${isHome ? 'pl-home' : 'pl-away'}"${pAttrs(p)} style="left:${x.toFixed(1)}%;top:${y.toFixed(1)}%"><span class="pl-img">${photoImg(p.id)}</span><span class="pl-no">${escapeHtml(p.number ?? '')}</span><span class="pl-name">${escapeHtml(shortName(p.name))}</span></${p.id > 0 ? 'button' : 'div'}>`);
       });
     });
     return out.join('');
   };
+  const pitchBox = (l, isHome, hidden) => `<div class="pitch-wrap" data-team="${isHome ? 'home' : 'away'}"${hidden ? ' hidden' : ''}><div class="pitch" dir="ltr" aria-label="تشكيلة الفريق"><i class="pitch-mid"></i><i class="pitch-circle"></i><i class="pitch-box top"></i><i class="pitch-box bottom"></i>${pitchPlayers(l, isHome)}</div></div>`;
   const benchList = (title, lineup, teamName) => `<div class="bench"><h3>${escapeHtml(title)}</h3>
       ${lineup.coach ? `<p class="coach">المدرب: <b>${escapeHtml(pn(lineup.coach))}</b></p>` : ''}
       <ul>${lineup.subs.map((p) => `<li${pAttrs(p)} class="${p.id > 0 ? 'clickable' : ''}"><span class="sq-img sm">${photoImg(p.id)}</span><span class="pl-no sm">${escapeHtml(p.number ?? '')}</span>${escapeHtml(shortName(p.name))}</li>`).join('') || '<li class="note">لا يوجد احتياط معلن.</li>'}</ul></div>`;
@@ -235,8 +241,8 @@
     const gridOk = [...home.start, ...away.start].every((p) => /^\d+:\d+$/.test(String(p.grid || '')));
     const H = tn(m.home_team); const A = tn(m.away_team);
     const pitch = gridOk
-      ? `<div class="pitch-head"><span>${escapeHtml(H)} <b dir="ltr">${escapeHtml(home.formation)}</b></span><span>${escapeHtml(A)} <b dir="ltr">${escapeHtml(away.formation)}</b></span></div>
-         <div class="pitch" dir="ltr" aria-label="ملعب التشكيلة"><i class="pitch-mid"></i><i class="pitch-circle"></i><i class="pitch-box top"></i><i class="pitch-box bottom"></i>${pitchPlayers(home, true)}${pitchPlayers(away, false)}</div>`
+      ? `<div class="team-switch" role="tablist" aria-label="اختر الفريق"><button type="button" class="ts-btn active" data-lt="home" aria-selected="true"><span>${escapeHtml(H)}</span><b dir="ltr">${escapeHtml(home.formation)}</b></button><button type="button" class="ts-btn" data-lt="away" aria-selected="false"><span>${escapeHtml(A)}</span><b dir="ltr">${escapeHtml(away.formation)}</b></button></div>
+         <div class="pitch-stage">${pitchBox(home, true, false)}${pitchBox(away, false, true)}</div>`
       : `<div class="starters">${[[H, home], [A, away]].map(([n, l]) => `<div class="bench"><h3>${escapeHtml(n)} <small dir="ltr">${escapeHtml(l.formation)}</small></h3><ul>${l.start.map((p) => `<li${pAttrs(p)} class="${p.id > 0 ? 'clickable' : ''}"><span class="sq-img sm">${photoImg(p.id)}</span><span class="pl-no sm">${escapeHtml(p.number ?? '')}</span>${escapeHtml(shortName(p.name))}</li>`).join('')}</ul></div>`).join('')}</div>`;
     return `${pitch}<div class="benches">${benchList(`احتياط ${H}`, home)}${benchList(`احتياط ${A}`, away)}</div>`;
   };
@@ -472,6 +478,15 @@
           frame.sandbox = 'allow-scripts allow-same-origin allow-presentation';
           frameBox.replaceChildren(frame);
           player.hidden = false;
+          const bar = $('match-player-bar');
+          if (bar && !bar.dataset.on) {
+            bar.dataset.on = '1';
+            const fs = document.createElement('button'); fs.type = 'button'; fs.className = 'pbtn'; fs.textContent = '⛶ ملء الشاشة';
+            fs.addEventListener('click', () => { const el = frameBox; (el.requestFullscreen || el.webkitRequestFullscreen || (() => frame.requestFullscreen && frame.requestFullscreen())).call(el); });
+            const th = document.createElement('button'); th.type = 'button'; th.className = 'pbtn'; th.textContent = '🎬 وضع السينما';
+            th.addEventListener('click', () => { const on = player.classList.toggle('theater'); th.textContent = on ? '✕ إغلاق السينما' : '🎬 وضع السينما'; });
+            bar.append(th, fs);
+          }
           }
           if (note && !$('watch-btn')) {
             const btn = document.createElement('button');
