@@ -397,8 +397,8 @@ Deno.serve(async (request) => {
     if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== body.date) {
       return jsonResponse({ error: 'التاريخ المطلوب غير صالح.' }, 400);
     }
-    if (![cairoDate(-1), cairoDate(), cairoDate(1)].includes(body.date)) {
-      return jsonResponse({ error: 'يمكن طلب مباريات أمس أو اليوم أو غدًا فقط.' }, 400);
+    if (body.date < cairoDate(-7) || body.date > cairoDate(7)) {
+      return jsonResponse({ error: 'يمكن طلب مباريات الأسبوع الماضي والأسبوع القادم فقط.' }, 400);
     }
     params.set('date', body.date);
   } else if (body.action === 'fixture') {
@@ -454,7 +454,7 @@ Deno.serve(async (request) => {
           const fixtures = rows.filter((item: unknown) => isImportant(sport, item)).map(normalize);
           out = { fixtures, leagues: leaguesFor(sport) };
           const anyLive = fixtures.some((item: Normalized) => item.status === 'live');
-          ttl = anyLive ? 5 * MIN : body.date === cairoDate() ? 20 * MIN : body.date < cairoDate() ? 12 * 60 * MIN : 3 * 60 * MIN;
+          ttl = anyLive ? 5 * MIN : body.date === cairoDate() ? 20 * MIN : body.date < cairoDate() ? (body.date < cairoDate(-1) ? 24 : 12) * 60 * MIN : (body.date > cairoDate(1) ? 6 : 3) * 60 * MIN;
         }
         cache.set(cacheKey, { payload: out, expires: Date.now() + ttl });
         await dbSet(cacheKey, out, Date.now() + ttl);

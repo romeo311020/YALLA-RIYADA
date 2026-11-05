@@ -106,6 +106,7 @@
     } catch (e) { console.error('streams lookup:', e); }
   };
 
+  const dayOff = (v) => { const n = { yesterday: -1, today: 0, tomorrow: 1 }[v] ?? parseInt(v, 10); return Number.isFinite(n) ? Math.max(-7, Math.min(7, n)) : 0; };
   const loadManualMatches = async (day) => {
     let { data, error } = await db.from('matches')
       .select('id,home_team,away_team,league,kickoff,status,home_score,away_score,home_logo,away_logo')
@@ -114,9 +115,9 @@
       .select('id,home_team,away_team,league,kickoff,status,home_score,away_score')
       .eq('is_published', true).order('kickoff', { ascending: true }).limit(100));
     if (error) throw error;
-    const target = localDate({ yesterday: -1, today: 0, tomorrow: 1 }[day] ?? 0);
+    const target = localDate(dayOff(day));
     return (data || []).filter((m) => {
-      if (!m.kickoff) return day === 'today';
+      if (!m.kickoff) return dayOff(day) === 0;
       const t = new Date(m.kickoff).getTime();
       return Number.isFinite(t) && cairoDay(t) === target;
     }).map((m) => ({ ...m, manual: true, league_key: 'manual', league_label: m.league || 'مباريات منشورة' }));
@@ -335,11 +336,9 @@
     const host = $('matches-list');
     if (!host) return;
     const params = new URLSearchParams(location.search);
-    const DAYS = ['yesterday', 'today', 'tomorrow'];
-    const offsets = { yesterday: -1, today: 0, tomorrow: 1 };
     const state = {
       sport: SPORT_NAME[params.get('sport')] ? params.get('sport') : 'football',
-      day: DAYS.includes(params.get('day')) ? params.get('day') : 'today',
+      day: String(dayOff(params.get('day'))),
       league: params.get('league') || 'all',
       q: '',
     };
@@ -351,9 +350,27 @@
       if (state.league !== 'all') p.set('league', state.league);
       try { history.replaceState(null, '', `?${p}`); } catch { /* لا مشكلة */ }
     };
+    const renderDays = () => {
+      const strip = $('day-strip'); if (!strip) return;
+      const cur = dayOff(state.day);
+      if (!strip.dataset.built) {
+        strip.dataset.built = '1';
+        strip.innerHTML = Array.from({ length: 15 }, (_, i) => i - 7).map((o) => {
+          const d = new Date(`${localDate(o)}T12:00:00Z`);
+          const wk = o === 0 ? 'اليوم' : o === -1 ? 'أمس' : o === 1 ? 'غدًا' : d.toLocaleDateString('ar-EG', { weekday: 'long', timeZone: 'UTC' });
+          const num = d.toLocaleDateString('ar-EG', { day: 'numeric', timeZone: 'UTC' });
+          const mon = d.toLocaleDateString('ar-EG', { month: 'short', timeZone: 'UTC' });
+          return `<button type="button" class="dchip${o === 0 ? ' is-today' : ''}" data-off="${o}"><small>${wk}</small><b>${num}</b><em>${mon}</em></button>`;
+        }).join('');
+      }
+      strip.querySelectorAll('.dchip').forEach((b) => { const on = Number(b.dataset.off) === cur; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); if (on) { try { strip.scrollTo({ left: b.offsetLeft - strip.clientWidth / 2 + b.offsetWidth / 2, behavior: 'smooth' }); } catch { /* قديم */ } } });
+      const pv = $('day-prev-btn'); const nx = $('day-next-btn');
+      if (pv) pv.disabled = cur >= 7; if (nx) nx.disabled = cur <= -7;
+    };
+    const goDay = (o) => { const n = Math.max(-7, Math.min(7, o)); if (String(n) === state.day) return; state.day = String(n); syncUrl(); load(); };
     const paintControls = () => {
       document.querySelectorAll('[data-sport]').forEach((b) => { const on = b.dataset.sport === state.sport; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
-      document.querySelectorAll('[data-day]').forEach((b) => { const on = b.dataset.day === state.day; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
+      renderDays();
       const sub = $('mc-sub');
       if (sub) sub.textContent = state.sport === 'football'
         ? 'أهم البطولات حول العالم: أوروبا وأفريقيا، الدوريات الخمسة الكبرى، السعودي والمصري والعربية.'
@@ -409,7 +426,7 @@
       data = { fixtures: [], leagues: [], manual: [], error: '' };
       if (!db) { data.error = 'بيانات Supabase غير مكتملة. أضف رابط المشروع والمفتاح في supabase-config.js.'; host.removeAttribute('aria-busy'); return render(); }
       const [api, manual] = await Promise.allSettled([
-        request({ action: 'fixtures', sport: state.sport, date: localDate(offsets[state.day]) }),
+        request({ action: 'fixtures', sport: state.sport, date: localDate(dayOff(state.day)) }),
         state.sport === 'football' ? loadManualMatches(state.day) : Promise.resolve([]),
       ]);
       if (my !== token) return; // وصل رد قديم بعد تغيير الاختيار
@@ -423,7 +440,9 @@
 
     /* أحداث */
     document.querySelectorAll('[data-sport]').forEach((b) => b.addEventListener('click', () => { if (state.sport === b.dataset.sport) return; state.sport = b.dataset.sport; state.league = 'all'; syncUrl(); load(); }));
-    document.querySelectorAll('[data-day]').forEach((b) => b.addEventListener('click', () => { if (state.day === b.dataset.day) return; state.day = b.dataset.day; syncUrl(); load(); }));
+    $('day-strip')?.addEventListener('click', (e) => { const b = e.target.closest('.dchip'); if (b) goDay(Number(b.dataset.off)); });
+    $('day-prev-btn')?.addEventListener('click', () => goDay(dayOff(state.day) + 1));
+    $('day-next-btn')?.addEventListener('click', () => goDay(dayOff(state.day) - 1));
     $('league-chips')?.addEventListener('click', (e) => { const b = e.target.closest('[data-league]'); if (!b) return; state.league = b.dataset.league; syncUrl(); render(); });
     host.addEventListener('click', (e) => {
       if (e.target.closest('#retry')) load();
@@ -446,7 +465,7 @@
     const fixtureId = p.get('fixture');
     if (!fixtureId) return;
     const sport = p.get('sport') === 'basketball' ? 'basketball' : 'football';
-    const day = ['yesterday', 'today', 'tomorrow'].includes(p.get('day')) ? p.get('day') : 'today';
+    const day = String(dayOff(p.get('day')));
     const title = $('match-title'); const score = $('match-score');
     const note = document.querySelector('main .panel .note');
     const body = $('match-body');
@@ -465,7 +484,8 @@
         title.textContent = `${H} × ${A}`;
         document.title = `${H} × ${A} | يلا رياضة`;
         score.innerHTML = `${teamMarkup(m.home_team, m.home_logo, sport, m.home_id)}${centerMarkup(m)}${teamMarkup(m.away_team, m.away_logo, sport, m.away_id)}`;
-        if (note) note.textContent = `${m.league_label || m.league} · ${formatDate(m.kickoff)} · ${m.status === 'live' ? 'مباشرة' : m.status === 'finished' ? 'انتهت' : m.status_note || 'قادمة'}`;
+        if (note) note.textContent = formatDate(m.kickoff);
+        window.yrHero && window.yrHero({ league: m.league_label || m.league, kickoff: m.kickoff, status: m.status, note: m.status === 'live' ? m.status_note : '' });
         if (sport === 'football' && body) {
           // تشكيلة يدوية من لوحة الأدمن (إن وُجدت) تتفوق على تشكيلة المزوّد
           let manual = null; let manualInfo = null;

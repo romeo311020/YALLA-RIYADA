@@ -27,13 +27,15 @@
       : 'تاريخ النشر غير متاح';
   };
 
-  const manualCard = (n) => `<article class="news-card">
+  const shareBtn = (id, title, url) => `<button type="button" class="news-share" data-share-title="${escapeHtml(title)}" data-share-url="${escapeHtml(url)}" aria-label="مشاركة الخبر"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/></svg><span>مشاركة</span></button>`;
+  const siteNews = (id) => `${location.origin}${location.pathname.replace(/[^/]*$/, '')}news.html?n=${encodeURIComponent(id)}`;
+  const manualCard = (n) => `<article class="news-card" id="n-${escapeHtml(n.id)}">
         ${n.safeImage ? `<div class="news-card-image"><img src="${escapeHtml(n.safeImage)}" alt="" loading="lazy"></div>` : ''}
         <div class="news-card-content">
           <div class="news-meta"><span class="tag">يلا رياضة</span><time>${escapeHtml(formatDate(n.created_at))}</time></div>
           <h2>${escapeHtml(n.title)}</h2>
           ${n.body ? `<p style="white-space:pre-wrap">${escapeHtml(n.body)}</p>` : ''}
-          ${n.safeSource ? `<a class="news-read-more" href="${escapeHtml(n.safeSource)}" target="_blank" rel="noopener noreferrer">اقرأ المزيد ↗</a>` : ''}
+          <div class="news-actions">${n.safeSource ? `<a class="news-read-more" href="${escapeHtml(n.safeSource)}" target="_blank" rel="noopener noreferrer">اقرأ المزيد ↗</a>` : ''}${shareBtn(n.id, n.title, siteNews(n.id))}</div>
         </div>
       </article>`;
   const apiCard = (article) => `<article class="news-card">
@@ -42,7 +44,7 @@
           <div class="news-meta"><span class="tag">يلا رياضة</span><time>${escapeHtml(formatDate(article.publishedAt))}</time></div>
           <h2><a href="${escapeHtml(article.safeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(article.title)}</a></h2>
           ${article.description ? `<p>${escapeHtml(article.description)}</p>` : ''}
-          <a class="news-read-more" href="${escapeHtml(article.safeUrl)}" target="_blank" rel="noopener noreferrer">اقرأ المزيد ↗</a>
+          <div class="news-actions"><a class="news-read-more" href="${escapeHtml(article.safeUrl)}" target="_blank" rel="noopener noreferrer">اقرأ المزيد ↗</a>${shareBtn('', article.title, article.safeUrl)}</div>
         </div>
       </article>`;
 
@@ -79,7 +81,15 @@
     host.innerHTML = html || `<p class="note">${feedError ? `تعذّر تحميل الأخبار: ${escapeHtml(feedError)}` : 'لا توجد أخبار رياضية متاحة حاليًا.'}</p>`;
     if (html && feedError) host.insertAdjacentHTML('beforeend', `<p class="note">تعذّر تحميل بعض الأخبار حاليًا. حاول لاحقًا.</p>`);
     host.removeAttribute('aria-busy');
+    // رابط خبر محدد (?n=ID): نمرّر له ونميّزه
+    const want = new URLSearchParams(location.search).get('n');
+    const card = want && document.getElementById(`n-${want}`);
+    if (card) { card.classList.add('news-focus'); setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'center' }), 250); }
   }
+  host.addEventListener('click', (e) => {
+    const b = e.target.closest('.news-share'); if (!b) return;
+    window.yrShare({ title: b.dataset.shareTitle, text: `${b.dataset.shareTitle} — يلا رياضة`, url: b.dataset.shareUrl });
+  });
 
   loadNews();
 })();

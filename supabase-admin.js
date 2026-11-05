@@ -79,6 +79,28 @@
   });
 
   const loaded = new Set();
+  /* ---------- الإشعارات ---------- */
+  function paintPushPreview() { $('pp-title').textContent = $('push-title').value || 'عنوان الإشعار'; $('pp-body').textContent = $('push-body').value || 'نص الإشعار'; }
+  ['push-title', 'push-body'].forEach((id) => $(id).addEventListener('input', paintPushPreview));
+  async function loadPush() {
+    const { data: n, error } = await client.rpc('push_count');
+    $('push-count').textContent = error ? 'غير متاح (شغّل supabase-push.sql)' : Number(n).toLocaleString('ar-EG');
+    const { data, error: e2 } = await client.from('push_log').select('title,sent,failed,url,created_at').order('created_at', { ascending: false }).limit(20);
+    $('push-log').innerHTML = e2 ? '<p class="note">سجل الإشعارات غير متاح بعد.</p>' : (data || []).map((r) => `<article class="admin-list-item"><div><strong>${esc(r.title)}</strong><small>وصل ${esc(r.sent)} · فشل ${esc(r.failed)} · ${esc(r.url)}</small></div><small>${esc(fmt(r.created_at))}</small></article>`).join('') || '<p class="note">لم تُرسل إشعارات بعد.</p>';
+  }
+  $('push-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const title = $('push-title').value.trim(); if (!title) return;
+    if (!confirm(`إرسال الإشعار لكل المشتركين؟\n\n${title}`)) return;
+    const btn = $('push-send'); btn.disabled = true; say('push-message', 'جارٍ الإرسال...');
+    try {
+      const r = await callFn('send-push', { title, body: $('push-body').value.trim(), url: $('push-url').value.trim() || 'news.html' });
+      say('push-message', `تم الإرسال: وصل ${r.sent} من ${r.total}${r.failed ? ` (فشل ${r.failed}، وحُذف ${r.removed} اشتراك منتهي)` : ''}.`);
+      $('push-form').reset(); $('push-url').value = 'news.html'; paintPushPreview(); await loadPush();
+    } catch (e) { say('push-message', `تعذّر الإرسال: ${e.message}`); }
+    finally { btn.disabled = false; }
+  });
+
   const loaders = {
     overview: () => loadOverview(),
     matches: () => loadMatches(),
@@ -87,6 +109,7 @@
     store: () => Promise.all([loadStoreSetting(), loadProducts(), loadCategories()]),
     orders: () => loadOrders(),
     news: () => loadNews(),
+    push: () => loadPush(),
     users: () => loadUsers(true),
     audit: () => loadAudit(),
   };
@@ -526,8 +549,15 @@
     say('news-message', 'جارٍ الحفظ...');
     const row = { title: $('news-title').value.trim(), body: $('news-body').value.trim(), image_url: image, source_url: source, is_published: $('news-published').checked };
     const id = $('news-edit-id').value;
-    const { error } = await (id ? client.from('news').update(row).eq('id', id) : client.from('news').insert(row));
+    let newId = null;
+    const { data: ins, error } = id ? await client.from('news').update(row).eq('id', id) : await client.from('news').insert(row).select('id').single();
+    if (!id && ins) newId = ins.id;
     if (error) { say('news-message', `تعذّر الحفظ: ${error.message}. شغّل ملف supabase-admin-upgrade.sql لو العمود source_url ناقص.`); return; }
+    if (!id && newId && row.is_published && $('news-notify')?.checked) {
+      try { const r = await callFn('send-push', { title: row.title.slice(0, 80), body: (row.body || '').replace(/\s+/g, ' ').slice(0, 160), url: `news.html?n=${newId}` }); say('news-message', `تم نشر الخبر وإرسال الإشعار إلى ${r.sent} مشترك.`); }
+      catch (e) { say('news-message', `تم نشر الخبر لكن تعذّر إرسال الإشعار: ${e.message}`); }
+      resetNewsForm(); await loadNews(); return;
+    }
     resetNewsForm(); say('news-message', id ? 'تم تحديث الخبر.' : 'تم نشر الخبر.'); await loadNews();
   });
   function resetNewsForm() { $('news-form').reset(); $('news-edit-id').value = ''; $('news-published').checked = true; $('news-save').textContent = 'نشر الخبر'; $('news-cancel-edit').hidden = true; }
@@ -537,11 +567,16 @@
     const { data, error } = await client.from('news').select('id,title,body,image_url,source_url,is_published,created_at').order('created_at', { ascending: false }).limit(100);
     if (error) { host.textContent = `تعذّر تحميل الأخبار: ${error.message}`; return; }
     host.innerHTML = (data || []).map((n) => `<article class="admin-list-item"><div><strong>${esc(n.title)}</strong><small>${esc(fmt(n.created_at))} · ${n.is_published ? 'منشور' : 'مخفي'}</small></div>
-      <div class="row"><button type="button" class="btn outline" data-toggle-news="${esc(n.id)}">${n.is_published ? 'إخفاء' : 'نشر'}</button><button type="button" class="btn outline" data-edit-news="${esc(n.id)}">تعديل</button><button type="button" class="btn outline" data-delete-news="${esc(n.id)}">حذف</button></div></article>`).join('') || '<p class="note">لا توجد أخبار.</p>';
+      <div class="row"><button type="button" class="btn outline" data-toggle-news="${esc(n.id)}">${n.is_published ? 'إخفاء' : 'نشر'}</button><button type="button" class="btn outline" data-notify-news="${esc(n.id)}">🔔 إشعار</button><button type="button" class="btn outline" data-edit-news="${esc(n.id)}">تعديل</button><button type="button" class="btn outline" data-delete-news="${esc(n.id)}">حذف</button></div></article>`).join('') || '<p class="note">لا توجد أخبار.</p>';
     host.querySelectorAll('[data-toggle-news]').forEach((b) => b.addEventListener('click', async () => {
       const n = data.find((x) => x.id === b.dataset.toggleNews); if (!n) return;
       const { error: e } = await client.from('news').update({ is_published: !n.is_published }).eq('id', n.id);
       say('news-message', e ? `تعذّر التحديث: ${e.message}` : 'تم التحديث.'); if (!e) await loadNews();
+    }));
+    host.querySelectorAll('[data-notify-news]').forEach((b) => b.addEventListener('click', () => {
+      const n = data.find((x) => x.id === b.dataset.notifyNews); if (!n) return;
+      openTab('push'); $('push-title').value = n.title.slice(0, 80); $('push-body').value = (n.body || '').replace(/\s+/g, ' ').slice(0, 160); $('push-url').value = `news.html?n=${n.id}`; paintPushPreview();
+      say('push-message', 'راجع النص واضغط «إرسال الإشعار».');
     }));
     host.querySelectorAll('[data-edit-news]').forEach((b) => b.addEventListener('click', () => {
       const n = data.find((x) => x.id === b.dataset.editNews); if (!n) return;

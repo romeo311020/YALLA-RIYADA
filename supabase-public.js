@@ -16,7 +16,7 @@
    if(score){const has=m.home_score!=null&&m.away_score!=null;
     score.innerHTML=`<div class="team"><span class="crest">${crest(m.home_logo)}</span><span class="team-name">${esc(tn(m.home_team))}</span></div>${has?`<div class="score" dir="ltr">${esc(m.away_score)} : ${esc(m.home_score)}</div>`:`<div class="kick">${m.kickoff?new Date(m.kickoff).toLocaleTimeString('ar-EG',{timeZone:'Africa/Cairo',hour:'2-digit',minute:'2-digit'}):'—'}</div>`}<div class="team"><span class="crest">${crest(m.away_logo)}</span><span class="team-name">${esc(tn(m.away_team))}</span></div>`;}
    const note=document.querySelector('main .panel .note');
-   if(note)note.textContent=(m.league?m.league+' · ':'')+date(m.kickoff)+' · '+(m.status==='live'?'مباشر':m.status==='finished'?'انتهت':'لم تبدأ');
+   if(note)note.textContent=date(m.kickoff);window.yrHero&&window.yrHero({league:m.league,kickoff:m.kickoff,status:m.status});
    const player=document.getElementById('match-player'), box=document.getElementById('match-player-frame');
    if(!player||!box)return;
    const {data:sess}=await db.auth.getSession();

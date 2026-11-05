@@ -18,21 +18,21 @@
 <body>
   <div id="shared-header"></div>
   <main class="wrap page wide">
-    <span class="kicker">MATCH DETAILS</span>
-    <h1 id="match-title">تفاصيل المباراة</h1>
-    <div class="watch-grid">
-    <div class="panel score-card">
+    <h1 id="match-title" class="sr-only">تفاصيل المباراة</h1>
+    <section class="panel mh" id="match-hero">
+      <div class="mh-glow mh-glow-a" aria-hidden="true"></div><div class="mh-glow mh-glow-b" aria-hidden="true"></div>
+      <div class="mh-top"><span class="mh-league" id="mh-league"></span><span class="st" id="mh-status"></span></div>
       <div id="match-score" class="teams"></div>
+      <div class="countdown" id="mh-count" hidden aria-live="off"></div>
       <p class="note">جارٍ تحميل تفاصيل المباراة...</p>
-    </div>
-    <section class="panel match-player" id="match-player" hidden>
-      <div class="player-top"><h2><span class="live-dot"></span>مشغّل المباراة</h2><button type="button" class="theater-close" id="theater-close">✕ إغلاق</button></div>
+    </section>
+    <div class="watch-grid">
+    <section class="match-player" id="match-player" hidden>
+      <div class="player-top"><h2><span class="live-dot"></span>البث المباشر</h2><button type="button" class="theater-close" id="theater-close">✕ إغلاق السينما</button></div>
       <div class="match-player-frame" id="match-player-frame"></div>
     </section>
-    <aside class="panel watch-actions" id="match-actions" hidden aria-label="أدوات المشاهدة">
-      <h3>أدوات المشاهدة</h3>
+    <aside class="watch-actions" id="match-actions" hidden aria-label="أدوات المشاهدة">
       <div class="player-bar" id="match-player-bar"></div>
-      <p class="note">لو المشغّل لا يعمل جرّب «إعادة تحميل المشغّل»، أو «وضع السينما» للمشاهدة بحجم أكبر.</p>
     </aside>
     <div id="match-body" hidden>
       <div class="tabs" role="tablist" aria-label="أقسام المباراة">

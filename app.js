@@ -129,7 +129,10 @@ window.yrMountPlayer = function (url, title) {
     frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
     frame.allowFullscreen = true; frame.referrerPolicy = 'strict-origin-when-cross-origin';
     frame.sandbox = 'allow-scripts allow-same-origin allow-presentation';
-    box.replaceChildren(frame); return frame;
+    const load = document.createElement('div'); load.className = 'pf-load'; load.innerHTML = '<i></i><span>جارٍ تحميل البث…</span>';
+    box.replaceChildren(frame, load);
+    const done = () => load.remove(); frame.addEventListener('load', done, { once: true }); setTimeout(done, 9000);
+    return frame;
   };
   const frame = build();
   player.hidden = false; if (actions) actions.hidden = false; window.yrPlayerReady();
@@ -137,19 +140,17 @@ window.yrMountPlayer = function (url, title) {
     bar.dataset.on = '1';
     const mk = (ico, t, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'pbtn'; b.innerHTML = '<i aria-hidden="true">' + ico + '</i><span></span>'; b.lastChild.textContent = t; b.addEventListener('click', fn); bar.append(b); return b; };
     const label = (b, t) => { b.lastChild.textContent = t; };
-    const setTheater = (on) => { player.classList.toggle('theater', on); document.body.style.overflow = on ? 'hidden' : ''; label(th, on ? 'إغلاق السينما' : 'وضع السينما'); };
-    const th = mk('🎬', 'وضع السينما', () => setTheater(!player.classList.contains('theater')));
+    const setTheater = (on) => { player.classList.toggle('theater', on); document.body.style.overflow = on ? 'hidden' : ''; label(th, on ? 'إغلاق' : 'سينما'); };
+    const th = mk('🎬', 'سينما', () => setTheater(!player.classList.contains('theater')));
     mk('⛶', 'ملء الشاشة', async () => {
       try {
         await (box.requestFullscreen ? box.requestFullscreen() : box.webkitRequestFullscreen());
         if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
       } catch (e) { setTheater(true); }
     });
-    mk('↻', 'إعادة تحميل المشغّل', () => build());
-    const sh = mk('🔗', 'مشاركة المباراة', async () => {
-      const data = { title: document.title, url: location.href };
-      try { if (navigator.share) { await navigator.share(data); return; } await navigator.clipboard.writeText(location.href); label(sh, 'تم نسخ الرابط ✓'); setTimeout(() => label(sh, 'مشاركة المباراة'), 1800); }
-      catch (e) { /* أُلغيت المشاركة */ }
+    mk('↻', 'تحديث', () => build());
+    const sh = mk('🔗', 'مشاركة', async () => {
+      window.yrShare({ title: document.title, text: document.title + ' — شاهد المباراة على يلا رياضة', url: location.href });
     });
     const close = document.getElementById('theater-close'); if (close) close.addEventListener('click', () => setTheater(false));
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && player.classList.contains('theater')) setTheater(false); });
@@ -172,4 +173,49 @@ window.yrPlayerReady = function () {
   const t = document.querySelector('.tab-player'); if (t) t.hidden = false;
   const grid = document.querySelector('.watch-grid'); if (grid) grid.classList.add('has-player');
   if (/[?&]watch=1/.test(location.search) && window.yrSelectTab && window.matchMedia('(max-width:1099px)').matches) window.yrSelectTab('player');
+};
+
+/* هيرو المباراة: شارة الحالة + عدّاد تنازلي للمباريات القادمة */
+window.yrHero = function (m) {
+  const lg = document.getElementById('mh-league'); if (lg) lg.textContent = m.league || '';
+  const st = document.getElementById('mh-status');
+  if (st) {
+    st.className = 'st st-' + (m.status || 'scheduled');
+    st.textContent = m.status === 'live' ? '● مباشر' + (m.note ? ' · ' + m.note : '') : m.status === 'finished' ? 'انتهت' : 'قادمة';
+  }
+  const box = document.getElementById('mh-count'); if (!box) return;
+  if (window.__yrCount) { clearInterval(window.__yrCount); window.__yrCount = null; }
+  const t = m.kickoff ? new Date(m.kickoff).getTime() : NaN;
+  if (m.status !== 'scheduled' || !Number.isFinite(t)) { box.hidden = true; return; }
+  const n = (v) => Number(v).toLocaleString('ar-EG', { minimumIntegerDigits: 2, useGrouping: false });
+  const tick = () => {
+    const d = t - Date.now();
+    if (d <= 0) { box.innerHTML = '<span class="cd-now">حان موعد المباراة — حدّث الصفحة</span>'; clearInterval(window.__yrCount); return; }
+    const days = Math.floor(d / 864e5), h = Math.floor(d / 36e5) % 24, mi = Math.floor(d / 6e4) % 60, s = Math.floor(d / 1e3) % 60;
+    const cell = (v, l) => `<div class="cd"><b>${v}</b><small>${l}</small></div>`;
+    box.innerHTML = (days ? cell(n(days), 'يوم') : '') + cell(n(h), 'ساعة') + cell(n(mi), 'دقيقة') + cell(n(s), 'ثانية');
+  };
+  box.hidden = false; tick(); window.__yrCount = setInterval(tick, 1000);
+};
+
+/* مشاركة: قائمة المشاركة الأصلية في الموبايل، ولوحة بديلة (واتساب/تيليجرام/إكس/فيسبوك/نسخ) على الكمبيوتر */
+window.yrShare = async function (data) {
+  const url = data.url || location.href; const title = data.title || document.title; const text = data.text || title;
+  try { if (navigator.share) { await navigator.share({ title, text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+  document.getElementById('yr-share')?.remove();
+  const q = encodeURIComponent; const msg = `${text}\n${url}`;
+  const items = [
+    ['واتساب', '💬', `https://wa.me/?text=${q(msg)}`], ['تيليجرام', '✈️', `https://t.me/share/url?url=${q(url)}&text=${q(text)}`],
+    ['إكس', '𝕏', `https://twitter.com/intent/tweet?text=${q(text)}&url=${q(url)}`], ['فيسبوك', '📘', `https://www.facebook.com/sharer/sharer.php?u=${q(url)}`],
+  ];
+  const w = document.createElement('div'); w.id = 'yr-share'; w.className = 'share-back'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'مشاركة');
+  w.innerHTML = '<div class="share-sheet"><div class="share-head"><b>مشاركة</b><button type="button" class="share-x" aria-label="إغلاق">✕</button></div><p class="share-title"></p><div class="share-grid"></div><button type="button" class="share-copy">🔗 نسخ الرابط</button></div>';
+  w.querySelector('.share-title').textContent = title;
+  const g = w.querySelector('.share-grid');
+  items.forEach(([n, ico, href]) => { const l = document.createElement('a'); l.href = href; l.target = '_blank'; l.rel = 'noopener noreferrer'; l.innerHTML = `<i>${ico}</i><span>${n}</span>`; g.append(l); });
+  const close = () => { w.classList.remove('in'); setTimeout(() => w.remove(), 200); };
+  w.addEventListener('click', (e) => { if (e.target === w || e.target.closest('.share-x')) close(); });
+  w.querySelector('.share-copy').addEventListener('click', async (e) => { try { await navigator.clipboard.writeText(url); e.target.textContent = '✓ تم النسخ'; setTimeout(close, 900); } catch (err) { e.target.textContent = url; } });
+  document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); } });
+  document.body.append(w); requestAnimationFrame(() => w.classList.add('in'));
 };

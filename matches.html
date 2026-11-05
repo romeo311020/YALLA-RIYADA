@@ -15,10 +15,10 @@
       </div>
     </div>
 
-    <div class="pills" role="group" aria-label="اليوم">
-      <button class="pill" type="button" data-day="yesterday">أمس</button>
-      <button class="pill active" type="button" data-day="today">اليوم</button>
-      <button class="pill" type="button" data-day="tomorrow">غدًا</button>
+    <div class="daybar" role="group" aria-label="اختر اليوم">
+      <button class="dnav" id="day-next-btn" type="button" aria-label="الأيام السابقة">›</button>
+      <div class="days" id="day-strip"></div>
+      <button class="dnav" id="day-prev-btn" type="button" aria-label="الأيام التالية">‹</button>
     </div>
     <div class="league-chips" id="league-chips" role="group" aria-label="البطولات"></div>
     <p class="results-count" id="results-count" aria-live="polite"></p>

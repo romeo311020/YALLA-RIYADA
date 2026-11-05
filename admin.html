@@ -43,6 +43,7 @@
         <button type="button" class="atab" role="tab" data-atab="store" aria-selected="false">المتجر</button>
         <button type="button" class="atab" role="tab" data-atab="orders" aria-selected="false">الطلبات <b id="orders-badge" class="badge" hidden></b></button>
         <button type="button" class="atab" role="tab" data-atab="news" aria-selected="false">الأخبار</button>
+        <button type="button" class="atab" role="tab" data-atab="push" aria-selected="false">الإشعارات</button>
         <button type="button" class="atab" role="tab" data-atab="users" aria-selected="false">المستخدمون</button>
         <button type="button" class="atab" role="tab" data-atab="audit" aria-selected="false">السجل</button>
       </div>
@@ -237,6 +238,7 @@
             <label>رابط صورة (اختياري)<input id="news-image" type="url" inputmode="url"></label>
             <label>رابط المصدر (اختياري)<input id="news-source" type="url" inputmode="url"></label>
             <label class="admin-checkbox"><input id="news-published" type="checkbox" checked> منشور</label>
+            <label class="admin-checkbox"><input id="news-notify" type="checkbox"> أرسل إشعارًا للمشتركين عند نشر الخبر (للخبر الجديد فقط)</label>
             <div class="row">
               <button class="btn primary" id="news-save" type="submit">نشر الخبر</button>
               <button class="btn outline" id="news-cancel-edit" type="button" hidden>إلغاء التعديل</button>
@@ -244,6 +246,26 @@
           </form>
           <p id="news-message" class="note" role="status" aria-live="polite"></p>
           <div id="admin-news"></div>
+        </div>
+      </section>
+
+      <!-- الإشعارات -->
+      <section class="admin-pane" id="pane-push" role="tabpanel" hidden>
+        <div class="panel admin-section">
+          <div class="admin-section-heading">
+            <div><span class="tag">الإشعارات</span><h2>إرسال إشعار للمشتركين</h2></div>
+            <p class="note">يصل لكل الأعضاء اللي فعّلوا إشعارات الأخبار. عدد المشتركين: <b id="push-count">…</b></p>
+          </div>
+          <form id="push-form" class="form-stack admin-form">
+            <label>العنوان (حتى 80 حرف)<input id="push-title" required maxlength="80" placeholder="مثال: عاجل: الأهلي يتعاقد مع ..."></label>
+            <label>النص (حتى 200 حرف)<textarea id="push-body" rows="3" maxlength="200" placeholder="سطرين يشرحوا الخبر"></textarea></label>
+            <label>الصفحة اللي يفتحها الإشعار<input id="push-url" maxlength="120" dir="ltr" value="news.html" placeholder="news.html"></label>
+            <div class="push-preview" aria-hidden="true"><img src="icon-192.png" alt=""><div><b id="pp-title">عنوان الإشعار</b><small id="pp-body">نص الإشعار</small><em>يلا رياضة · الآن</em></div></div>
+            <div class="row"><button class="btn primary" id="push-send" type="submit">إرسال الإشعار</button></div>
+          </form>
+          <p id="push-message" class="note" role="status" aria-live="polite"></p>
+          <h3 class="admin-list-title">آخر الإشعارات المرسلة</h3>
+          <div id="push-log"></div>
         </div>
       </section>
 

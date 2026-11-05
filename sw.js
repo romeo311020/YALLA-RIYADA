@@ -1,6 +1,6 @@
 // يلا رياضة — Service Worker: يجعل الموقع قابلًا للتثبيت كتطبيق، ويعرض آخر نسخة محفوظة لو انقطع الإنترنت.
 // الاستراتيجية: الشبكة أولًا (تحديثاتك تظهر فورًا)، والنسخة المحفوظة احتياطية فقط. لا نحفظ طلبات Supabase أو المباريات.
-const CACHE = 'yalla-riyada-v2';
+const CACHE = 'yalla-riyada-v3';
 const SHELL = ['./', 'matches.html', 'news.html', 'store.html', 'about.html', 'styles.css', 'app.js', 'icon-192.png', 'favicon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -27,5 +27,28 @@ self.addEventListener('fetch', (event) => {
       if (req.mode === 'navigate') { const home = await caches.match('matches.html'); if (home) return home; }
       throw error;
     }
+  })());
+});
+
+// ----- إشعارات الأخبار (Web Push) -----
+self.addEventListener('push', (event) => {
+  let d = {};
+  try { d = event.data ? event.data.json() : {}; } catch (e) { d = { title: 'يلا رياضة', body: event.data ? event.data.text() : '' }; }
+  const title = String(d.title || 'يلا رياضة').slice(0, 80);
+  event.waitUntil(self.registration.showNotification(title, {
+    body: String(d.body || '').slice(0, 200),
+    icon: 'icon-192.png', badge: 'icon-192.png', lang: 'ar', dir: 'rtl',
+    tag: d.tag || 'yr-news', renotify: true,
+    data: { url: String(d.url || 'news.html') },
+  }));
+});
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || 'news.html', self.registration.scope).href;
+  if (new URL(target).origin !== self.location.origin) return;
+  event.waitUntil((async () => {
+    const all = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) { if ('focus' in c) { try { await c.navigate(target); } catch (e) { /* ignore */ } return c.focus(); } }
+    return clients.openWindow(target);
   })());
 });
