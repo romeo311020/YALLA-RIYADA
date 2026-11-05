@@ -20,15 +20,20 @@
   <main class="wrap page wide">
     <span class="kicker">MATCH DETAILS</span>
     <h1 id="match-title">تفاصيل المباراة</h1>
-    <div class="panel">
+    <div class="watch-grid">
+    <div class="panel score-card">
       <div id="match-score" class="teams"></div>
       <p class="note">جارٍ تحميل تفاصيل المباراة...</p>
     </div>
     <section class="panel match-player" id="match-player" hidden>
-      <div class="player-top"><h2><span class="live-dot"></span>مشغّل المباراة</h2><div class="player-bar" id="match-player-bar"></div></div>
+      <div class="player-top"><h2><span class="live-dot"></span>مشغّل المباراة</h2><button type="button" class="theater-close" id="theater-close">✕ إغلاق</button></div>
       <div class="match-player-frame" id="match-player-frame"></div>
-      <p class="note">لو المشغّل لا يعمل جرّب إعادة تحميل الصفحة، أو اضغط «وضع السينما» للمشاهدة بحجم أكبر.</p>
     </section>
+    <aside class="panel watch-actions" id="match-actions" hidden aria-label="أدوات المشاهدة">
+      <h3>أدوات المشاهدة</h3>
+      <div class="player-bar" id="match-player-bar"></div>
+      <p class="note">لو المشغّل لا يعمل جرّب «إعادة تحميل المشغّل»، أو «وضع السينما» للمشاهدة بحجم أكبر.</p>
+    </aside>
     <div id="match-body" hidden>
       <div class="tabs" role="tablist" aria-label="أقسام المباراة">
         <button type="button" class="tab active" role="tab" data-tab="summary" aria-selected="true">الملخص</button>
@@ -40,6 +45,7 @@
       <section class="panel tab-panel" id="tab-lineup" role="tabpanel" hidden></section>
       <section class="panel tab-panel" id="tab-stats" role="tabpanel" hidden></section>
       <section class="panel tab-panel" id="tab-info" role="tabpanel" hidden></section>
+    </div>
     </div>
   </main>
   <div id="shared-footer"></div>

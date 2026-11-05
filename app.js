@@ -121,25 +121,38 @@
 /* مشغّل المباراة المشترك (للمباريات اليدوية ومباريات الـ API) */
 window.yrMountPlayer = function (url, title) {
   const player = document.getElementById('match-player'); const box = document.getElementById('match-player-frame'); const bar = document.getElementById('match-player-bar');
+  const actions = document.getElementById('match-actions');
   if (!player || !box) return null;
-  const frame = document.createElement('iframe');
-  frame.src = url; frame.title = title || 'مشغّل المباراة';
-  frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
-  frame.allowFullscreen = true; frame.referrerPolicy = 'strict-origin-when-cross-origin';
-  frame.sandbox = 'allow-scripts allow-same-origin allow-presentation';
-  box.replaceChildren(frame); player.hidden = false;
+  const build = () => {
+    const frame = document.createElement('iframe');
+    frame.src = url; frame.title = title || 'مشغّل المباراة';
+    frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    frame.allowFullscreen = true; frame.referrerPolicy = 'strict-origin-when-cross-origin';
+    frame.sandbox = 'allow-scripts allow-same-origin allow-presentation';
+    box.replaceChildren(frame); return frame;
+  };
+  const frame = build();
+  player.hidden = false; if (actions) actions.hidden = false;
   if (bar && !bar.dataset.on) {
     bar.dataset.on = '1';
-    const mk = (t, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'pbtn'; b.textContent = t; b.addEventListener('click', fn); return b; };
-    const th = mk('🎬 وضع السينما', () => { const on = player.classList.toggle('theater'); th.textContent = on ? '✕ إغلاق السينما' : '🎬 وضع السينما'; document.body.style.overflow = on ? 'hidden' : ''; });
-    const fs = mk('⛶ ملء الشاشة', async () => {
+    const mk = (ico, t, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'pbtn'; b.innerHTML = '<i aria-hidden="true">' + ico + '</i><span></span>'; b.lastChild.textContent = t; b.addEventListener('click', fn); bar.append(b); return b; };
+    const label = (b, t) => { b.lastChild.textContent = t; };
+    const setTheater = (on) => { player.classList.toggle('theater', on); document.body.style.overflow = on ? 'hidden' : ''; label(th, on ? 'إغلاق السينما' : 'وضع السينما'); };
+    const th = mk('🎬', 'وضع السينما', () => setTheater(!player.classList.contains('theater')));
+    mk('⛶', 'ملء الشاشة', async () => {
       try {
         await (box.requestFullscreen ? box.requestFullscreen() : box.webkitRequestFullscreen());
         if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
-      } catch (e) { player.classList.add('theater'); }
+      } catch (e) { setTheater(true); }
     });
-    bar.append(th, fs);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && player.classList.contains('theater')) th.click(); });
+    mk('↻', 'إعادة تحميل المشغّل', () => build());
+    const sh = mk('🔗', 'مشاركة المباراة', async () => {
+      const data = { title: document.title, url: location.href };
+      try { if (navigator.share) { await navigator.share(data); return; } await navigator.clipboard.writeText(location.href); label(sh, 'تم نسخ الرابط ✓'); setTimeout(() => label(sh, 'مشاركة المباراة'), 1800); }
+      catch (e) { /* أُلغيت المشاركة */ }
+    });
+    const close = document.getElementById('theater-close'); if (close) close.addEventListener('click', () => setTheater(false));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && player.classList.contains('theater')) setTheater(false); });
   }
   return frame;
 };
