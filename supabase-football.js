@@ -313,10 +313,16 @@
     $('tab-stats').innerHTML = renderStats(m, res);
     if ($('tab-info')) $('tab-info').innerHTML = renderInfo(m, res, manualInfo);
     body.hidden = false;
+    const grid = document.querySelector('.watch-grid'); let lastContent = 'summary';
     const select = (name) => {
-      body.querySelectorAll('[data-tab]').forEach((b) => { const on = b.dataset.tab === name; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
-      ['summary', 'lineup', 'stats', 'info'].forEach((t) => { if ($(`tab-${t}`)) $(`tab-${t}`).hidden = t !== name; });
+      if (name !== 'player') lastContent = name;
+      body.querySelectorAll('[data-tab]').forEach((b) => { const on = b.dataset.tab === name; b.classList.toggle('active', on); b.classList.toggle('was', name === 'player' && b.dataset.tab === lastContent); b.setAttribute('aria-selected', String(on)); });
+      // «المشغّل» لا يخفي لوحات التفاصيل بالـ hidden حتى تظل ظاهرة على الكمبيوتر (يخفيها CSS على الموبايل فقط)
+      if (name !== 'player') ['summary', 'lineup', 'stats', 'info'].forEach((t) => { if ($(`tab-${t}`)) $(`tab-${t}`).hidden = t !== name; });
+      if (grid) grid.dataset.view = name;
     };
+    window.yrSelectTab = select;
+    if (grid) { grid.classList.add('tabbed'); grid.dataset.view = 'summary'; }
     body.querySelector('.tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) select(b.dataset.tab); });
     // قبل المباراة: افتح التشكيلة لو أُعلنت
     if (m.status === 'scheduled' && (res.lineups || []).length) select('lineup');
@@ -488,7 +494,7 @@
           }
           if (!signedIn) {
             frameBox.innerHTML = window.yrLockBox ? window.yrLockBox('المشغّل للأعضاء فقط', 'سجّل دخولك بحسابك لمشاهدة هذه المباراة.') : '';
-            player.hidden = false;
+            player.hidden = false; window.yrPlayerReady && window.yrPlayerReady();
           } else {
           window.yrMountPlayer(url, `مشغّل مباراة ${H} ضد ${A}`);
           }

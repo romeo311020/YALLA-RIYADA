@@ -789,3 +789,30 @@ body.modal-open{overflow:hidden}
 .watch-actions .pbtn:hover,.watch-actions .pbtn:focus-visible{background:var(--acc)!important;color:var(--on-acc)!important;border-color:var(--acc)}
 .watch-actions .pbtn{background:var(--panel2);color:var(--text)}
 .watch-grid>.panel,.watch-grid>#match-body{margin:0}
+
+/* ===== v26: خمسة أزرار على الموبايل + ألوان الموقع بحواف صفراء + منع الزوم ===== */
+html{touch-action:manipulation}
+.watch-grid.has-player .watch-btn{display:none}
+.tab-player{color:var(--text)}
+.tabs{gap:6px}
+.tab{min-width:0}
+@media(max-width:1099px){
+  .tab-player{display:flex}
+  .tabs{overflow:visible}
+  .tab{padding:8px 2px;font-size:12px;min-height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1}
+  .watch-grid.tabbed{display:flex;flex-direction:column}
+  .watch-grid.tabbed .score-card{order:1}
+  .watch-grid.tabbed #match-body{order:2}
+  .watch-grid.tabbed .match-player{order:3}
+  .watch-grid.tabbed .watch-actions{order:4}
+  .watch-grid.tabbed:not([data-view="player"]) .match-player,.watch-grid.tabbed:not([data-view="player"]) .watch-actions{display:none}
+  .watch-grid.tabbed[data-view="player"] .tab-panel{display:none}
+}
+@media(min-width:1100px){.tab-player{display:none!important}.tab.was{background:var(--acc);color:var(--on-acc);border-color:var(--acc)}}
+/* مشغّل بألوان الموقع وحواف صفراء بدل الأزرق */
+.match-player{background:var(--panel);color:var(--text);border:2px solid #facc15;box-shadow:0 0 0 5px rgba(250,204,21,.14),0 24px 60px -30px rgba(0,0,0,.6)}
+.match-player h2{color:var(--text)}
+.match-player .note{color:var(--muted)}
+.match-player-frame{background:#000;border:2px solid #facc15;box-shadow:0 0 22px -6px rgba(250,204,21,.55)}
+.match-player.theater{background:#000;border:0;box-shadow:none}
+.match-player.theater h2{color:#fff}

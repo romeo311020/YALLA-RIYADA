@@ -132,7 +132,7 @@ window.yrMountPlayer = function (url, title) {
     box.replaceChildren(frame); return frame;
   };
   const frame = build();
-  player.hidden = false; if (actions) actions.hidden = false;
+  player.hidden = false; if (actions) actions.hidden = false; window.yrPlayerReady();
   if (bar && !bar.dataset.on) {
     bar.dataset.on = '1';
     const mk = (ico, t, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'pbtn'; b.innerHTML = '<i aria-hidden="true">' + ico + '</i><span></span>'; b.lastChild.textContent = t; b.addEventListener('click', fn); bar.append(b); return b; };
@@ -155,4 +155,21 @@ window.yrMountPlayer = function (url, title) {
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && player.classList.contains('theater')) setTheater(false); });
   }
   return frame;
+};
+
+/* منع التكبير والتصغير (زوم) */
+(function () {
+  const stop = (e) => e.preventDefault();
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => document.addEventListener(t, stop, { passive: false }));
+  document.addEventListener('touchmove', (e) => { if (e.scale && e.scale !== 1) e.preventDefault(); }, { passive: false });
+  document.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+  document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && ['+', '-', '=', '0', '_'].includes(e.key)) e.preventDefault(); });
+  let last = 0;
+  document.addEventListener('touchend', (e) => { const n = Date.now(); if (n - last < 300 && !e.target.closest('input,textarea,select')) e.preventDefault(); last = n; }, { passive: false });
+})();
+/* إظهار زر «المشغّل» في شريط الأزرار (موبايل) */
+window.yrPlayerReady = function () {
+  const t = document.querySelector('.tab-player'); if (t) t.hidden = false;
+  const grid = document.querySelector('.watch-grid'); if (grid) grid.classList.add('has-player');
+  if (/[?&]watch=1/.test(location.search) && window.yrSelectTab && window.matchMedia('(max-width:1099px)').matches) window.yrSelectTab('player');
 };
