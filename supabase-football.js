@@ -406,7 +406,7 @@
     const renderChips = () => {
       const box = $('league-chips'); if (!box) return;
       const list = all();
-      const chips = [{ key: 'all', label: 'كل البطولات المهمة', n: list.length }, ...data.leagues.map((l) => ({ key: l.key, label: l.label, n: list.filter((m) => m.league_key === l.key).length })).filter((c) => c.n > 0 || c.key === state.league)];
+      const chips = [{ key: 'all', label: 'كل البطولات', n: list.length }, ...data.leagues.map((l) => ({ key: l.key, label: l.label, n: list.filter((m) => m.league_key === l.key).length })).filter((c) => c.n > 0 || c.key === state.league)];
       if (state.sport === 'football' && data.manual.length) chips.push({ key: 'manual', label: 'مباريات منشورة', n: data.manual.length });
       box.innerHTML = chips.map((c) => `<button type="button" class="chip${state.league === c.key ? ' active' : ''}" data-league="${escapeHtml(c.key)}" aria-pressed="${state.league === c.key}">${escapeHtml(c.label)} <span class="chip-n">${c.n}</span></button>`).join('');
     };

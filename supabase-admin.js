@@ -610,21 +610,22 @@
     const image = $('news-image').value.trim(); const source = $('news-source').value.trim();
     if ((image && !httpsOk(image)) || (source && !httpsOk(source))) { say('news-message', 'الروابط لازم تبدأ بـ https://'); return; }
     say('news-message', 'جارٍ الحفظ...');
-    const row = { title: $('news-title').value.trim(), body: $('news-body').value.trim(), image_url: image, source_url: source, is_published: $('news-published').checked };
+    const row = { title: $('news-title').value.trim(), body: $('news-body').value.trim(), image_url: image, source_url: source, is_published: $('news-published').checked, category: $('news-category').value, excerpt: $('news-excerpt').value.trim() };
     const id = $('news-edit-id').value;
     let newId = null;
     const { data: ins, error } = id ? await client.from('news').update(row).eq('id', id) : await client.from('news').insert(row).select('id').single();
     if (!id && ins) newId = ins.id;
-    if (error) { say('news-message', `تعذّر الحفظ: ${error.message}. شغّل ملف supabase-admin-upgrade.sql لو العمود source_url ناقص.`); return; }
+    if (error) { say('news-message', `تعذّر الحفظ: ${error.message}. شغّل ملف supabase-news-upgrade.sql في Supabase لو لسه ما شغلتوش.`); return; }
     resetNewsForm(); say('news-message', id ? 'تم تحديث الخبر.' : 'تم نشر الخبر.'); await loadNews();
   });
   function resetNewsForm() { $('news-form').reset(); $('news-edit-id').value = ''; $('news-published').checked = true; $('news-save').textContent = 'نشر الخبر'; $('news-cancel-edit').hidden = true; }
   $('news-cancel-edit').addEventListener('click', resetNewsForm);
   async function loadNews() {
     const host = $('admin-news');
-    const { data, error } = await client.from('news').select('id,title,body,image_url,source_url,is_published,created_at').order('created_at', { ascending: false }).limit(100);
+    let { data, error } = await client.from('news').select('id,title,body,image_url,source_url,is_published,created_at,category,excerpt,views').order('created_at', { ascending: false }).limit(100);
+    if (error) ({ data, error } = await client.from('news').select('id,title,body,image_url,source_url,is_published,created_at').order('created_at', { ascending: false }).limit(100));
     if (error) { host.textContent = `تعذّر تحميل الأخبار: ${error.message}`; return; }
-    host.innerHTML = (data || []).map((n) => `<article class="admin-list-item"><div><strong>${esc(n.title)}</strong><small>${esc(fmt(n.created_at))} · ${n.is_published ? 'منشور' : 'مخفي'}</small></div>
+    host.innerHTML = (data || []).map((n) => `<article class="admin-list-item"><div><strong>${esc(n.title)}</strong><small>${esc(fmt(n.created_at))} · ${n.is_published ? 'منشور' : 'مخفي'}${n.views != null ? ` · ${n.views} مشاهدة` : ''}</small></div>
       <div class="row"><button type="button" class="btn outline" data-toggle-news="${esc(n.id)}">${n.is_published ? 'إخفاء' : 'نشر'}</button><button type="button" class="btn outline" data-edit-news="${esc(n.id)}">تعديل</button><button type="button" class="btn outline" data-delete-news="${esc(n.id)}">حذف</button></div></article>`).join('') || '<p class="note">لا توجد أخبار.</p>';
     host.querySelectorAll('[data-toggle-news]').forEach((b) => b.addEventListener('click', async () => {
       const n = data.find((x) => x.id === b.dataset.toggleNews); if (!n) return;
@@ -633,7 +634,7 @@
     }));
     host.querySelectorAll('[data-edit-news]').forEach((b) => b.addEventListener('click', () => {
       const n = data.find((x) => x.id === b.dataset.editNews); if (!n) return;
-      $('news-edit-id').value = n.id; $('news-title').value = n.title; $('news-body').value = n.body || ''; $('news-image').value = n.image_url || ''; $('news-source').value = n.source_url || ''; $('news-published').checked = n.is_published;
+      $('news-edit-id').value = n.id; $('news-title').value = n.title; $('news-body').value = n.body || ''; $('news-image').value = n.image_url || ''; $('news-source').value = n.source_url || ''; $('news-category').value = n.category || 'أخبار'; $('news-excerpt').value = n.excerpt || ''; $('news-published').checked = n.is_published;
       $('news-save').textContent = 'حفظ التعديلات'; $('news-cancel-edit').hidden = false; $('news-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }));
     host.querySelectorAll('[data-delete-news]').forEach((b) => b.addEventListener('click', async () => {
