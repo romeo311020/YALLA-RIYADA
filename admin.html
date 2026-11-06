@@ -73,6 +73,16 @@
               <select id="match-import" aria-label="مباراة للاستيراد"><option value="">— اختر مباراة —</option></select>
               <p class="note" id="match-import-status" role="status"></p>
             </div>
+            <div class="snap-box" id="match-snap-box">
+              <strong>بيانات المباراة المحفوظة</strong>
+              <p class="note" id="match-snap-status">لا يوجد. اختر مباراة من القائمة أعلاه لحفظ التشكيلة والأحداث والإحصائيات مع المباراة.</p>
+              <button class="btn outline" id="match-snap-refresh" type="button" hidden>🔄 تحديث البيانات من المصدر (طلب واحد)</button>
+            </div>
+            <fieldset class="admin-fieldset"><legend>التفاصيل (تظهر في تبويب «التفاصيل»)</legend>
+              <label>القناة الناقلة<input id="match-info-channel" maxlength="120" placeholder="مثال: beIN Sports 1 HD"></label>
+              <label>المعلّق<input id="match-info-commentator" maxlength="120"></label>
+              <label>ملاحظات<textarea id="match-info-notes" rows="2" maxlength="400"></textarea></label>
+            </fieldset>
             <label>الفريق الأول<input id="match-home" required maxlength="100"></label>
             <label>الفريق الثاني<input id="match-away" required maxlength="100"></label>
             <div class="row">

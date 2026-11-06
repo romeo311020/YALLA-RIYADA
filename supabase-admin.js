@@ -150,20 +150,25 @@
       away_score: $('match-away-score').value === '' ? null : Number($('match-away-score').value),
       embed_url: embedUrl, notes: '', is_published: $('match-published').checked,
       home_logo: $('match-home-logo').value.trim(), away_logo: $('match-away-logo').value.trim(),
+      fixture_id: snap?.fixture_id ?? null,
+      details: {
+        ...(snap || {}),
+        info_manual: { channel: $('match-info-channel').value.trim(), commentator: $('match-info-commentator').value.trim(), notes: $('match-info-notes').value.trim() },
+      },
     };
     if ((row.home_logo && !httpsOk(row.home_logo)) || (row.away_logo && !httpsOk(row.away_logo))) { say('match-message', 'رابط اللوجو يجب أن يبدأ بـ https://'); return; }
     const editId = $('match-edit-id').value;
     const save = (r) => (editId ? client.from('matches').update(r).eq('id', editId) : client.from('matches').insert(r));
     let { error } = await save(row);
-    if (error && /home_logo|away_logo/.test(error.message || '')) { // عمود اللوجو غير مضاف: نحفظ بدونه ونُنبّه
-      const { home_logo, away_logo, ...plain } = row; ({ error } = await save(plain));
-      if (!error) say('match-message', 'تم الحفظ بدون اللوجوهات. شغّل ملف supabase-manual-upgrade.sql لتفعيلها.');
+    if (error && /home_logo|away_logo|details|fixture_id/.test(error.message || '')) { // أعمدة جديدة غير مضافة: نحفظ الأساسي ونُنبّه
+      const { home_logo, away_logo, details, fixture_id, ...plain } = row; ({ error } = await save(plain));
+      if (!error) say('match-message', 'تم حفظ المباراة، لكن التشكيلة والتفاصيل والإحصائيات لم تُحفظ. شغّل ملف supabase-match-full.sql (وsupabase-manual-upgrade.sql) ثم احفظ تاني.');
     }
     if (error) { say('match-message', `تعذّر حفظ المباراة: ${error.message}`); return; }
-    resetMatchForm(); say('match-message', editId ? 'تم تحديث المباراة.' : 'تمت إضافة المباراة.'); await loadMatches();
+    const savedMsg = $('match-message').textContent; resetMatchForm(); say('match-message', /لم تُحفظ|بدون/.test(savedMsg) ? savedMsg : editId ? 'تم تحديث المباراة (مع التشكيلة والإحصائيات والتفاصيل).' : 'تمت إضافة المباراة (مع التشكيلة والإحصائيات والتفاصيل).'); await loadMatches();
   });
   function resetMatchForm() {
-    $('match-form').reset(); $('match-edit-id').value = ''; $('match-published').checked = true;
+    $('match-form').reset(); $('match-edit-id').value = ''; $('match-published').checked = true; snap = null; paintSnap();
     $('match-save').textContent = 'حفظ المباراة'; $('match-cancel-edit').hidden = true;
   }
   $('match-cancel-edit').addEventListener('click', resetMatchForm);
@@ -172,7 +177,7 @@
     const { data, error } = await client.from('matches').select('*').order('created_at', { ascending: false }).limit(50);
     if (error) { host.textContent = `تعذّر تحميل المباريات: ${error.message}`; return; }
     host.innerHTML = (data || []).map((m) => `<article class="admin-list-item">
-      <div><strong>${esc(m.home_team)} × ${esc(m.away_team)}</strong><small>${esc(m.league || 'كرة القدم')} · ${m.is_published ? 'منشورة' : 'مخفية'}</small></div>
+      <div><strong>${esc(m.home_team)} × ${esc(m.away_team)}</strong><small>${esc(m.league || 'كرة القدم')} · ${m.is_published ? 'منشورة' : 'مخفية'}${m.details && (m.details.lineups || []).length ? ' · 📋 بيانات كاملة' : ''}</small></div>
       <div class="row"><button type="button" class="btn outline" data-edit-match="${esc(m.id)}">تعديل</button><button type="button" class="btn outline" data-delete-match="${esc(m.id)}">حذف</button></div>
     </article>`).join('') || '<p class="note">لا توجد مباريات يدوية بعد.</p>';
     host.querySelectorAll('[data-edit-match]').forEach((b) => b.addEventListener('click', () => {
@@ -180,13 +185,24 @@
       $('match-edit-id').value = m.id; $('match-home').value = m.home_team; $('match-away').value = m.away_team; $('match-league').value = m.league || '';
       $('match-kickoff').value = localDT(m.kickoff); $('match-status').value = m.status; $('match-home-score').value = m.home_score ?? ''; $('match-away-score').value = m.away_score ?? '';
       $('match-home-logo').value = m.home_logo || ''; $('match-away-logo').value = m.away_logo || '';
+      const d = m.details || {}; snap = d.fixture_id || m.fixture_id ? { ...d, fixture_id: m.fixture_id ?? d.fixture_id } : null; paintSnap();
+      const im = d.info_manual || {}; $('match-info-channel').value = im.channel || ''; $('match-info-commentator').value = im.commentator || ''; $('match-info-notes').value = im.notes || '';
       $('match-embed').value = m.embed_url || ''; $('match-published').checked = m.is_published; $('match-save').textContent = 'حفظ التعديلات'; $('match-cancel-edit').hidden = false;
       $('match-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }));
     host.querySelectorAll('[data-delete-match]').forEach((b) => b.addEventListener('click', async () => {
-      if (!window.confirm('هل تريد حذف هذه المباراة؟')) return;
-      const { error: e } = await client.from('matches').delete().eq('id', b.dataset.deleteMatch);
-      say('match-message', e ? `تعذّر حذف المباراة: ${e.message}` : 'تم حذف المباراة.'); if (!e) await loadMatches();
+      const m = data.find((x) => x.id === b.dataset.deleteMatch); if (!m) return;
+      if (!window.confirm(`حذف المباراة «${m.home_team} × ${m.away_team}» نهائيًا؟\n\nهيتمسح معاها من قاعدة البيانات: التشكيلة والإحصائيات والتفاصيل والمشغّل، ومش هترجع.`)) return;
+      let msg = '';
+      const r = await client.rpc('delete_match_full', { p_id: m.id });
+      if (!r.error) { const c = r.data || {}; msg = `تم حذف المباراة نهائيًا مع كل بياناتها${c.stream || c.manual ? ` (مشغّل ${c.stream || 0}، تشكيلة/تفاصيل ${c.manual || 0})` : ''}.`; }
+      else {
+        // الدالة غير مثبّتة بعد: نحذف يدويًا نفس الأشياء
+        if (m.fixture_id) { await client.from('fixture_streams').delete().eq('fixture_id', m.fixture_id); await client.from('fixture_manual').delete().eq('fixture_id', m.fixture_id); }
+        const { error: e } = await client.from('matches').delete().eq('id', m.id);
+        msg = e ? `تعذّر حذف المباراة: ${e.message}` : 'تم حذف المباراة وبياناتها.';
+      }
+      say('match-message', msg); await loadMatches();
     }));
   }
 
@@ -219,13 +235,45 @@
       if (!fx.length) say('match-import-status', 'لا توجد مباريات لهذا اليوم.');
     } catch (e) { sel.innerHTML = '<option value="">— اختر مباراة —</option>'; say('match-import-status', `${e.message} — أضف المباراة يدويًا بالأسفل.`); }
   });
-  $('match-import').addEventListener('change', () => {
+  /* ---------- نسخة كاملة من المباراة (تشكيلة + أحداث + إحصائيات) تتحفظ مع المباراة ---------- */
+  let snap = null; // { fixture_id, home_id, away_id, events, lineups, stats, info, manual, saved_at }
+  const snapSummary = (s) => !s ? 'لا يوجد. اختر مباراة من القائمة أعلاه لحفظ التشكيلة والأحداث والإحصائيات مع المباراة.'
+    : `تشكيلة ${(s.lineups || []).length ? '✓' : '✗'} · أحداث ${(s.events || []).length ? `✓ (${s.events.length})` : '✗'} · إحصائيات ${Object.keys(s.stats || {}).length ? '✓' : '✗'} · معلومات ${s.info && Object.keys(s.info).length ? '✓' : '✗'}${s.saved_at ? ` · آخر تحديث ${new Date(s.saved_at).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', dateStyle: 'short', timeStyle: 'short' })}` : ''}`;
+  const paintSnap = () => { $('match-snap-status').textContent = snapSummary(snap); $('match-snap-refresh').hidden = !snap?.fixture_id; };
+  async function pullSnapshot(fid) {
+    const res = await callFn('football-matches', { action: 'fixture', sport: 'football', fixtureId: Number(fid) });
+    const f = res?.fixture || {};
+    let manual = null;
+    try { const { data } = await client.from('fixture_manual').select('lineups,info').eq('fixture_id', Number(fid)).maybeSingle(); manual = data || null; } catch { /* اختياري */ }
+    return {
+      fixture: f,
+      snap: { fixture_id: Number(fid), home_id: f.home_id ?? null, away_id: f.away_id ?? null, events: res.events || [], lineups: res.lineups || [], stats: res.stats || {}, info: res.info || {}, manual_lineups: manual?.lineups || null, saved_at: new Date().toISOString() },
+      manualInfo: manual?.info || null,
+    };
+  }
+  $('match-import').addEventListener('change', async () => {
     const f = fixtureCache.get($('match-import').value); if (!f) return;
     $('match-home').value = f.home_team || ''; $('match-away').value = f.away_team || ''; $('match-league').value = f.league_label || f.league || '';
     $('match-home-logo').value = httpsOk(f.home_logo || '') ? f.home_logo : ''; $('match-away-logo').value = httpsOk(f.away_logo || '') ? f.away_logo : '';
     $('match-kickoff').value = localDT(f.kickoff); $('match-status').value = ['live', 'finished'].includes(f.status) ? f.status : 'scheduled';
     $('match-home-score').value = f.home_score ?? ''; $('match-away-score').value = f.away_score ?? '';
-    say('match-import-status', 'تم نسخ البيانات. أضف رابط المشغّل واحفظ.');
+    say('match-import-status', 'تم نسخ البيانات. جارٍ جلب التشكيلة والإحصائيات والتفاصيل...');
+    try {
+      const r = await pullSnapshot(f.fixture_id); snap = r.snap; paintSnap();
+      const mi = r.manualInfo || {}; if (mi.channel) $('match-info-channel').value = mi.channel; if (mi.commentator) $('match-info-commentator').value = mi.commentator; if (mi.notes) $('match-info-notes').value = mi.notes;
+      say('match-import-status', 'تم. أضف رابط المشغّل (لو عندك) واحفظ، وكل البيانات هتتحفظ مع المباراة.');
+    } catch (e) { snap = { fixture_id: Number(f.fixture_id), home_id: f.home_id ?? null, away_id: f.away_id ?? null, events: [], lineups: [], stats: {}, info: {} }; paintSnap(); say('match-import-status', `نُسخت بيانات المباراة الأساسية، لكن تعذّر جلب التشكيلة والإحصائيات (${e.message}). جرّب «تحديث البيانات» لاحقًا.`); }
+  });
+  $('match-snap-refresh').addEventListener('click', async () => {
+    if (!snap?.fixture_id) return;
+    const btn = $('match-snap-refresh'); btn.disabled = true; say('match-message', 'جارٍ تحديث البيانات...');
+    try {
+      const r = await pullSnapshot(snap.fixture_id); snap = r.snap; paintSnap(); const f = r.fixture;
+      if (f.status) $('match-status').value = ['live', 'finished'].includes(f.status) ? f.status : 'scheduled';
+      if (f.home_score != null) $('match-home-score').value = f.home_score; if (f.away_score != null) $('match-away-score').value = f.away_score;
+      say('match-message', 'تم التحديث. اضغط «حفظ» لتثبيته.');
+    } catch (e) { say('match-message', `تعذّر التحديث: ${e.message}`); }
+    finally { btn.disabled = false; }
   });
   $('stream-fixture-day').addEventListener('change', () => loadApiFixtures('stream'));
   $('lineup-fixture-day').addEventListener('change', () => loadApiFixtures('lineup'));

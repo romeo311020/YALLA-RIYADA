@@ -5,7 +5,8 @@
   (async()=>{
    const id=new URLSearchParams(location.search).get('id'); if(!id)return;
    const cols='id,home_team,away_team,league,kickoff,status,home_score,away_score';
-   let r=await db.from('matches').select(cols+',home_logo,away_logo').eq('id',id).eq('is_published',true).maybeSingle();
+   let r=await db.from('matches').select(cols+',home_logo,away_logo,fixture_id,details').eq('id',id).eq('is_published',true).maybeSingle();
+   if(r.error) r=await db.from('matches').select(cols+',home_logo,away_logo').eq('id',id).eq('is_published',true).maybeSingle();
    if(r.error) r=await db.from('matches').select(cols).eq('id',id).eq('is_published',true).maybeSingle();
    const m=r.data; if(r.error||!m)return;
    const tn=n=>window.YR_NAMES?window.YR_NAMES.team(n):n;
@@ -17,6 +18,15 @@
     score.innerHTML=`<div class="team"><span class="crest">${crest(m.home_logo)}</span><span class="team-name">${esc(tn(m.home_team))}</span></div>${has?`<div class="score" dir="ltr">${esc(m.away_score)} : ${esc(m.home_score)}</div>`:`<div class="kick">${m.kickoff?new Date(m.kickoff).toLocaleTimeString('ar-EG',{timeZone:'Africa/Cairo',hour:'2-digit',minute:'2-digit'}):'—'}</div>`}<div class="team"><span class="crest">${crest(m.away_logo)}</span><span class="team-name">${esc(tn(m.away_team))}</span></div>`;}
    const note=document.querySelector('main .panel .note');
    if(note)note.textContent=date(m.kickoff);window.yrHero&&window.yrHero({league:m.league,kickoff:m.kickoff,status:m.status});
+   // النسخة الكاملة المحفوظة (تشكيلة + أحداث + إحصائيات + تفاصيل): تعمل حتى لو الـ API وقف
+   const d=m.details||{};
+   for(let i=0;i<40&&!window.yrRenderDetails;i++)await new Promise(r=>setTimeout(r,100)); // supabase-football.js يتحمّل بعد هذا الملف
+   if(window.yrRenderDetails&&((d.lineups||[]).length||(d.manual_lineups&&d.manual_lineups.home)||(d.events||[]).length||Object.keys(d.stats||{}).length||(d.info_manual&&Object.values(d.info_manual).some(Boolean)))){
+    const mm={sport:'football',home_team:m.home_team,away_team:m.away_team,home_logo:m.home_logo,away_logo:m.away_logo,home_id:d.home_id,away_id:d.away_id,status:m.status,kickoff:m.kickoff,home_score:m.home_score,away_score:m.away_score,league:m.league,league_label:m.league};
+    const res={fixture:mm,events:d.events||[],lineups:d.lineups||[],stats:d.stats||{},info:d.info||{}};
+    const im=d.info_manual||{};const mi=(im.channel||im.commentator||im.notes)?im:null;
+    try{window.yrRenderDetails(mm,res,d.manual_lineups||null,mi)}catch(e){console.error('saved details:',e)}
+   }
    const player=document.getElementById('match-player'), box=document.getElementById('match-player-frame');
    if(!player||!box)return;
    const {data:sess}=await db.auth.getSession();
