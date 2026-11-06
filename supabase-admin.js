@@ -9,7 +9,8 @@
   const logoutButton = $('admin-logout');
   let currentUser = null;
 
-  const say = (id, message) => { const el = $(id); if (el) el.textContent = message; };
+  const toast = (m) => { if (!m) return; let t = document.getElementById('toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = m; t.className = 'show'; clearTimeout(toast.t); toast.t = setTimeout(() => { t.className = ''; }, 3200); };
+  const say = (id, message) => { const el = $(id); if (el) el.textContent = message; if (message && /^(تم|اتحفظ|✓)/.test(String(message))) toast(message); };
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const httpsOk = (value) => { try { return new URL(value).protocol === 'https:'; } catch { return false; } };
   const localDT = (value) => {
@@ -89,6 +90,7 @@
     news: () => loadNews(),
     users: () => loadUsers(true),
     audit: () => loadAudit(),
+    leagues: () => loadLeagueOrderAdmin(),
   };
   function openTab(name) {
     if (!loaders[name]) name = 'overview';
@@ -97,6 +99,7 @@
     try { const p = new URLSearchParams(location.search); p.set('tab', name); history.replaceState(null, '', `?${p}`); } catch { /* لا مشكلة */ }
     if (!loaded.has(name)) { loaded.add(name); Promise.resolve(loaders[name]()).catch((e) => console.error(`admin tab ${name}:`, e)); }
   }
+  document.addEventListener('click', (e) => { const g = e.target.closest('[data-goto]'); if (g) { openTab(g.dataset.goto); window.scrollTo({ top: 0, behavior: 'smooth' }); } });
   document.querySelector('.admin-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-atab]'); if (b) openTab(b.dataset.atab); });
 
   /* ======================== نظرة عامة ======================== */
@@ -150,7 +153,7 @@
       away_score: $('match-away-score').value === '' ? null : Number($('match-away-score').value),
       embed_url: embedUrl, notes: '', is_published: $('match-published').checked,
       home_logo: $('match-home-logo').value.trim(), away_logo: $('match-away-logo').value.trim(),
-      fixture_id: snap?.fixture_id ?? null,
+      fixture_id: snap?.fixture_id ?? null, featured: $('match-featured').checked,
       details: {
         ...(snap || {}),
         info_manual: { channel: $('match-info-channel').value.trim(), commentator: $('match-info-commentator').value.trim(), notes: $('match-info-notes').value.trim() },
@@ -160,15 +163,15 @@
     const editId = $('match-edit-id').value;
     const save = (r) => (editId ? client.from('matches').update(r).eq('id', editId) : client.from('matches').insert(r));
     let { error } = await save(row);
-    if (error && /home_logo|away_logo|details|fixture_id/.test(error.message || '')) { // أعمدة جديدة غير مضافة: نحفظ الأساسي ونُنبّه
-      const { home_logo, away_logo, details, fixture_id, ...plain } = row; ({ error } = await save(plain));
+    if (error && /home_logo|away_logo|details|fixture_id|featured/.test(error.message || '')) { // أعمدة جديدة غير مضافة: نحفظ الأساسي ونُنبّه
+      const { home_logo, away_logo, details, fixture_id, featured, ...plain } = row; ({ error } = await save(plain));
       if (!error) say('match-message', 'تم حفظ المباراة، لكن التشكيلة والتفاصيل والإحصائيات لم تُحفظ. شغّل ملف supabase-match-full.sql (وsupabase-manual-upgrade.sql) ثم احفظ تاني.');
     }
     if (error) { say('match-message', `تعذّر حفظ المباراة: ${error.message}`); return; }
     const savedMsg = $('match-message').textContent; resetMatchForm(); say('match-message', /لم تُحفظ|بدون/.test(savedMsg) ? savedMsg : editId ? 'تم تحديث المباراة (مع التشكيلة والإحصائيات والتفاصيل).' : 'تمت إضافة المباراة (مع التشكيلة والإحصائيات والتفاصيل).'); await loadMatches();
   });
   function resetMatchForm() {
-    $('match-form').reset(); $('match-edit-id').value = ''; $('match-published').checked = true; snap = null; paintSnap();
+    $('match-form').reset(); $('match-edit-id').value = ''; $('match-published').checked = true; $('match-featured').checked = false; snap = null; paintSnap();
     $('match-save').textContent = 'حفظ المباراة'; $('match-cancel-edit').hidden = true;
   }
   $('match-cancel-edit').addEventListener('click', resetMatchForm);
@@ -177,7 +180,7 @@
     const { data, error } = await client.from('matches').select('*').order('created_at', { ascending: false }).limit(50);
     if (error) { host.textContent = `تعذّر تحميل المباريات: ${error.message}`; return; }
     host.innerHTML = (data || []).map((m) => `<article class="admin-list-item">
-      <div><strong>${esc(ar(m.home_team))} × ${esc(ar(m.away_team))}</strong><small>${esc(m.league || 'كرة القدم')} · ${m.is_published ? 'منشورة' : 'مخفية'}${m.details && (m.details.lineups || []).length ? ' · 📋 بيانات كاملة' : ''}</small></div>
+      <div><strong>${esc(ar(m.home_team))} × ${esc(ar(m.away_team))}</strong><small>${esc(m.league || 'كرة القدم')} · ${m.featured ? '⭐ مهمة · ' : ''}${m.is_published ? 'منشورة' : 'مخفية'}${m.details && (m.details.lineups || []).length ? ' · 📋 بيانات كاملة' : ''}</small></div>
       <div class="row"><button type="button" class="btn outline" data-edit-match="${esc(m.id)}">تعديل</button><button type="button" class="btn outline" data-delete-match="${esc(m.id)}">حذف</button></div>
     </article>`).join('') || '<p class="note">لا توجد مباريات يدوية بعد.</p>';
     host.querySelectorAll('[data-edit-match]').forEach((b) => b.addEventListener('click', () => {
@@ -187,7 +190,7 @@
       $('match-home-logo').value = m.home_logo || ''; $('match-away-logo').value = m.away_logo || '';
       const d = m.details || {}; snap = d.fixture_id || m.fixture_id ? { ...d, fixture_id: m.fixture_id ?? d.fixture_id } : null; paintSnap();
       const im = d.info_manual || {}; $('match-info-channel').value = im.channel || ''; $('match-info-commentator').value = im.commentator || ''; $('match-info-notes').value = im.notes || '';
-      $('match-embed').value = m.embed_url || ''; $('match-published').checked = m.is_published; $('match-save').textContent = 'حفظ التعديلات'; $('match-cancel-edit').hidden = false;
+      $('match-embed').value = m.embed_url || ''; $('match-published').checked = m.is_published; $('match-featured').checked = !!m.featured; $('match-save').textContent = 'حفظ التعديلات'; $('match-cancel-edit').hidden = false;
       $('match-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }));
     host.querySelectorAll('[data-delete-match]').forEach((b) => b.addEventListener('click', async () => {
@@ -237,6 +240,37 @@
     } catch (e) { sel.innerHTML = '<option value="">— اختر مباراة —</option>'; say('match-import-status', `${e.message} — أضف المباراة يدويًا بالأسفل.`); }
   });
 
+
+  /* ---------- ترتيب البطولات (site_settings.league_order) ---------- */
+  let lgList = []; let lgAvail = [];
+  const lgRender = () => {
+    $('lg-list').innerHTML = lgList.map((c, i) => `<li><span class="lg-n">${i + 1}</span><b>${esc(c.l)}</b><span class="lg-btns"><button type="button" data-lg="top" data-i="${i}" title="للأول">⤒</button><button type="button" data-lg="up" data-i="${i}" title="فوق">▲</button><button type="button" data-lg="down" data-i="${i}" title="تحت">▼</button><button type="button" data-lg="del" data-i="${i}" title="حذف">✕</button></span></li>`).join('') || '<li class="note">مفيش ترتيب مخصص — بيظهر الترتيب الافتراضي.</li>';
+    $('lg-pick').innerHTML = '<option value="">— أضف بطولة من القائمة —</option>' + lgAvail.filter((a) => !lgList.some((c) => c.l === a.label)).map((a) => `<option value="${esc(a.key)}">${esc(a.label)}</option>`).join('');
+  };
+  async function loadLeagueOrderAdmin() {
+    try { const d = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(0) }); lgAvail = Array.isArray(d?.leagues) ? d.leagues : []; } catch { lgAvail = []; }
+    const { data } = await client.from('site_settings').select('value').eq('key', 'league_order').maybeSingle();
+    lgList = Array.isArray(data?.value) && data.value.length ? data.value.map((c) => ({ k: c.k, l: c.l })) : lgAvail.slice(0, 12).map((a) => ({ k: a.key, l: a.label }));
+    lgRender();
+  }
+  $('lg-list').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-lg]'); if (!b) return; const i = Number(b.dataset.i); const a = b.dataset.lg;
+    if (a === 'del') lgList.splice(i, 1);
+    else if (a === 'top' && i > 0) lgList.unshift(...lgList.splice(i, 1));
+    else if (a === 'up' && i > 0) [lgList[i - 1], lgList[i]] = [lgList[i], lgList[i - 1]];
+    else if (a === 'down' && i < lgList.length - 1) [lgList[i + 1], lgList[i]] = [lgList[i], lgList[i + 1]];
+    lgRender();
+  });
+  $('lg-add').addEventListener('click', () => { const k = $('lg-pick').value; const a = lgAvail.find((x) => x.key === k); if (a) { lgList.push({ k: a.key, l: a.label }); lgRender(); } });
+  $('lg-add-custom').addEventListener('click', () => { const l = $('lg-custom').value.trim(); if (l && !lgList.some((c) => c.l === l)) { lgList.push({ k: '', l }); $('lg-custom').value = ''; lgRender(); } });
+  $('lg-save').addEventListener('click', async () => {
+    const { error } = await client.from('site_settings').upsert({ key: 'league_order', value: lgList, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    say('lg-msg', error ? `تعذّر الحفظ: ${error.message}` : 'تم حفظ الترتيب ✓ (هيظهر للزوار فورًا).');
+  });
+  $('lg-reset').addEventListener('click', async () => {
+    const { error } = await client.from('site_settings').delete().eq('key', 'league_order');
+    say('lg-msg', error ? error.message : 'تم الرجوع للترتيب الافتراضي.'); if (!error) loadLeagueOrderAdmin();
+  });
   /* ---------- تعديل مباريات الـ API (fixture_overrides) ---------- */
   const ovFx = new Map(); let ovMap = new Map();
   const ovLabel = (id) => { const f = ovFx.get(String(id)); return f ? `${ar(f.home_team)} × ${ar(f.away_team)}` : `مباراة #${id}`; };
@@ -245,7 +279,7 @@
     const { data, error } = await client.from('fixture_overrides').select('*').order('updated_at', { ascending: false }).limit(50);
     if (error) { $('ov-list').innerHTML = ''; say('ov-msg', /fixture_overrides|relation/.test(error.message) ? 'شغّل ملف supabase-overrides.sql في Supabase الأول.' : error.message); return; }
     ovMap = new Map((data || []).map((o) => [String(o.fixture_id), o]));
-    $('ov-list').innerHTML = (data || []).length ? '<h4>التعديلات الحالية</h4>' + data.map((o) => `<article class="admin-list-item"><div><strong>${esc(o.title || ovLabel(o.fixture_id))}</strong><small>${esc(ST_AR[o.status] || 'بدون تغيير حالة')}${o.home_score != null ? ` · ${o.home_score}-${o.away_score ?? ''}` : ''}${o.note ? ` · ${esc(o.note)}` : ''}</small></div><div class="row"><button class="btn outline" type="button" data-ov-del="${esc(o.fixture_id)}">حذف</button></div></article>`).join('') : '';
+    $('ov-list').innerHTML = (data || []).length ? '<h4>التعديلات الحالية</h4>' + data.map((o) => `<article class="admin-list-item"><div><strong>${o.featured ? '⭐ ' : ''}${esc(o.title || ovLabel(o.fixture_id))}</strong><small>${esc(ST_AR[o.status] || 'بدون تغيير حالة')}${o.home_score != null ? ` · ${o.home_score}-${o.away_score ?? ''}` : ''}${o.note ? ` · ${esc(o.note)}` : ''}</small></div><div class="row"><button class="btn outline" type="button" data-ov-del="${esc(o.fixture_id)}">حذف</button></div></article>`).join('') : '';
   }
   $('ov-load').addEventListener('click', async () => {
     const sel = $('ov-fixture'); sel.innerHTML = '<option value="">جارٍ التحميل...</option>'; say('ov-msg', '');
@@ -258,14 +292,15 @@
   });
   $('ov-fixture').addEventListener('change', () => {
     const id = $('ov-fixture').value; const f = ovFx.get(id); const o = ovMap.get(id);
-    $('ov-status').value = o?.status || ''; $('ov-kickoff').value = localDT(o?.kickoff || ''); $('ov-home').value = o?.home_score ?? ''; $('ov-away').value = o?.away_score ?? ''; $('ov-note').value = o?.note || '';
+    $('ov-status').value = o?.status || ''; $('ov-kickoff').value = localDT(o?.kickoff || ''); $('ov-home').value = o?.home_score ?? ''; $('ov-away').value = o?.away_score ?? ''; $('ov-note').value = o?.note || ''; $('ov-featured').checked = !!o?.featured;
     if (f && !o) { $('ov-home').value = f.home_score ?? ''; $('ov-away').value = f.away_score ?? ''; }
   });
   $('ov-form').addEventListener('submit', async (e) => {
     e.preventDefault(); const id = $('ov-fixture').value; if (!id) { say('ov-msg', 'اختر مباراة الأول.'); return; }
     const k = $('ov-kickoff').value; const n = (v) => (v === '' ? null : Number(v));
-    const row = { fixture_id: Number(id), status: $('ov-status').value || null, kickoff: k ? new Date(k).toISOString() : null, home_score: n($('ov-home').value), away_score: n($('ov-away').value), note: $('ov-note').value.trim() || null, title: ovLabel(id), updated_at: new Date().toISOString() };
-    const { error } = await client.from('fixture_overrides').upsert(row);
+    const row = { fixture_id: Number(id), status: $('ov-status').value || null, kickoff: k ? new Date(k).toISOString() : null, home_score: n($('ov-home').value), away_score: n($('ov-away').value), note: $('ov-note').value.trim() || null, featured: $('ov-featured').checked, title: ovLabel(id), updated_at: new Date().toISOString() };
+    let { error } = await client.from('fixture_overrides').upsert(row);
+    if (error && /featured/.test(error.message)) { const { featured, ...plain } = row; ({ error } = await client.from('fixture_overrides').upsert(plain)); if (!error) { say('ov-msg', 'اتحفظ التعديل بس «مباراة مهمة» محتاجة تشغّل supabase-admin-v34.sql.'); ovRefreshList(); return; } }
     say('ov-msg', error ? (/fixture_overrides|relation/.test(error.message) ? 'شغّل ملف supabase-overrides.sql في Supabase الأول.' : error.message) : 'تم حفظ التعديل ✓ (هيظهر للزوار فورًا بعد تحديث الصفحة).');
     if (!error) ovRefreshList();
   });

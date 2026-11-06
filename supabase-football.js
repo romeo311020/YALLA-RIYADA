@@ -116,7 +116,7 @@
     const ids = fixtures.filter((m) => m.sport !== 'basketball' && Number.isSafeInteger(Number(m.fixture_id))).map((m) => Number(m.fixture_id));
     if (!db || !ids.length) return fixtures;
     try {
-      const { data, error } = await db.from('fixture_overrides').select('fixture_id,status,kickoff,home_score,away_score,note').in('fixture_id', ids);
+      const { data, error } = await db.from('fixture_overrides').select('*').in('fixture_id', ids);
       if (error || !Array.isArray(data) || !data.length) return fixtures;
       const by = new Map(data.map((o) => [Number(o.fixture_id), o]));
       return fixtures.map((m) => { const o = by.get(Number(m.fixture_id)); return o ? mergeOverride(m, o) : m; });
@@ -129,12 +129,23 @@
     if (o.home_score != null) r.home_score = o.home_score;
     if (o.away_score != null) r.away_score = o.away_score;
     if (o.note) r.status_note = o.note;
+    if (o.featured) r.featured = true;
     return r;
+  };
+  /* ترتيب البطولات اللي حدده الأدمن (site_settings.league_order) — لو مفيش، ترتيب الدالة الافتراضي */
+  let leagueOrder = null;
+  const loadLeagueOrder = async () => {
+    if (leagueOrder !== null || !db) return leagueOrder || [];
+    try { const { data } = await db.from('site_settings').select('value').eq('key', 'league_order').maybeSingle(); leagueOrder = Array.isArray(data?.value) ? data.value : []; } catch { leagueOrder = []; }
+    return leagueOrder;
   };
   const loadManualMatches = async (day) => {
     let { data, error } = await db.from('matches')
-      .select('id,home_team,away_team,league,kickoff,status,home_score,away_score,home_logo,away_logo')
+      .select('id,home_team,away_team,league,kickoff,status,home_score,away_score,home_logo,away_logo,featured')
       .eq('is_published', true).order('kickoff', { ascending: true }).limit(100);
+    if (error) ({ data, error } = await db.from('matches')
+      .select('id,home_team,away_team,league,kickoff,status,home_score,away_score,home_logo,away_logo')
+      .eq('is_published', true).order('kickoff', { ascending: true }).limit(100));
     if (error) ({ data, error } = await db.from('matches') // أعمدة اللوجو غير مضافة بعد
       .select('id,home_team,away_team,league,kickoff,status,home_score,away_score')
       .eq('is_published', true).order('kickoff', { ascending: true }).limit(100));
@@ -406,7 +417,7 @@
     const renderChips = () => {
       const box = $('league-chips'); if (!box) return;
       const list = all();
-      const chips = [{ key: 'all', label: 'كل البطولات', n: list.length }, ...data.leagues.map((l) => ({ key: l.key, label: l.label, n: list.filter((m) => m.league_key === l.key).length })).filter((c) => c.n > 0 || c.key === state.league)];
+      const chips = [{ key: 'all', label: 'كل البطولات', n: list.length }, ...[...data.leagues].sort((x, y) => { const f = (l) => { const i = (leagueOrder || []).findIndex((c) => String(c.k) === l.key || c.l === l.label); return i >= 0 ? i : 1000; }; return f(x) - f(y); }).map((l) => ({ key: l.key, label: l.label, n: list.filter((m) => m.league_key === l.key).length })).filter((c) => c.n > 0 || c.key === state.league)];
       if (state.sport === 'football' && data.manual.length) chips.push({ key: 'manual', label: 'مباريات منشورة', n: data.manual.length });
       box.innerHTML = chips.map((c) => `<button type="button" class="chip${state.league === c.key ? ' active' : ''}" data-league="${escapeHtml(c.key)}" aria-pressed="${state.league === c.key}">${escapeHtml(c.label)} <span class="chip-n">${c.n}</span></button>`).join('');
     };
@@ -427,18 +438,24 @@
         if (count) count.textContent = '';
         return;
       }
-      // تجميع حسب البطولة بترتيب القائمة، والمباشر أولًا ثم الأقرب موعدًا
-      const order = [...data.leagues.map((l) => l.key), 'manual'];
+      // تجميع حسب البطولة. أولًا «مباريات مهمة» (يحددها الأدمن)، ثم البطولات بالترتيب المحدد
+      const custom = leagueOrder || [];
+      const base = [...data.leagues.map((l) => l.key), 'manual'];
+      const pos = (k, label) => { const i = custom.findIndex((c) => String(c.k) === String(k) || (c.l && c.l === label)); return i >= 0 ? i : 1000 + ((base.indexOf(k) + 1) || 99); };
       const groups = new Map();
       rows.forEach((m) => { if (!groups.has(m.league_key)) groups.set(m.league_key, []); groups.get(m.league_key).push(m); });
       const rank = (m) => (m.status === 'live' ? 0 : 1);
-      const keys = [...groups.keys()].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
-      host.innerHTML = keys.map((k) => {
-        const items = groups.get(k).sort((a, b) => rank(a) - rank(b) || new Date(a.kickoff || 0) - new Date(b.kickoff || 0));
+      const byTime = (a, b) => rank(a) - rank(b) || new Date(a.kickoff || 0) - new Date(b.kickoff || 0);
+      const keys = [...groups.keys()].sort((a, b) => pos(a, groups.get(a)[0].league_label) - pos(b, groups.get(b)[0].league_label));
+      const card = (m) => (m.manual ? manualCard(m) : fixtureCard(m, state));
+      const star = rows.filter((m) => m.featured).sort(byTime);
+      const featuredHtml = star.length && state.league === 'all' ? `<section class="league-group featured-group" aria-label="مباريات مهمة"><h2 class="league-title"><span>⭐ مباريات مهمة</span><small>${star.length}</small></h2><div class="match-grid">${star.map(card).join('')}</div></section>` : '';
+      host.innerHTML = featuredHtml + keys.map((k) => {
+        const items = groups.get(k).sort(byTime);
         const logo = safeUrl(items.find((m) => m.league_logo)?.league_logo);
         return `<section class="league-group" aria-label="${escapeHtml(items[0].league_label)}">
           <h2 class="league-title">${logo ? `<img src="${escapeHtml(logo)}" alt="" loading="lazy">` : ''}<span>${escapeHtml(items[0].league_label)}</span><small>${items.length}</small></h2>
-          <div class="match-grid">${items.map((m) => (m.manual ? manualCard(m) : fixtureCard(m, state))).join('')}</div></section>`;
+          <div class="match-grid">${items.map(card).join('')}</div></section>`;
       }).join('');
       if (count) count.textContent = `${rows.length} ${rows.length === 1 ? 'مباراة' : 'مباراة'}${q ? ' مطابقة للبحث' : ''}`;
     };
@@ -457,6 +474,7 @@
       if (my !== token) return; // وصل رد قديم بعد تغيير الاختيار
       if (api.status === 'fulfilled') { data.fixtures = api.value?.fixtures || []; data.leagues = api.value?.leagues || []; data.fixtures = await applyOverrides(data.fixtures); await markStreams(data.fixtures); if (my !== token) return; }
       else { console.error('matches:', api.reason); data.error = `تعذّر تحميل المباريات: ${api.reason?.message || 'خطأ غير معروف'}`; }
+      await loadLeagueOrder();
       if (manual.status === 'fulfilled') data.manual = manual.value;
       host.removeAttribute('aria-busy');
       if (state.league !== 'all' && !data.leagues.some((l) => l.key === state.league) && state.league !== 'manual') state.league = 'all';

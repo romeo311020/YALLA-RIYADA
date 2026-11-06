@@ -36,19 +36,27 @@
 
     <div id="admin-workspace" hidden>
       <div class="admin-tabs" role="tablist" aria-label="أقسام لوحة الإدارة">
-        <button type="button" class="atab active" role="tab" data-atab="overview" aria-selected="true">نظرة عامة</button>
-        <button type="button" class="atab" role="tab" data-atab="matches" aria-selected="false">المباريات</button>
-        <button type="button" class="atab" role="tab" data-atab="streams" aria-selected="false">المشغّلات</button>
-        <button type="button" class="atab" role="tab" data-atab="lineups" aria-selected="false">التشكيلات</button>
-        <button type="button" class="atab" role="tab" data-atab="store" aria-selected="false">المتجر</button>
-        <button type="button" class="atab" role="tab" data-atab="orders" aria-selected="false">الطلبات <b id="orders-badge" class="badge" hidden></b></button>
-        <button type="button" class="atab" role="tab" data-atab="news" aria-selected="false">الأخبار</button>
-        <button type="button" class="atab" role="tab" data-atab="users" aria-selected="false">المستخدمون</button>
-        <button type="button" class="atab" role="tab" data-atab="audit" aria-selected="false">السجل</button>
+        <button type="button" class="atab active" role="tab" data-atab="overview" aria-selected="true"><i class="ti" aria-hidden="true">📊</i>نظرة عامة</button>
+        <button type="button" class="atab" role="tab" data-atab="matches" aria-selected="false"><i class="ti" aria-hidden="true">⚽</i>المباريات</button>
+        <button type="button" class="atab" role="tab" data-atab="leagues" aria-selected="false"><i class="ti" aria-hidden="true">🏆</i>البطولات</button>
+        <button type="button" class="atab" role="tab" data-atab="streams" aria-selected="false"><i class="ti" aria-hidden="true">📺</i>المشغّلات</button>
+        <button type="button" class="atab" role="tab" data-atab="lineups" aria-selected="false"><i class="ti" aria-hidden="true">📋</i>التشكيلات</button>
+        <button type="button" class="atab" role="tab" data-atab="store" aria-selected="false"><i class="ti" aria-hidden="true">🛍️</i>المتجر</button>
+        <button type="button" class="atab" role="tab" data-atab="orders" aria-selected="false"><i class="ti" aria-hidden="true">📦</i>الطلبات <b id="orders-badge" class="badge" hidden></b></button>
+        <button type="button" class="atab" role="tab" data-atab="news" aria-selected="false"><i class="ti" aria-hidden="true">📰</i>الأخبار</button>
+        <button type="button" class="atab" role="tab" data-atab="users" aria-selected="false"><i class="ti" aria-hidden="true">👥</i>المستخدمون</button>
+        <button type="button" class="atab" role="tab" data-atab="audit" aria-selected="false"><i class="ti" aria-hidden="true">🧾</i>السجل</button>
       </div>
 
       <!-- نظرة عامة -->
       <section class="admin-pane" id="pane-overview" role="tabpanel">
+        <div class="quick-actions" aria-label="اختصارات سريعة">
+          <button type="button" class="qa" data-goto="matches"><i>⚽</i><b>مباراة / تعديل مباراة</b><small>إضافة أو تأجيل أو تمييز مهمة</small></button>
+          <button type="button" class="qa" data-goto="leagues"><i>🏆</i><b>ترتيب البطولات</b><small>اللي تظهر الأول</small></button>
+          <button type="button" class="qa" data-goto="news"><i>📰</i><b>خبر جديد</b><small>حصري على يلا رياضة</small></button>
+          <button type="button" class="qa" data-goto="streams"><i>📺</i><b>ربط مشغّل</b><small>زر شاهد للأعضاء</small></button>
+          <button type="button" class="qa" data-goto="orders"><i>📦</i><b>الطلبات</b><small>متابعة العملاء</small></button>
+        </div>
         <div class="stat-cards" id="overview-cards"></div>
         <div class="panel">
           <h2>حالة الموقع</h2>
@@ -63,6 +71,7 @@
             <div><span class="tag">المباريات</span><h2>إضافة مباراة وإدارتها</h2></div>
             <p class="note">المباريات اليدوية تظهر للزوار عند تفعيل خيار النشر.</p>
           </div>
+          <details class="acc" open><summary>➕ إضافة / تعديل مباراة يدوية</summary>
           <form id="match-form" class="form-stack admin-form">
             <input id="match-edit-id" type="hidden">
             <div class="import-box">
@@ -101,14 +110,16 @@
             <label>رابط المشغّل الرسمي (اختياري)<input id="match-embed" type="url" inputmode="url" placeholder="https://..."></label>
             <p class="note">استخدم رابط Embed رسميًا ومصرحًا به فقط.</p>
             <label class="admin-checkbox"><input id="match-published" type="checkbox" checked> نشر المباراة للزوار</label>
+            <label class="admin-checkbox"><input id="match-featured" type="checkbox"> ⭐ مباراة مهمة (تظهر في الأول)</label>
             <div class="row">
               <button class="btn primary" id="match-save" type="submit">حفظ المباراة</button>
               <button class="btn outline" id="match-cancel-edit" type="button" hidden>إلغاء التعديل</button>
             </div>
           </form>
+          </details>
           <p id="match-message" class="note" role="status" aria-live="polite"></p>
+          <details class="acc" open><summary>🛠️ تعديل مباراة API — تأجيل / إلغاء / نتيجة / ⭐ مباراة مهمة</summary>
           <form id="ov-form" class="form-stack admin-form import-box">
-            <strong>تعديل أي مباراة جاية من الـ API (تأجيل / إلغاء / تصحيح الموعد أو النتيجة)</strong>
             <p class="note">اختار اليوم ثم المباراة، وعدّل اللي محتاجه. اللي تسيبه فاضي هيفضل زي ما هو من الـ API. التعديل بيظهر للزوار في القائمة وصفحة المباراة.</p>
             <div class="row"><select id="ov-day" aria-label="اليوم"><option value="0">اليوم</option><option value="1">غدًا</option><option value="-1">أمس</option><option value="2">بعد غد</option><option value="-2">أول أمس</option><option value="3">+٣ أيام</option><option value="-3">-٣ أيام</option></select>
             <button class="btn outline" id="ov-load" type="button">تحميل المباريات</button></div>
@@ -121,13 +132,34 @@
               <label>نتيجة الأول<input id="ov-home" type="number" min="0"></label>
               <label>نتيجة الثاني<input id="ov-away" type="number" min="0"></label>
             </div>
+            <label class="admin-checkbox"><input id="ov-featured" type="checkbox"> ⭐ مباراة مهمة (تظهر في أول الصفحة)</label>
             <label>ملاحظة تظهر للزوار (اختياري)<input id="ov-note" maxlength="60" placeholder="مثال: تأجلت لظروف الطقس"></label>
             <div class="row"><button class="btn primary" id="ov-save" type="submit">حفظ التعديل</button><button class="btn outline" id="ov-clear" type="button">حذف التعديل (رجوع لبيانات الـ API)</button></div>
             <p class="note" id="ov-msg" role="status"></p>
             <div id="ov-list"></div>
           </form>
+          </details>
           <h3 class="admin-list-title">المباريات اليدوية</h3>
           <div id="admin-matches"></div>
+        </div>
+      </section>
+
+      <!-- ترتيب البطولات -->
+      <section class="admin-pane" id="pane-leagues" role="tabpanel" hidden>
+        <div class="panel admin-section">
+          <div class="admin-section-heading">
+            <div><span class="tag">البطولات</span><h2>ترتيب البطولات في صفحة المباريات</h2></div>
+            <p class="note">البطولات اللي فوق بتظهر الأول للزوار. استخدم الأسهم لتغيير الترتيب.</p>
+          </div>
+          <div class="lg-add row">
+            <select id="lg-pick" aria-label="بطولة"><option value="">— أضف بطولة من القائمة —</option></select>
+            <button class="btn outline" id="lg-add" type="button">إضافة</button>
+            <input id="lg-custom" maxlength="60" placeholder="أو اكتب اسم بطولة بالعربي (مثال: كأس مصر)" aria-label="اسم بطولة">
+            <button class="btn outline" id="lg-add-custom" type="button">إضافة بالاسم</button>
+          </div>
+          <ol id="lg-list" class="lg-list"></ol>
+          <div class="row"><button class="btn primary" id="lg-save" type="button">حفظ الترتيب</button><button class="btn outline" id="lg-reset" type="button">رجوع للترتيب الافتراضي</button></div>
+          <p class="note" id="lg-msg" role="status"></p>
         </div>
       </section>
 
