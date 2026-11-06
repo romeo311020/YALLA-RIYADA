@@ -92,7 +92,7 @@
             <label>البطولة<input id="match-league" maxlength="120"></label>
             <label>موعد المباراة<input id="match-kickoff" type="datetime-local"></label>
             <label>حالة المباراة
-              <select id="match-status"><option value="scheduled">لم تبدأ</option><option value="live">مباشر</option><option value="finished">انتهت</option></select>
+              <select id="match-status"><option value="scheduled">لم تبدأ</option><option value="live">مباشر</option><option value="finished">انتهت</option><option value="postponed">مؤجلة</option><option value="cancelled">ملغاة</option></select>
             </label>
             <div class="row">
               <label>نتيجة الفريق الأول<input id="match-home-score" type="number" min="0"></label>
@@ -107,6 +107,25 @@
             </div>
           </form>
           <p id="match-message" class="note" role="status" aria-live="polite"></p>
+          <form id="ov-form" class="form-stack admin-form import-box">
+            <strong>تعديل أي مباراة جاية من الـ API (تأجيل / إلغاء / تصحيح الموعد أو النتيجة)</strong>
+            <p class="note">اختار اليوم ثم المباراة، وعدّل اللي محتاجه. اللي تسيبه فاضي هيفضل زي ما هو من الـ API. التعديل بيظهر للزوار في القائمة وصفحة المباراة.</p>
+            <div class="row"><select id="ov-day" aria-label="اليوم"><option value="0">اليوم</option><option value="1">غدًا</option><option value="-1">أمس</option><option value="2">بعد غد</option><option value="-2">أول أمس</option><option value="3">+٣ أيام</option><option value="-3">-٣ أيام</option></select>
+            <button class="btn outline" id="ov-load" type="button">تحميل المباريات</button></div>
+            <select id="ov-fixture" aria-label="المباراة"><option value="">— اختر مباراة —</option></select>
+            <label>الحالة
+              <select id="ov-status"><option value="">زي ما هي</option><option value="scheduled">لم تبدأ</option><option value="live">مباشر</option><option value="finished">انتهت</option><option value="postponed">مؤجلة</option><option value="cancelled">ملغاة</option></select>
+            </label>
+            <label>الموعد الجديد (اختياري)<input id="ov-kickoff" type="datetime-local"></label>
+            <div class="row">
+              <label>نتيجة الأول<input id="ov-home" type="number" min="0"></label>
+              <label>نتيجة الثاني<input id="ov-away" type="number" min="0"></label>
+            </div>
+            <label>ملاحظة تظهر للزوار (اختياري)<input id="ov-note" maxlength="60" placeholder="مثال: تأجلت لظروف الطقس"></label>
+            <div class="row"><button class="btn primary" id="ov-save" type="submit">حفظ التعديل</button><button class="btn outline" id="ov-clear" type="button">حذف التعديل (رجوع لبيانات الـ API)</button></div>
+            <p class="note" id="ov-msg" role="status"></p>
+            <div id="ov-list"></div>
+          </form>
           <h3 class="admin-list-title">المباريات اليدوية</h3>
           <div id="admin-matches"></div>
         </div>
@@ -314,6 +333,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
   <script src="supabase-config.js"></script>
   <script src="supabase-client.js"></script>
+  <script src="names-ar.js"></script>
   <script src="supabase-admin.js"></script>
 <script src="install.js" defer></script></body>
 </html>

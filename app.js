@@ -181,7 +181,7 @@ window.yrHero = function (m) {
   const st = document.getElementById('mh-status');
   if (st) {
     st.className = 'st st-' + (m.status || 'scheduled');
-    st.textContent = m.status === 'live' ? '● مباشر' + (m.note ? ' · ' + m.note : '') : m.status === 'finished' ? 'انتهت' : 'قادمة';
+    st.textContent = m.status === 'live' ? '● مباشر' + (m.note ? ' · ' + m.note : '') : m.status === 'finished' ? 'انتهت' : m.status === 'postponed' ? 'مؤجلة' : m.status === 'cancelled' ? 'ملغاة' : 'قادمة';
   }
   const box = document.getElementById('mh-count'); if (!box) return;
   if (window.__yrCount) { clearInterval(window.__yrCount); window.__yrCount = null; }

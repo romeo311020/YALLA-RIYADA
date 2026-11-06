@@ -177,7 +177,7 @@
     const { data, error } = await client.from('matches').select('*').order('created_at', { ascending: false }).limit(50);
     if (error) { host.textContent = `تعذّر تحميل المباريات: ${error.message}`; return; }
     host.innerHTML = (data || []).map((m) => `<article class="admin-list-item">
-      <div><strong>${esc(m.home_team)} × ${esc(m.away_team)}</strong><small>${esc(m.league || 'كرة القدم')} · ${m.is_published ? 'منشورة' : 'مخفية'}${m.details && (m.details.lineups || []).length ? ' · 📋 بيانات كاملة' : ''}</small></div>
+      <div><strong>${esc(ar(m.home_team))} × ${esc(ar(m.away_team))}</strong><small>${esc(m.league || 'كرة القدم')} · ${m.is_published ? 'منشورة' : 'مخفية'}${m.details && (m.details.lineups || []).length ? ' · 📋 بيانات كاملة' : ''}</small></div>
       <div class="row"><button type="button" class="btn outline" data-edit-match="${esc(m.id)}">تعديل</button><button type="button" class="btn outline" data-delete-match="${esc(m.id)}">حذف</button></div>
     </article>`).join('') || '<p class="note">لا توجد مباريات يدوية بعد.</p>';
     host.querySelectorAll('[data-edit-match]').forEach((b) => b.addEventListener('click', () => {
@@ -192,7 +192,7 @@
     }));
     host.querySelectorAll('[data-delete-match]').forEach((b) => b.addEventListener('click', async () => {
       const m = data.find((x) => x.id === b.dataset.deleteMatch); if (!m) return;
-      if (!window.confirm(`حذف المباراة «${m.home_team} × ${m.away_team}» نهائيًا؟\n\nهيتمسح معاها من قاعدة البيانات: التشكيلة والإحصائيات والتفاصيل والمشغّل، ومش هترجع.`)) return;
+      if (!window.confirm(`حذف المباراة «${ar(m.home_team)} × ${ar(m.away_team)}» نهائيًا؟\n\nهيتمسح معاها من قاعدة البيانات: التشكيلة والإحصائيات والتفاصيل والمشغّل، ومش هترجع.`)) return;
       let msg = '';
       const r = await client.rpc('delete_match_full', { p_id: m.id });
       if (!r.error) { const c = r.data || {}; msg = `تم حذف المباراة نهائيًا مع كل بياناتها${c.stream || c.manual ? ` (مشغّل ${c.stream || 0}، تشكيلة/تفاصيل ${c.manual || 0})` : ''}.`; }
@@ -208,6 +208,7 @@
 
   /* ======================== قوائم مباريات المزوّد (للمشغّلات والتشكيلات) ======================== */
   const fixtureCache = new Map();
+  const ar = (n) => (window.YR_NAMES ? window.YR_NAMES.team(n) : n) || n;
   async function loadApiFixtures(kind) {
     const select = $(kind === 'stream' ? 'stream-fixture-id' : 'lineup-fixture-select');
     const dayEl = $(kind === 'stream' ? 'stream-fixture-day' : 'lineup-fixture-day');
@@ -218,7 +219,7 @@
       const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(offsets[dayEl.value] ?? 0) });
       const fixtures = Array.isArray(data?.fixtures) ? data.fixtures : [];
       fixtures.forEach((f) => fixtureCache.set(String(f.fixture_id), f));
-      select.innerHTML = '<option value="">اختر مباراة</option>' + fixtures.map((f) => `<option value="${esc(f.fixture_id)}">${esc(`${f.home_team} × ${f.away_team} · ${f.league_label || f.league} · #${f.fixture_id}`)}</option>`).join('');
+      select.innerHTML = '<option value="">اختر مباراة</option>' + fixtures.map((f) => `<option value="${esc(f.fixture_id)}">${esc(`${ar(f.home_team)} × ${ar(f.away_team)} · ${f.league_label || f.league} · #${f.fixture_id}`)}</option>`).join('');
       if (!fixtures.length) say(statusId, 'لا توجد مباريات متاحة لهذا اليوم.');
     } catch (error) {
       console.error('fixtures list:', error);
@@ -231,10 +232,47 @@
     try {
       const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate({ yesterday: -1, today: 0, tomorrow: 1 }[$('match-import-day').value] ?? 0) });
       const fx = Array.isArray(data?.fixtures) ? data.fixtures : []; fx.forEach((f) => fixtureCache.set(String(f.fixture_id), f));
-      sel.innerHTML = '<option value="">— اختر مباراة —</option>' + fx.map((f) => `<option value="${esc(f.fixture_id)}">${esc(`${f.home_team} × ${f.away_team} · ${f.league_label || f.league}`)}</option>`).join('');
+      sel.innerHTML = '<option value="">— اختر مباراة —</option>' + fx.map((f) => `<option value="${esc(f.fixture_id)}">${esc(`${ar(f.home_team)} × ${ar(f.away_team)} · ${f.league_label || f.league}`)}</option>`).join('');
       if (!fx.length) say('match-import-status', 'لا توجد مباريات لهذا اليوم.');
     } catch (e) { sel.innerHTML = '<option value="">— اختر مباراة —</option>'; say('match-import-status', `${e.message} — أضف المباراة يدويًا بالأسفل.`); }
   });
+
+  /* ---------- تعديل مباريات الـ API (fixture_overrides) ---------- */
+  const ovFx = new Map(); let ovMap = new Map();
+  const ovLabel = (id) => { const f = ovFx.get(String(id)); return f ? `${ar(f.home_team)} × ${ar(f.away_team)}` : `مباراة #${id}`; };
+  const ST_AR = { scheduled: 'لم تبدأ', live: 'مباشر', finished: 'انتهت', postponed: 'مؤجلة', cancelled: 'ملغاة' };
+  async function ovRefreshList() {
+    const { data, error } = await client.from('fixture_overrides').select('*').order('updated_at', { ascending: false }).limit(50);
+    if (error) { $('ov-list').innerHTML = ''; say('ov-msg', /fixture_overrides|relation/.test(error.message) ? 'شغّل ملف supabase-overrides.sql في Supabase الأول.' : error.message); return; }
+    ovMap = new Map((data || []).map((o) => [String(o.fixture_id), o]));
+    $('ov-list').innerHTML = (data || []).length ? '<h4>التعديلات الحالية</h4>' + data.map((o) => `<article class="admin-list-item"><div><strong>${esc(o.title || ovLabel(o.fixture_id))}</strong><small>${esc(ST_AR[o.status] || 'بدون تغيير حالة')}${o.home_score != null ? ` · ${o.home_score}-${o.away_score ?? ''}` : ''}${o.note ? ` · ${esc(o.note)}` : ''}</small></div><div class="row"><button class="btn outline" type="button" data-ov-del="${esc(o.fixture_id)}">حذف</button></div></article>`).join('') : '';
+  }
+  $('ov-load').addEventListener('click', async () => {
+    const sel = $('ov-fixture'); sel.innerHTML = '<option value="">جارٍ التحميل...</option>'; say('ov-msg', '');
+    try {
+      const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(Number($('ov-day').value) || 0) });
+      const fx = Array.isArray(data?.fixtures) ? data.fixtures : []; fx.forEach((f) => { fixtureCache.set(String(f.fixture_id), f); ovFx.set(String(f.fixture_id), f); });
+      sel.innerHTML = '<option value="">— اختر مباراة —</option>' + fx.map((f) => `<option value="${esc(f.fixture_id)}">${esc(`${ar(f.home_team)} × ${ar(f.away_team)} · ${f.league_label || f.league}`)}</option>`).join('');
+      if (!fx.length) say('ov-msg', 'لا توجد مباريات لهذا اليوم.');
+    } catch (e) { sel.innerHTML = '<option value="">— اختر مباراة —</option>'; say('ov-msg', e.message); }
+  });
+  $('ov-fixture').addEventListener('change', () => {
+    const id = $('ov-fixture').value; const f = ovFx.get(id); const o = ovMap.get(id);
+    $('ov-status').value = o?.status || ''; $('ov-kickoff').value = localDT(o?.kickoff || ''); $('ov-home').value = o?.home_score ?? ''; $('ov-away').value = o?.away_score ?? ''; $('ov-note').value = o?.note || '';
+    if (f && !o) { $('ov-home').value = f.home_score ?? ''; $('ov-away').value = f.away_score ?? ''; }
+  });
+  $('ov-form').addEventListener('submit', async (e) => {
+    e.preventDefault(); const id = $('ov-fixture').value; if (!id) { say('ov-msg', 'اختر مباراة الأول.'); return; }
+    const k = $('ov-kickoff').value; const n = (v) => (v === '' ? null : Number(v));
+    const row = { fixture_id: Number(id), status: $('ov-status').value || null, kickoff: k ? new Date(k).toISOString() : null, home_score: n($('ov-home').value), away_score: n($('ov-away').value), note: $('ov-note').value.trim() || null, title: ovLabel(id), updated_at: new Date().toISOString() };
+    const { error } = await client.from('fixture_overrides').upsert(row);
+    say('ov-msg', error ? (/fixture_overrides|relation/.test(error.message) ? 'شغّل ملف supabase-overrides.sql في Supabase الأول.' : error.message) : 'تم حفظ التعديل ✓ (هيظهر للزوار فورًا بعد تحديث الصفحة).');
+    if (!error) ovRefreshList();
+  });
+  const ovDelete = async (id) => { const { error } = await client.from('fixture_overrides').delete().eq('fixture_id', Number(id)); say('ov-msg', error ? error.message : 'تم حذف التعديل.'); ovRefreshList(); };
+  $('ov-clear').addEventListener('click', () => { const id = $('ov-fixture').value; if (id) ovDelete(id); else say('ov-msg', 'اختر مباراة الأول.'); });
+  $('ov-list').addEventListener('click', (e) => { const b = e.target.closest('[data-ov-del]'); if (b) ovDelete(b.dataset.ovDel); });
+  ovRefreshList();
   /* ---------- نسخة كاملة من المباراة (تشكيلة + أحداث + إحصائيات) تتحفظ مع المباراة ---------- */
   let snap = null; // { fixture_id, home_id, away_id, events, lineups, stats, info, manual, saved_at }
   const snapSummary = (s) => !s ? 'لا يوجد. اختر مباراة من القائمة أعلاه لحفظ التشكيلة والأحداث والإحصائيات مع المباراة.'
@@ -253,9 +291,9 @@
   }
   $('match-import').addEventListener('change', async () => {
     const f = fixtureCache.get($('match-import').value); if (!f) return;
-    $('match-home').value = f.home_team || ''; $('match-away').value = f.away_team || ''; $('match-league').value = f.league_label || f.league || '';
+    $('match-home').value = ar(f.home_team) || ''; $('match-away').value = ar(f.away_team) || ''; $('match-league').value = f.league_label || f.league || '';
     $('match-home-logo').value = httpsOk(f.home_logo || '') ? f.home_logo : ''; $('match-away-logo').value = httpsOk(f.away_logo || '') ? f.away_logo : '';
-    $('match-kickoff').value = localDT(f.kickoff); $('match-status').value = ['live', 'finished'].includes(f.status) ? f.status : 'scheduled';
+    $('match-kickoff').value = localDT(f.kickoff); $('match-status').value = ['live', 'finished'].includes(f.status) ? f.status : (/مؤجل/.test(f.status_note || '') ? 'postponed' : /ملغ/.test(f.status_note || '') ? 'cancelled' : 'scheduled');
     $('match-home-score').value = f.home_score ?? ''; $('match-away-score').value = f.away_score ?? '';
     say('match-import-status', 'تم نسخ البيانات. جارٍ جلب التشكيلة والإحصائيات والتفاصيل...');
     try {
@@ -269,7 +307,7 @@
     const btn = $('match-snap-refresh'); btn.disabled = true; say('match-message', 'جارٍ تحديث البيانات...');
     try {
       const r = await pullSnapshot(snap.fixture_id); snap = r.snap; paintSnap(); const f = r.fixture;
-      if (f.status) $('match-status').value = ['live', 'finished'].includes(f.status) ? f.status : 'scheduled';
+      if (f.status) $('match-status').value = ['live', 'finished'].includes(f.status) ? f.status : (/مؤجل/.test(f.status_note || '') ? 'postponed' : /ملغ/.test(f.status_note || '') ? 'cancelled' : 'scheduled');
       if (f.home_score != null) $('match-home-score').value = f.home_score; if (f.away_score != null) $('match-away-score').value = f.away_score;
       say('match-message', 'تم التحديث. اضغط «حفظ» لتثبيته.');
     } catch (e) { say('match-message', `تعذّر التحديث: ${e.message}`); }
@@ -301,7 +339,7 @@
     if (error) { host.textContent = `تعذّر تحميل المشغّلات: ${error.message}. شغّل ملف supabase-admin-upgrade.sql.`; return; }
     host.innerHTML = (data || []).map((s) => {
       const f = fixtureCache.get(String(s.fixture_id));
-      return `<article class="admin-list-item"><div><strong>${esc(f ? `${f.home_team} × ${f.away_team}` : `مباراة #${s.fixture_id}`)}</strong><small>#${esc(s.fixture_id)} · ${esc(fmt(s.updated_at))}</small></div>
+      return `<article class="admin-list-item"><div><strong>${esc(f ? `${ar(f.home_team)} × ${ar(f.away_team)}` : `مباراة #${s.fixture_id}`)}</strong><small>#${esc(s.fixture_id)} · ${esc(fmt(s.updated_at))}</small></div>
       <div class="row"><button type="button" class="btn outline" data-edit-stream="${esc(s.fixture_id)}">تعديل</button><button type="button" class="btn outline" data-delete-stream="${esc(s.fixture_id)}">حذف</button></div></article>`;
     }).join('') || '<p class="note">لم تتم إضافة مشغّلات بعد.</p>';
     host.querySelectorAll('[data-edit-stream]').forEach((b) => b.addEventListener('click', () => {
@@ -362,7 +400,7 @@
     if (!e.target.value) return;
     $('lineup-fixture-id').value = e.target.value; loadExistingManual(e.target.value);
     const f = fixtureCache.get(e.target.value);
-    if (f) { if (!$('lineup-home-name').value) $('lineup-home-name').value = f.home_team; if (!$('lineup-away-name').value) $('lineup-away-name').value = f.away_team; }
+    if (f) { if (!$('lineup-home-name').value) $('lineup-home-name').value = ar(f.home_team); if (!$('lineup-away-name').value) $('lineup-away-name').value = ar(f.away_team); }
   });
   $('lineup-form').addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -379,7 +417,7 @@
     say('lineup-message', 'جارٍ الحفظ...');
     const f = fixtureCache.get(String(fixtureId));
     const row = {
-      fixture_id: fixtureId, title: `${home.name || f?.home_team || 'الأول'} × ${away.name || f?.away_team || 'الثاني'}`,
+      fixture_id: fixtureId, title: `${home.name || ar(f?.home_team) || 'الأول'} × ${away.name || ar(f?.away_team) || 'الثاني'}`,
       info, updated_by: currentUser.id, updated_at: new Date().toISOString(),
     };
     if (hasLineup) row.lineups = { home: { name: home.name, formation: home.formation, coach: home.coach, start: home.start, subs: home.subs }, away: { name: away.name, formation: away.formation, coach: away.coach, start: away.start, subs: away.subs } };

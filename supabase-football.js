@@ -56,9 +56,10 @@
     return job;
   };
 
+  const initials = (n, sport) => { const w = String(n || '').trim().replace(/(^|\s)ال(?=\S)/g, '$1').split(/\s+/).filter(Boolean); return w.length ? (w.length > 1 ? w[0][0] + w[1][0] : w[0].slice(0, 2)) : (SPORT_ICON[sport] || '⚽'); };
   const teamMarkup = (name, logo, sport = 'football', id = null) => {
     const image = safeUrl(logo);
-    const inner = `<span class="crest">${image ? `<img src="${escapeHtml(image)}" alt="" loading="lazy">` : SPORT_ICON[sport] || '⚽'}</span><span class="team-name">${escapeHtml(tn(name))}</span>`;
+    const inner = `<span class="crest${image ? '' : ' nologo'}">${image ? `<img src="${escapeHtml(image)}" alt="" loading="lazy">` : escapeHtml(initials(tn(name), sport))}</span><span class="team-name">${escapeHtml(tn(name))}</span>`;
     // الضغط على الفريق (صفحة المباراة) يفتح معلوماته
     return id && sport === 'football' && id > 0 && page === 'match.html'
       ? `<a class="team team-link" href="team.html?id=${encodeURIComponent(id)}" title="معلومات الفريق">${inner}</a>`
@@ -67,10 +68,13 @@
   const statusTag = (m) => {
     if (m.status === 'live') return `<span class="tag live">● مباشر${m.minute ? ` · ${escapeHtml(m.minute)}'` : ''}</span>`;
     if (m.status === 'finished') return '<span class="tag">انتهت</span>';
+    if (m.status === 'postponed') return '<span class="tag warn">مؤجلة</span>';
+    if (m.status === 'cancelled') return '<span class="tag warn">ملغاة</span>';
     if (m.status_note) return `<span class="tag">${escapeHtml(m.status_note)}</span>`;
     return '<span class="tag">قادمة</span>';
   };
   const centerMarkup = (m) => {
+    if (m.status === 'postponed' || m.status === 'cancelled') return `<div class="kick off">${m.status === 'postponed' ? 'مؤجلة' : 'ملغاة'}${m.kickoff && m.status === 'postponed' ? `<small>${escapeHtml(formatTime(m.kickoff))}</small>` : ''}</div>`;
     if (m.home_score == null || m.away_score == null) return `<div class="kick">${escapeHtml(formatTime(m.kickoff))}</div>`;
     // الصفحة من اليمين لليسار: الفريق صاحب الأرض على اليمين، والرقم يُكتب LTR، فنكتب الضيف أولًا ليكون صاحب الأرض على اليمين
     return `<div class="score" dir="ltr">${escapeHtml(m.away_score)} : ${escapeHtml(m.home_score)}</div>`;
@@ -107,6 +111,26 @@
   };
 
   const dayOff = (v) => { const n = { yesterday: -1, today: 0, tomorrow: 1 }[v] ?? parseInt(v, 10); return Number.isFinite(n) ? Math.max(-7, Math.min(7, n)) : 0; };
+  /* تعديلات الأدمن على مباريات الـ API (تأجيل/إلغاء/نتيجة/موعد) */
+  const applyOverrides = async (fixtures) => {
+    const ids = fixtures.filter((m) => m.sport !== 'basketball' && Number.isSafeInteger(Number(m.fixture_id))).map((m) => Number(m.fixture_id));
+    if (!db || !ids.length) return fixtures;
+    try {
+      const { data, error } = await db.from('fixture_overrides').select('fixture_id,status,kickoff,home_score,away_score,note').in('fixture_id', ids);
+      if (error || !Array.isArray(data) || !data.length) return fixtures;
+      const by = new Map(data.map((o) => [Number(o.fixture_id), o]));
+      return fixtures.map((m) => { const o = by.get(Number(m.fixture_id)); return o ? mergeOverride(m, o) : m; });
+    } catch { return fixtures; }
+  };
+  const mergeOverride = (m, o) => {
+    const r = { ...m, edited: true };
+    if (o.status) { r.status = o.status; r.status_note = ''; if (o.status === 'postponed' || o.status === 'cancelled') { r.home_score = null; r.away_score = null; } }
+    if (o.kickoff) r.kickoff = o.kickoff;
+    if (o.home_score != null) r.home_score = o.home_score;
+    if (o.away_score != null) r.away_score = o.away_score;
+    if (o.note) r.status_note = o.note;
+    return r;
+  };
   const loadManualMatches = async (day) => {
     let { data, error } = await db.from('matches')
       .select('id,home_team,away_team,league,kickoff,status,home_score,away_score,home_logo,away_logo')
@@ -176,6 +200,7 @@
   /* ---------- صور اللاعبين ونافذة بيانات اللاعب ---------- */
   const photoOf = (id) => (Number.isSafeInteger(Number(id)) && Number(id) > 0 ? `https://media.api-sports.io/football/players/${Number(id)}.png` : '');
   const photoImg = (id) => { const u = photoOf(id); return u ? `<img src="${u}" alt="" loading="lazy" decoding="async">` : ''; };
+  document.addEventListener('error', (e) => { const c = e.target?.tagName === 'IMG' && e.target.closest('.crest'); if (c) { const n = c.parentElement?.querySelector('.team-name')?.textContent || ''; e.target.remove(); c.classList.add('nologo'); const w = n.trim().replace(/(^|\s)ال(?=\S)/g, '$1').split(/\s+/).filter(Boolean); c.textContent = w.length > 1 ? w[0][0] + w[1][0] : (w[0] || '⚽').slice(0, 2); } }, true);
   document.addEventListener('error', (e) => { if (e.target?.tagName === 'IMG' && e.target.closest('.pl-img,.sq-img,.pm-photo')) e.target.remove(); }, true);
   const POS_AR = { Goalkeeper: 'حارس مرمى', Defender: 'مدافع', Midfielder: 'لاعب وسط', Attacker: 'مهاجم', G: 'حارس مرمى', D: 'مدافع', M: 'لاعب وسط', F: 'مهاجم' };
   const COUNTRY_AR = { Egypt: 'مصر', Morocco: 'المغرب', Algeria: 'الجزائر', Tunisia: 'تونس', 'Saudi-Arabia': 'السعودية', 'Saudi Arabia': 'السعودية', Senegal: 'السنغال', Nigeria: 'نيجيريا', Ghana: 'غانا', Cameroon: 'الكاميرون', 'Ivory-Coast': 'ساحل العاج', 'Ivory Coast': 'ساحل العاج', Mali: 'مالي', 'South-Africa': 'جنوب أفريقيا', Spain: 'إسبانيا', England: 'إنجلترا', France: 'فرنسا', Germany: 'ألمانيا', Italy: 'إيطاليا', Portugal: 'البرتغال', Netherlands: 'هولندا', Belgium: 'بلجيكا', Brazil: 'البرازيل', Argentina: 'الأرجنتين', Uruguay: 'الأوروغواي', Colombia: 'كولومبيا', Croatia: 'كرواتيا', Turkey: 'تركيا', Greece: 'اليونان', Scotland: 'اسكتلندا', Wales: 'ويلز', Ireland: 'أيرلندا', Switzerland: 'سويسرا', Austria: 'النمسا', Denmark: 'الدنمارك', Sweden: 'السويد', Norway: 'النرويج', Poland: 'بولندا', Serbia: 'صربيا', Ukraine: 'أوكرانيا', Russia: 'روسيا', Japan: 'اليابان', 'South-Korea': 'كوريا الجنوبية', USA: 'الولايات المتحدة', Canada: 'كندا', Mexico: 'المكسيك', Chile: 'تشيلي', Ecuador: 'الإكوادور', Paraguay: 'باراغواي', Peru: 'بيرو', Venezuela: 'فنزويلا', Iran: 'إيران', Iraq: 'العراق', Jordan: 'الأردن', Syria: 'سوريا', Lebanon: 'لبنان', Palestine: 'فلسطين', UAE: 'الإمارات', 'United-Arab-Emirates': 'الإمارات', Qatar: 'قطر', Kuwait: 'الكويت', Oman: 'عُمان', Sudan: 'السودان', Libya: 'ليبيا', Gabon: 'الغابون', Guinea: 'غينيا', 'DR-Congo': 'الكونغو الديمقراطية', Congo: 'الكونغو', Angola: 'أنغولا', Zambia: 'زامبيا', Zimbabwe: 'زيمبابوي', Kenya: 'كينيا', Uganda: 'أوغندا', Tanzania: 'تنزانيا', Ethiopia: 'إثيوبيا', 'Burkina-Faso': 'بوركينا فاسو', 'Cape-Verde': 'الرأس الأخضر', Albania: 'ألبانيا', Slovenia: 'سلوفينيا', Slovakia: 'سلوفاكيا', 'Czech-Republic': 'التشيك', Hungary: 'المجر', Romania: 'رومانيا', Bulgaria: 'بلغاريا', Finland: 'فنلندا', Iceland: 'آيسلندا', 'Bosnia-and-Herzegovina': 'البوسنة والهرسك', Georgia: 'جورجيا', Israel: 'إسرائيل', China: 'الصين', India: 'الهند', Australia: 'أستراليا', 'New-Zealand': 'نيوزيلندا' };
@@ -367,7 +392,7 @@
       const pv = $('day-prev-btn'); const nx = $('day-next-btn');
       if (pv) pv.disabled = cur >= 7; if (nx) nx.disabled = cur <= -7;
     };
-    const goDay = (o) => { const n = Math.max(-7, Math.min(7, o)); if (String(n) === state.day) return; state.day = String(n); syncUrl(); load(); };
+    const goDay = (o) => { const n = Math.max(-7, Math.min(7, o)); if (String(n) === state.day) return; host.classList.remove('swipe-l', 'swipe-r'); void host.offsetWidth; host.classList.add(n > dayOff(state.day) ? 'swipe-r' : 'swipe-l'); state.day = String(n); syncUrl(); load(); };
     const paintControls = () => {
       document.querySelectorAll('[data-sport]').forEach((b) => { const on = b.dataset.sport === state.sport; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
       renderDays();
@@ -430,7 +455,7 @@
         state.sport === 'football' ? loadManualMatches(state.day) : Promise.resolve([]),
       ]);
       if (my !== token) return; // وصل رد قديم بعد تغيير الاختيار
-      if (api.status === 'fulfilled') { data.fixtures = api.value?.fixtures || []; data.leagues = api.value?.leagues || []; await markStreams(data.fixtures); if (my !== token) return; }
+      if (api.status === 'fulfilled') { data.fixtures = api.value?.fixtures || []; data.leagues = api.value?.leagues || []; data.fixtures = await applyOverrides(data.fixtures); await markStreams(data.fixtures); if (my !== token) return; }
       else { console.error('matches:', api.reason); data.error = `تعذّر تحميل المباريات: ${api.reason?.message || 'خطأ غير معروف'}`; }
       if (manual.status === 'fulfilled') data.manual = manual.value;
       host.removeAttribute('aria-busy');
@@ -440,6 +465,14 @@
 
     /* أحداث */
     document.querySelectorAll('[data-sport]').forEach((b) => b.addEventListener('click', () => { if (state.sport === b.dataset.sport) return; state.sport = b.dataset.sport; state.league = 'all'; syncUrl(); load(); }));
+    /* سحب بالإصبع يمين/شمال لتقليب الأيام (موبايل) */
+    let sx = 0, sy = 0, st = 0;
+    host.addEventListener('touchstart', (e) => { const t = e.touches[0]; sx = t.clientX; sy = t.clientY; st = Date.now(); }, { passive: true });
+    host.addEventListener('touchend', (e) => {
+      const t = e.changedTouches[0]; const dx = t.clientX - sx; const dy = t.clientY - sy;
+      if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.6 || Date.now() - st > 700) return;
+      goDay(dayOff(state.day) + (dx > 0 ? 1 : -1));
+    }, { passive: true });
     $('day-strip')?.addEventListener('click', (e) => { const b = e.target.closest('.dchip'); if (b) goDay(Number(b.dataset.off)); });
     $('day-prev-btn')?.addEventListener('click', () => goDay(dayOff(state.day) + 1));
     $('day-next-btn')?.addEventListener('click', () => goDay(dayOff(state.day) - 1));
@@ -481,14 +514,15 @@
     (async () => {
       try {
         const res = await request({ action: 'fixture', sport, fixtureId: Number(fixtureId) });
-        const m = res?.fixture;
+        let m = res?.fixture;
         if (!m) { if (note) note.textContent = 'المباراة غير متاحة حاليًا.'; return; }
+        if (sport === 'football') { const [mm] = await applyOverrides([m]); m = mm; }
         const H = tn(m.home_team); const A = tn(m.away_team);
         title.textContent = `${H} × ${A}`;
         document.title = `${H} × ${A} | يلا رياضة`;
         score.innerHTML = `${teamMarkup(m.home_team, m.home_logo, sport, m.home_id)}${centerMarkup(m)}${teamMarkup(m.away_team, m.away_logo, sport, m.away_id)}`;
         if (note) note.textContent = formatDate(m.kickoff);
-        window.yrHero && window.yrHero({ league: m.league_label || m.league, kickoff: m.kickoff, status: m.status, note: m.status === 'live' ? m.status_note : '' });
+        window.yrHero && window.yrHero({ league: m.league_label || m.league, kickoff: m.kickoff, status: m.status, note: ['live', 'postponed', 'cancelled'].includes(m.status) ? m.status_note : '' });
         if (sport === 'football' && body) {
           // تشكيلة يدوية من لوحة الأدمن (إن وُجدت) تتفوق على تشكيلة المزوّد
           let manual = null; let manualInfo = null;
