@@ -154,6 +154,8 @@
             <label>ملاحظة تظهر للزوار (اختياري)<input id="ov-note" maxlength="60" placeholder="مثال: تأجلت لظروف الطقس"></label>
             <div class="row"><button class="btn primary" id="ov-save" type="submit">حفظ التعديل</button><button class="btn outline" id="ov-clear" type="button">حذف التعديل (رجوع لبيانات الـ API)</button></div>
             <p class="note" id="ov-msg" role="status"></p>
+            <div class="snap-box"><div><strong>💾 نسخة احتياطية للمباريات المهمة</strong><small>بيحفظ مباريات الفرق المهمة (اليوم + ٣ أيام جاية) في قاعدة البيانات، فتفضل ظاهرة للزوار حتى لو الـ API خلص.</small></div><button class="btn primary" id="ov-saveall" type="button">حفظ جميع المباريات المهمة</button></div>
+            <p class="note" id="ov-allmsg" role="status"></p>
             <div id="ov-list"></div>
           </form>
           </details>

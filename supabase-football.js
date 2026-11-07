@@ -156,6 +156,14 @@
     if (o.featured) r.featured = true;
     return r;
   };
+  /* نسخة احتياطية للمباريات المهمة (fixture_overrides.snapshot) — تُعرض لما الـ API يفشل أو يرجع فاضي */
+  const loadSnapshots = async (day) => {
+    try {
+      const { data, error } = await db.from('fixture_overrides').select('*').not('snapshot', 'is', null).limit(300);
+      if (error || !Array.isArray(data)) return [];
+      return data.map((o) => mergeOverride({ ...o.snapshot, from_snapshot: true }, o)).filter((m) => m.kickoff && cairoDay(m.kickoff) === day);
+    } catch { return []; }
+  };
   /* ترتيب البطولات اللي حدده الأدمن (site_settings.league_order) — لو مفيش، ترتيب الدالة الافتراضي */
   let leagueOrder = null;
   const loadLeagueOrder = async () => {
@@ -501,6 +509,10 @@
       if (my !== token) return; // وصل رد قديم بعد تغيير الاختيار
       if (api.status === 'fulfilled') { data.fixtures = api.value?.fixtures || []; data.leagues = api.value?.leagues || []; data.fixtures = await applyOverrides(data.fixtures); await markStreams(data.fixtures); if (my !== token) return; }
       else { console.error('matches:', api.reason); data.error = `تعذّر تحميل المباريات: ${api.reason?.message || 'خطأ غير معروف'}`; }
+      if (state.sport === 'football' && (api.status !== 'fulfilled' || !data.fixtures.length)) {
+        const saved = await loadSnapshots(localDate(dayOff(state.day))); if (my !== token) return;
+        if (saved.length) { data.fixtures = saved; data.leagues = []; data.error = ''; data.fromSnapshot = true; await markStreams(data.fixtures); if (my !== token) return; }
+      }
       await loadLeagueOrder();
       if (manual.status === 'fulfilled') data.manual = manual.value;
       host.removeAttribute('aria-busy');

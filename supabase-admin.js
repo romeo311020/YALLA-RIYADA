@@ -386,6 +386,33 @@
   $('ov-list').addEventListener('click', (e) => { const b = e.target.closest('[data-ov-del]'); if (b) ovDelete(b.dataset.ovDel); });
   ovRefreshList();
 
+
+  /* ---------- حفظ جميع المباريات المهمة (نسخة احتياطية) ---------- */
+  $('ov-saveall').addEventListener('click', async () => {
+    const btn = $('ov-saveall'); btn.disabled = true; say('ov-allmsg', 'جارٍ تحميل المباريات…');
+    try {
+      if (!tmList.length) await loadTopTeamsAdmin();
+      const keys = new Set(); tmList.forEach((t) => { if (t.en) keys.add(normQ(t.en)); if (t.ar) keys.add(normQ(t.ar)); });
+      const isTop = (f) => [f.home_team, f.away_team].some((n) => n && (keys.has(normQ(n)) || keys.has(normQ(ar(n)))));
+      const { data: old } = await client.from('fixture_overrides').select('*').limit(500);
+      const oldMap = new Map((old || []).map((o) => [Number(o.fixture_id), o]));
+      const picked = new Map(); let fails = 0;
+      for (let d = 0; d <= 3; d++) {
+        say('ov-allmsg', `جارٍ تحميل اليوم ${d + 1} من 4…`);
+        try {
+          const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(d) });
+          (data?.fixtures || []).forEach((f) => { f.fixture_id && !f.manual && (isTop(f) || oldMap.get(Number(f.fixture_id))?.featured) && picked.set(Number(f.fixture_id), f); });
+        } catch { fails++; }
+      }
+      if (!picked.size) { say('ov-allmsg', fails ? 'تعذّر تحميل المباريات (ممكن حصة الـ API خلصت). جرّب بعدين.' : 'مفيش مباريات مهمة في الأيام الجاية.'); return; }
+      const rows = [...picked.values()].map((f) => { const o = oldMap.get(Number(f.fixture_id)) || {}; return { ...o, fixture_id: Number(f.fixture_id), featured: true, title: `${ar(f.home_team)} × ${ar(f.away_team)}`, snapshot: f, updated_at: new Date().toISOString() }; });
+      const { error } = await client.from('fixture_overrides').upsert(rows);
+      if (error) { say('ov-allmsg', /snapshot/.test(error.message) ? 'شغّل ملف supabase-snapshot.sql في Supabase الأول.' : error.message); return; }
+      say('ov-allmsg', `تم حفظ ${rows.length} مباراة مهمة ✓${fails ? ` (تعذّر تحميل ${fails} يوم)` : ''}`);
+      ovRefreshList();
+    } catch (e) { say('ov-allmsg', e.message); } finally { btn.disabled = false; }
+  });
+
   /* ---------- الفرق: الأكثر متابعة + تعديل الأسماء ---------- */
   const DEFAULT_TOP = [['Al Ahly', 'الأهلي'], ['Zamalek', 'الزمالك'], ['Pyramids', 'بيراميدز'], ['Ismaily', 'الإسماعيلي'], ['Al Ittihad Alexandria', 'الاتحاد السكندري'], ['Al Masry', 'المصري'],
     ['Real Madrid', 'ريال مدريد'], ['Barcelona', 'برشلونة'], ['Liverpool', 'ليفربول'], ['Manchester City', 'مانشستر سيتي'], ['Manchester United', 'مانشستر يونايتد'], ['Chelsea', 'تشيلسي'], ['Arsenal', 'أرسنال'],

@@ -133,3 +133,6 @@ body.adm .panel>h2{margin-bottom:12px}
 .ud-role-row{display:flex;gap:10px;align-items:flex-end}.ud-role-row label{flex:1}
 /* المحرر: الأخبار فقط */
 body.adm-editor .admin-tabs .atab:not([data-atab="news"]),body.adm-editor .nav-label,body.adm-editor .admin-search{display:none!important}
+.snap-box{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:16px 0 6px;padding:14px 16px;border:1px dashed var(--acc);border-radius:14px;background:color-mix(in srgb,var(--acc) 7%,var(--panel))}
+.snap-box small{display:block;color:var(--muted);margin-top:3px;font-size:12.5px}
+@media(max-width:700px){.snap-box{flex-direction:column;align-items:stretch}}
