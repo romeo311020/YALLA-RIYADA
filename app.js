@@ -129,9 +129,18 @@ window.yrMountPlayer = function (url, title) {
     frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
     frame.allowFullscreen = true; frame.referrerPolicy = 'strict-origin-when-cross-origin';
     frame.sandbox = 'allow-scripts allow-same-origin allow-presentation';
-    const load = document.createElement('div'); load.className = 'pf-load'; load.innerHTML = '<i></i><span>جارٍ تحميل البث…</span>';
+    const load = document.createElement('div'); load.className = 'pf-load'; load.innerHTML = '<i></i><span>جارٍ تحميل البث…</span><div class="pf-bar" role="progressbar" aria-label="تحميل البث"><b></b></div><small class="pf-pct">0%</small>';
     box.replaceChildren(frame, load);
-    const done = () => load.remove(); frame.addEventListener('load', done, { once: true }); setTimeout(done, 9000);
+    // شريط تحميل: بيتقدم تدريجيًا لحد ~٩٣٪ وبيكمّل ١٠٠٪ أول ما البث يفتح، والرسالة بتتغير عشان المستخدم يطمّن
+    const msg = load.querySelector('span'); const pct = load.querySelector('.pf-pct'); const t0 = Date.now();
+    const steps = [[0, 'جارٍ تحميل البث…'], [2500, 'جارٍ الاتصال بالسيرفر…'], [6000, 'لحظات ويبدأ البث…'], [10000, 'التحميل بياخد وقت أطول من المعتاد… ممكن تضغط تحديث']];
+    const tick = setInterval(() => {
+      const el = Date.now() - t0; const last = steps.filter(([t]) => el >= t).pop(); if (last && msg.textContent !== last[1]) msg.textContent = last[1];
+      pct.textContent = Math.min(93, Math.round(100 * (1 - Math.exp(-el / 3200)) * 0.93 + 2)) + '%';
+    }, 250);
+    let finished = false;
+    const done = () => { if (finished) return; finished = true; clearInterval(tick); pct.textContent = '100%'; msg.textContent = 'تم ✓'; load.classList.add('done'); setTimeout(() => load.remove(), 700); };
+    frame.addEventListener('load', done, { once: true }); setTimeout(done, 14000);
     return frame;
   };
   const frame = build();

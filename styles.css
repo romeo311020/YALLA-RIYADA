@@ -7,8 +7,8 @@
   --acc:#c6ff3d; --on-acc:#000; --r:16px; color-scheme:dark;
 }
 :root[data-theme="light"]{
-  --bg:#fff; --bg2:#f5f5f5; --panel:#fff; --panel2:#efefef; --line:#d6d6d6;
-  --text:#0a0a0a; --muted:#5b5b5b; --inv:#000; --on-inv:#fff; --focus:#000; --acc:#15803d; --on-acc:#fff;
+  --bg:#f2f8f4; --bg2:#e7f1ea; --panel:#ffffff; --panel2:#e9f3ec; --line:#cfe1d5;
+  --text:#0b1f14; --muted:#4f6659; --inv:#0b1f14; --on-inv:#fff; --focus:#0b6b34; --acc:#0f8a3f; --on-acc:#fff;
   color-scheme:light;
 }
 
@@ -978,3 +978,33 @@ a.news-card{color:inherit;display:block}
 .g-team .g-en{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis}.g-team input{min-height:38px;border:1px solid var(--line);border-radius:10px;padding:0 10px;background:var(--bg);color:var(--text)}
 .g-team .btn{min-height:38px;padding:0 14px}
 .admin-search{position:sticky}
+
+
+/* ===== v39: مشغّل بإطار واحد + شريط تحميل + ثيم فاتح أغنى ===== */
+.match-player{border:2px solid var(--acc);border-radius:14px;box-shadow:0 24px 54px -34px rgba(0,0,0,.5)}
+.match-player-frame{border:0;box-shadow:none;border-radius:8px}
+.match-player.theater{border:0}
+.pf-load{gap:14px;background:radial-gradient(80% 80% at 50% 40%,#0f1a13,#000);color:#fff;padding:24px;text-align:center}
+.pf-load i{border-color:color-mix(in srgb,var(--acc) 28%,transparent);border-top-color:var(--acc)}
+.pf-load span{font-size:15px;min-height:1.6em;transition:opacity .3s}
+.pf-bar{width:min(300px,64vw);height:6px;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden}
+.pf-bar b{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--acc),color-mix(in srgb,var(--acc) 55%,#fff));animation:pfbar 8s cubic-bezier(.12,.7,.25,1) forwards;position:relative}
+.pf-bar b::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-100%);animation:pfshine 1.2s linear infinite}
+.pf-load.done .pf-bar b{animation:none;width:100%;transition:width .3s}
+.pf-load.done{opacity:0;transition:opacity .45s .15s}
+.pf-pct{font-size:12px;color:rgba(255,255,255,.7);font-variant-numeric:tabular-nums}
+@keyframes pfbar{0%{width:2%}30%{width:55%}70%{width:82%}100%{width:93%}}
+@keyframes pfshine{to{transform:translateX(100%)}}
+
+/* ثيم فاتح: خلفية خضراء هادية، كروت بيضاء بظل ناعم، لمسات لون */
+:root[data-theme="light"] body{background-image:radial-gradient(60% 420px at 85% -120px,rgba(15,138,63,.14),transparent 70%),radial-gradient(50% 360px at 5% 10%,rgba(250,204,21,.10),transparent 70%);background-repeat:no-repeat;background-color:var(--bg)}
+:root[data-theme="light"] .match,:root[data-theme="light"] .news-card,:root[data-theme="light"] .product-card,:root[data-theme="light"] .panel,:root[data-theme="light"] .card,:root[data-theme="light"] .news-feature,:root[data-theme="light"] .league-group{box-shadow:0 10px 30px -18px rgba(11,60,30,.28),0 1px 0 rgba(255,255,255,.9) inset;border-color:var(--line)}
+:root[data-theme="light"] .match:hover,:root[data-theme="light"] .news-card:hover{border-color:var(--acc);box-shadow:0 18px 38px -18px rgba(15,138,63,.4)}
+:root[data-theme="light"] header.header{background:rgba(255,255,255,.78);border-bottom-color:var(--line)}
+:root[data-theme="light"] .league-title{color:#0b3d1f}
+:root[data-theme="light"] .tag{background:#e3f3e8;color:#0b6b34;border-color:#bfe0c9}
+:root[data-theme="light"] .btn.primary,:root[data-theme="light"] .atab.active{background:linear-gradient(135deg,#12a04c,#0b7a38);color:#fff;border-color:transparent}
+:root[data-theme="light"] .dchip.active{background:linear-gradient(135deg,#12a04c,#0b7a38);color:#fff}
+:root[data-theme="light"] .crest{background:#fff;border-color:#d9e8de}
+:root[data-theme="light"] footer{background:#e7f1ea}
+:root[data-theme="light"] .match-player{background:#fff}
