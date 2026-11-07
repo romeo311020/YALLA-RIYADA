@@ -88,7 +88,7 @@ Deno.serve(async (request) => {
 
     /* ---------- تغيير الدور ---------- */
     if (action === 'set_role') {
-      const role = body.role === 'admin' ? 'admin' : 'user';
+      const role = body.role === 'admin' ? 'admin' : body.role === 'editor' ? 'editor' : 'user';
       if (isSelf) return json({ error: 'لا يمكنك تغيير دور حسابك أنت.' }, 400);
       const { error } = await admin.from('profiles').upsert({ id, role }, { onConflict: 'id' });
       if (error) throw error;

@@ -346,7 +346,7 @@
           <div class="users-toolbar">
             <input id="users-search" type="search" placeholder="ابحث بالاسم أو البريد…" aria-label="بحث في المستخدمين">
             <select id="users-filter" aria-label="تصفية">
-              <option value="all">الكل</option><option value="admin">المسؤولون</option><option value="banned">المحظورون</option><option value="user">المستخدمون العاديون</option>
+              <option value="all">الكل</option><option value="admin">المسؤولون</option><option value="editor">محررو الأخبار</option><option value="banned">المحظورون</option><option value="user">المستخدمون العاديون</option>
             </select>
           </div>
           <p id="users-message" class="note" role="status" aria-live="polite"></p>
@@ -383,7 +383,7 @@
           <button class="btn outline" id="ud-ban" type="button">حظر</button>
           <button class="btn outline" id="ud-unban" type="button">فك الحظر</button>
         </div>
-        <button class="btn outline" id="ud-role" type="button">جعله مسؤولًا</button>
+        <div id="ud-role-wrap" class="ud-role-row"><label>الدور<select id="ud-role-sel"><option value="user">مستخدم عادي</option><option value="editor">محرر أخبار (الأخبار فقط)</option><option value="admin">مسؤول (تحكم كامل)</option></select></label><button class="btn primary" id="ud-role" type="button">حفظ الدور</button></div>
         <button class="btn outline" id="ud-reset" type="button">إرسال رابط تغيير كلمة المرور</button>
         <button class="btn danger" id="ud-delete" type="button">حذف الحساب نهائيًا</button>
       </div>

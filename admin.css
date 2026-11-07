@@ -130,3 +130,6 @@ body.adm .checklist li span{display:inline-grid;place-items:center;width:22px;he
 body.adm .checklist li.ok span{background:var(--ok)}body.adm .checklist li.bad span{background:var(--bad)}body.adm .checklist li.warn span{background:var(--warn)}
 body.adm .panel>h2{margin-bottom:12px}
 .ed-split textarea{font-size:14px!important;line-height:1.7!important;text-align:start}
+.ud-role-row{display:flex;gap:10px;align-items:flex-end}.ud-role-row label{flex:1}
+/* المحرر: الأخبار فقط */
+body.adm-editor .admin-tabs .atab:not([data-atab="news"]),body.adm-editor .nav-label,body.adm-editor .admin-search{display:none!important}

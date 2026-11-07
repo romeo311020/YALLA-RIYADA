@@ -50,19 +50,20 @@
     } catch (error) { say('admin-auth-message', `تعذّر التحقق من الجلسة: ${error.message}`); }
   }
 
+  let myRole = 'admin';
   async function verifyAdmin(user) {
     const { data: profile, error } = await client.from('profiles').select('role').eq('id', user.id).maybeSingle();
     if (error) { say('admin-auth-message', `تعذّر التحقق من صلاحيات الحساب: ${error.message}`); return; }
-    if (profile?.role !== 'admin') {
+    if (profile?.role !== 'admin' && profile?.role !== 'editor') {
       currentUser = null; workspace.hidden = true; loginPanel.hidden = false; logoutButton.hidden = false;
       say('admin-auth-message', 'هذا الحساب ليس مسؤولًا. يجب أن يعيّن مسؤول المشروع role=admin لهذا الحساب.');
       return;
     }
-    currentUser = user;
+    currentUser = user; myRole = profile.role; document.body.classList.toggle('adm-editor', myRole === 'editor');
     loginPanel.hidden = true; workspace.hidden = false; logoutButton.hidden = false;
     say('admin-auth-message', '');
-    refreshOrdersBadge();
-    openTab(new URLSearchParams(location.search).get('tab') || 'overview');
+    if (myRole === 'admin') refreshOrdersBadge();
+    openTab(myRole === 'editor' ? 'news' : (new URLSearchParams(location.search).get('tab') || 'overview'));
   }
 
   $('admin-login-form').addEventListener('submit', async (event) => {
@@ -168,6 +169,7 @@
   function openTab(name) {
     if ($('admin-search')) { $('admin-search').value = ''; setTimeout(applySearch, 0); }
     if (!loaders[name]) name = 'overview';
+    if (myRole === 'editor') name = 'news';
     document.querySelectorAll('[data-atab]').forEach((b) => { const on = b.dataset.atab === name; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
     document.querySelectorAll('.admin-pane').forEach((p) => { p.hidden = p.id !== `pane-${name}`; });
     const meta = PAGE_META[name] || PAGE_META.overview; if ($('adm-title')) { $('adm-title').textContent = meta[0]; $('adm-desc').textContent = meta[1]; }
@@ -746,12 +748,12 @@
   }
   function renderUsers() {
     const q = $('users-search').value.trim().toLowerCase(); const f = $('users-filter').value;
-    const rows = users.filter((u) => (!q || `${u.name} ${u.email}`.toLowerCase().includes(q)) && (f === 'all' || (f === 'admin' && u.role === 'admin') || (f === 'banned' && u.banned) || (f === 'user' && u.role !== 'admin')));
+    const rows = users.filter((u) => (!q || `${u.name} ${u.email}`.toLowerCase().includes(q)) && (f === 'all' || (f === 'admin' && u.role === 'admin') || (f === 'editor' && u.role === 'editor') || (f === 'banned' && u.banned) || (f === 'user' && u.role !== 'admin' && u.role !== 'editor')));
     $('admin-users').innerHTML = rows.map((u) => `<article class="user-row${u.banned ? ' is-banned' : ''}" data-uid="${esc(u.id)}">
       <span class="u-avatar">${u.avatar && httpsOk(u.avatar) ? `<img src="${esc(u.avatar)}" alt="" referrerpolicy="no-referrer">` : esc((u.name || u.email || '?').trim().charAt(0).toUpperCase())}</span>
       <div class="u-main"><strong>${esc(u.name || 'بدون اسم')}</strong><small dir="ltr">${esc(u.email)}</small>
         <small>انضم ${esc(fmt(u.created_at))} · آخر دخول ${esc(fmt(u.last_sign_in_at))}</small></div>
-      <div class="u-badges">${u.role === 'admin' ? '<span class="tag">مسؤول</span>' : ''}${u.banned ? '<span class="tag danger">محظور</span>' : ''}<span class="tag muted">${esc(u.provider.includes('google') ? 'Google' : 'بريد')}</span></div>
+      <div class="u-badges">${u.role === 'admin' ? '<span class="tag">مسؤول</span>' : u.role === 'editor' ? '<span class="tag">محرر أخبار</span>' : ''}${u.banned ? '<span class="tag danger">محظور</span>' : ''}<span class="tag muted">${esc(u.provider.includes('google') ? 'Google' : 'بريد')}</span></div>
       <button type="button" class="btn outline" data-manage="${esc(u.id)}">إدارة</button></article>`).join('') || '<p class="note">لا يوجد مستخدمون مطابقون.</p>';
   }
   $('users-search').addEventListener('input', renderUsers);
@@ -766,11 +768,11 @@
   function paintDialog() {
     const u = selected; const self = u.id === currentUser?.id;
     $('ud-title').textContent = u.name || u.email;
-    $('ud-meta').textContent = `${u.email} · ${u.role === 'admin' ? 'مسؤول' : 'مستخدم'} · ${u.banned ? `محظور حتى ${fmt(u.banned_until)}` : 'نشط'}`;
+    $('ud-meta').textContent = `${u.email} · ${u.role === 'admin' ? 'مسؤول' : u.role === 'editor' ? 'محرر أخبار' : 'مستخدم'} · ${u.banned ? `محظور حتى ${fmt(u.banned_until)}` : 'نشط'}`;
     $('ud-name').value = u.name || '';
     $('ud-ban').hidden = u.banned || self || u.role === 'admin'; $('ud-ban-days').hidden = $('ud-ban').hidden; $('ud-ban-days').parentElement.hidden = $('ud-ban').hidden;
     $('ud-unban').hidden = !u.banned;
-    $('ud-role').hidden = self; $('ud-role').textContent = u.role === 'admin' ? 'سحب صلاحية المسؤول' : 'جعله مسؤولًا';
+    $('ud-role-sel').value = u.role || 'user'; $('ud-role-wrap').hidden = self;
     $('ud-delete').hidden = self || u.role === 'admin';
   }
   async function userAction(payload, okMessage, confirmText) {
@@ -787,7 +789,11 @@
   $('ud-save-name').addEventListener('click', () => userAction({ action: 'update', display_name: $('ud-name').value }, 'تم حفظ الاسم.'));
   $('ud-ban').addEventListener('click', () => userAction({ action: 'ban', days: $('ud-ban-days').value }, 'تم حظر الحساب.', `حظر ${selected.email}؟ لن يستطيع تسجيل الدخول.`));
   $('ud-unban').addEventListener('click', () => userAction({ action: 'unban' }, 'تم فك الحظر.'));
-  $('ud-role').addEventListener('click', () => userAction({ action: 'set_role', role: selected.role === 'admin' ? 'user' : 'admin' }, 'تم تغيير الدور.', selected.role === 'admin' ? 'سحب صلاحية المسؤول من هذا الحساب؟' : 'سيصبح هذا الحساب مسؤولًا بكامل الصلاحيات. متأكد؟'));
+  $('ud-role').addEventListener('click', () => {
+    const r = $('ud-role-sel').value; if (r === (selected.role || 'user')) { say('ud-message', 'الدور هو نفسه.'); return; }
+    const names = { admin: 'مسؤول (تحكم كامل)', editor: 'محرر أخبار (الأخبار فقط)', user: 'مستخدم عادي' };
+    userAction({ action: 'set_role', role: r }, 'تم تغيير الدور.', `تغيير دور ${selected.email} إلى: ${names[r]}؟`);
+  });
   $('ud-reset').addEventListener('click', () => userAction({ action: 'reset_password', redirectTo: new URL('password-reset.html', location.href).href }, 'تم إرسال رابط تغيير كلمة المرور لبريد المستخدم.'));
   $('ud-delete').addEventListener('click', () => userAction({ action: 'delete' }, 'تم حذف الحساب.', `حذف ${selected.email} نهائيًا؟ لا يمكن التراجع.`));
 
