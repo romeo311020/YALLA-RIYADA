@@ -965,3 +965,16 @@ a.news-card{color:inherit;display:block}
   .admin-tabs .atab.active{background:var(--acc);color:var(--on-acc)}
   .admin-search{top:70px}
 }
+
+/* ===== v38: بحث شامل في لوحة التحكم ===== */
+.admin-search{flex-wrap:wrap;position:sticky}
+.gsearch{position:absolute;top:calc(100% + 6px);inset-inline:0;max-height:min(70vh,560px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 50px -20px rgba(0,0,0,.55);padding:8px;z-index:60}
+.gsearch[hidden]{display:none}
+.g-sec h4{margin:10px 8px 4px;font-size:12px;color:var(--muted);font-weight:800}
+.g-row{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:0;border-radius:12px;background:transparent;color:var(--text);text-align:start;cursor:pointer;font-family:inherit}
+.g-row:hover{background:var(--panel2)}.g-row i{font-style:normal;width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:var(--panel2)}
+.g-row span{display:flex;flex-direction:column;min-width:0}.g-row b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.g-row small{color:var(--muted);font-size:12px}
+.g-team{display:grid;grid-template-columns:minmax(90px,1fr) minmax(120px,1.2fr) auto;gap:8px;align-items:center;padding:6px 8px}
+.g-team .g-en{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis}.g-team input{min-height:38px;border:1px solid var(--line);border-radius:10px;padding:0 10px;background:var(--bg);color:var(--text)}
+.g-team .btn{min-height:38px;padding:0 14px}
+.admin-search{position:sticky}

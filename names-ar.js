@@ -272,7 +272,7 @@
     } catch { /* الجدول اختياري */ }
   })();
 
-  window.YR_NAMES = { team: teamFinal, player: playerFinal, translit, ready, unknown: () => ({ teams: [...unknown].sort(), players: [...unknownPlayers].sort() }) };
+  window.YR_NAMES = { entries: () => [...TM].map(([en, ar]) => [en, ar]), team: teamFinal, player: playerFinal, translit, ready, unknown: () => ({ teams: [...unknown].sort(), players: [...unknownPlayers].sort() }) };
   window.addEventListener('load', () => setTimeout(() => {
     if (unknown.size || unknownPlayers.size) console.info('[يلا رياضة] أسماء كُتبت تلقائيًا (تقريبية) — صحّحها في names-ar.js أو جدول name_translations:', { teams: [...unknown].sort(), players: [...unknownPlayers].sort() });
   }, 2500));

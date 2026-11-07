@@ -107,6 +107,52 @@
   document.addEventListener('keydown', (e) => { if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) { e.preventDefault(); $('admin-search').focus(); } if (e.key === 'Escape' && document.activeElement === $('admin-search')) { $('admin-search').value = ''; applySearch(); $('admin-search').blur(); } });
   // لما القوائم تتحدّث (تحميل/حفظ/حذف) نعيد تطبيق البحث
   let searchTimer; new MutationObserver((muts) => { if (!$('admin-search').value || muts.every((m) => m.target.closest?.('.admin-search') || m.target.classList?.contains('search-none') || m.target === $('admin-search-count'))) return; clearTimeout(searchTimer); searchTimer = setTimeout(applySearch, 60); }).observe(document.getElementById('admin-workspace'), { childList: true, subtree: true });
+
+  /* ---------- بحث شامل: مباريات، فرق، أخبار، منتجات، طلبات، أقسام ---------- */
+  const TABS = [['overview', 'نظرة عامة'], ['matches', 'المباريات'], ['leagues', 'البطولات وترتيبها'], ['teams', 'الفرق وأسماؤها'], ['streams', 'المشغّلات'], ['store', 'المتجر'], ['orders', 'الطلبات'], ['news', 'الأخبار'], ['users', 'المستخدمون'], ['audit', 'السجل']];
+  let gTimer; let gSeq = 0;
+  const likeQ = (q) => q.replace(/[%,()*]/g, ' ').trim();
+  const gRow = (icon, title, sub, attrs) => `<button type="button" class="g-row" ${attrs}><i>${icon}</i><span><b>${esc(title)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span></button>`;
+  async function globalSearch() {
+    const box = $('gsearch'); const raw = $('admin-search').value.trim(); const q = normQ(raw);
+    if (q.length < 2) { box.hidden = true; box.innerHTML = ''; return; }
+    const my = ++gSeq; const lq = likeQ(raw); const sections = [];
+    const tabs = TABS.filter(([, n]) => normQ(n).includes(q));
+    if (tabs.length) sections.push(['الأقسام', tabs.map(([k, n]) => gRow('➜', n, 'افتح القسم', `data-g-tab="${k}"`)).join('')]);
+    // فرق: القاموس + اللي عدّلته + فرق اليوم — مع تعديل الاسم مباشرة
+    const teams = new Map();
+    (window.YR_NAMES?.entries?.() || []).forEach(([en, a]) => { if (normQ(en).includes(q) || normQ(a).includes(q)) teams.set(en, a); });
+    nmSaved.forEach((r) => { if (normQ(r.en).includes(q) || normQ(r.ar).includes(q)) teams.set(r.en.toLowerCase(), r.ar); });
+    tmSeen.forEach((a, en) => { if (normQ(en).includes(q) || normQ(a).includes(q)) teams.set(en.toLowerCase(), nmSaved.get(en.toLowerCase())?.ar || a); });
+    const tl = [...teams].slice(0, 8);
+    if (tl.length) sections.push(['الفرق (عدّل الاسم من هنا)', tl.map(([en, a]) => `<div class="g-team" data-g-en="${esc(en)}"><span dir="ltr" class="g-en">${esc(en)}</span><input value="${esc(a)}" maxlength="60" aria-label="الاسم بالعربي"><button type="button" class="btn primary" data-g-name="${esc(en)}">حفظ</button></div>`).join('')]);
+    const jobs = [
+      ['المباريات', () => client.from('matches').select('id,home_team,away_team,league,kickoff').or(`home_team.ilike.%${lq}%,away_team.ilike.%${lq}%,league.ilike.%${lq}%`).limit(6), (r) => gRow('⚽', `${ar(r.home_team)} × ${ar(r.away_team)}`, r.league, 'data-g-tab="matches" data-g-q="' + esc(r.home_team) + '"')],
+      ['الأخبار', () => client.from('news').select('id,title').ilike('title', `%${lq}%`).limit(5), (r) => gRow('📰', r.title, '', 'data-g-tab="news" data-g-q="' + esc(r.title.slice(0, 30)) + '"')],
+      ['المنتجات', () => client.from('products').select('id,name,category').ilike('name', `%${lq}%`).limit(5), (r) => gRow('🛍️', r.name, r.category, 'data-g-tab="store" data-g-q="' + esc(r.name.slice(0, 30)) + '"')],
+      ['الطلبات', () => client.from('orders').select('order_no,customer_name,phone,product_name').or(`customer_name.ilike.%${lq}%,phone.ilike.%${lq}%,product_name.ilike.%${lq}%`).limit(5), (r) => gRow('📦', `#${r.order_no} · ${r.customer_name}`, `${r.product_name} · ${r.phone}`, 'data-g-tab="orders" data-g-q="' + esc(String(r.order_no)) + '"')],
+    ];
+    const res = await Promise.all(jobs.map(async ([title, p, f]) => { try { const { data } = await p(); return data?.length ? [title, data.map(f).join('')] : null; } catch { return null; } }));
+    if (my !== gSeq) return;
+    res.forEach((r) => r && sections.push(r));
+    sections.push(['مستخدمون', gRow('👥', `ابحث عن «${raw}» في المستخدمين`, 'بالإيميل أو الاسم', 'data-g-tab="users" data-g-q="' + esc(raw) + '"')]);
+    box.innerHTML = sections.map(([t, body]) => `<div class="g-sec"><h4>${esc(t)}</h4>${body}</div>`).join('');
+    box.hidden = false;
+  }
+  $('admin-search').addEventListener('input', () => { clearTimeout(gTimer); gTimer = setTimeout(globalSearch, 280); });
+  document.addEventListener('click', async (e) => {
+    const box = $('gsearch');
+    const t = e.target.closest('[data-g-tab]');
+    if (t) { const q = t.dataset.gQ || ''; openTab(t.dataset.gTab); box.hidden = true; if (q) { $('admin-search').value = q; setTimeout(() => { applySearch(); }, 600); } return; }
+    const sv = e.target.closest('[data-g-name]');
+    if (sv) {
+      const en = sv.dataset.gName; const val = sv.closest('.g-team').querySelector('input').value.trim(); if (!val) return;
+      const { error } = await client.from('name_translations').upsert({ kind: 'team', en, ar: val }, { onConflict: 'kind,en' });
+      sv.textContent = error ? '✗' : 'تم ✓'; if (!error) { nmSaved.set(en.toLowerCase(), { en, ar: val }); loadSavedNames(); }
+      return;
+    }
+    if (!e.target.closest('.admin-search')) box.hidden = true;
+  });
   function openTab(name) {
     if ($('admin-search')) { $('admin-search').value = ''; setTimeout(applySearch, 0); }
     if (!loaders[name]) name = 'overview';
