@@ -222,6 +222,8 @@
     const embedUrl = $('match-embed').value.trim();
     if (embedUrl && !httpsOk(embedUrl)) { say('match-message', 'يجب أن يكون رابط المشغّل آمنًا ويبدأ بـ https://'); return; }
     say('match-message', 'جارٍ حفظ المباراة...');
+    const manual = manualDetails();
+    if (manual.partial) { say('match-message', 'اكتب تشكيلة الفريقين معًا (أو سيب الاتنين فاضيين).'); return; }
     const k = $('match-kickoff').value;
     const row = {
       sport: 'football', home_team: $('match-home').value.trim(), away_team: $('match-away').value.trim(), league: $('match-league').value.trim(),
@@ -233,6 +235,7 @@
       fixture_id: snap?.fixture_id ?? null, featured: $('match-featured').checked,
       details: {
         ...(snap || {}),
+        ...manual.out,
         info_manual: { channel: $('match-info-channel').value.trim(), commentator: $('match-info-commentator').value.trim(), notes: $('match-info-notes').value.trim() },
       },
     };
@@ -248,7 +251,7 @@
     const savedMsg = $('match-message').textContent; resetMatchForm(); say('match-message', /لم تُحفظ|بدون/.test(savedMsg) ? savedMsg : editId ? 'تم تحديث المباراة (مع التشكيلة والإحصائيات والتفاصيل).' : 'تمت إضافة المباراة (مع التشكيلة والإحصائيات والتفاصيل).'); await loadMatches();
   });
   function resetMatchForm() {
-    $('match-form').reset(); $('match-edit-id').value = ''; $('match-published').checked = true; $('match-featured').checked = false; snap = null; paintSnap();
+    $('match-form').reset(); $('match-edit-id').value = ''; $('match-published').checked = true; $('match-featured').checked = false; snap = null; paintSnap(); fillManual({});
     $('match-save').textContent = 'حفظ المباراة'; $('match-cancel-edit').hidden = true;
   }
   $('match-cancel-edit').addEventListener('click', resetMatchForm);
@@ -266,7 +269,7 @@
       $('match-kickoff').value = localDT(m.kickoff); $('match-status').value = m.status; $('match-home-score').value = m.home_score ?? ''; $('match-away-score').value = m.away_score ?? '';
       $('match-home-logo').value = m.home_logo || ''; $('match-away-logo').value = m.away_logo || '';
       const d = m.details || {}; snap = d.fixture_id || m.fixture_id ? { ...d, fixture_id: m.fixture_id ?? d.fixture_id } : null; paintSnap();
-      const im = d.info_manual || {}; $('match-info-channel').value = im.channel || ''; $('match-info-commentator').value = im.commentator || ''; $('match-info-notes').value = im.notes || '';
+      fillManual(d); const im = d.info_manual || {}; $('match-info-channel').value = im.channel || ''; $('match-info-commentator').value = im.commentator || ''; $('match-info-notes').value = im.notes || '';
       $('match-embed').value = m.embed_url || ''; $('match-published').checked = m.is_published; $('match-featured').checked = !!m.featured; $('match-save').textContent = 'حفظ التعديلات'; $('match-cancel-edit').hidden = false;
       $('match-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }));
@@ -477,6 +480,60 @@
     const b = e.target.closest('[data-nm-del]'); if (!b) return;
     const { error } = await client.from('name_translations').delete().eq('id', b.dataset.nmDel); say('nm-msg', error ? error.message : 'تم الحذف.'); loadSavedNames();
   });
+
+  /* ---------- تشكيلة وملخص المباراة يدويًا ---------- */
+  let mEv = [];
+  const EV_LABEL = { 'goal|Normal Goal': '⚽ هدف', 'goal|Penalty': '⚽ ركلة جزاء', 'goal|Own Goal': '⚽ هدف عكسي', 'card|Yellow Card': '🟨 إنذار', 'card|Red Card': '🟥 طرد', 'subst|Substitution': '🔄 تبديل' };
+  const evRender = () => {
+    $('mev-list').innerHTML = mEv.length ? mEv.map((e, i) => `<div class="mev-row"><b>${esc(e.minute)}'</b><span>${esc(EV_LABEL[`${e.type}|${e.detail}`] || e.type)} — <strong>${esc(e.player)}</strong>${e.assist ? ` <small>${e.type === 'subst' ? 'بدل' : 'صناعة'}: ${esc(e.assist)}</small>` : ''} <small>(${e.side === 'home' ? esc($('match-home').value || 'الأول') : esc($('match-away').value || 'الثاني')})</small></span><button type="button" class="btn outline" data-mev-del="${i}">حذف</button></div>`).join('') : '<p class="note">لا توجد أحداث بعد.</p>';
+  };
+  $('mev-btn').addEventListener('click', () => {
+    const min = $('mev-min').value.trim(); const player = $('mev-player').value.trim();
+    if (min === '' || !player) { say('match-message', 'اكتب الدقيقة واسم اللاعب.'); return; }
+    const [type, detail] = $('mev-type').value.split('|');
+    mEv.push({ minute: Number(min), type, detail, side: $('mev-team').value, player, assist: $('mev-other').value.trim() });
+    mEv.sort((a, b) => a.minute - b.minute); $('mev-player').value = ''; $('mev-other').value = ''; $('mev-min').value = ''; evRender(); $('mev-min').focus();
+  });
+  $('mev-list').addEventListener('click', (e) => { const b = e.target.closest('[data-mev-del]'); if (b) { mEv.splice(Number(b.dataset.mevDel), 1); evRender(); } });
+  const parsePlayer = (line) => {
+    const t = line.trim().replace(/^[-•.]\s*/, ''); if (!t) return null; let m;
+    if ((m = t.match(/^(\d{1,2})\s*[-.):]?\s*(.+)$/))) return { number: m[1], name: m[2].trim() };
+    if ((m = t.match(/^(.+?)\s+[-(]?(\d{1,2})\)?$/))) return { number: m[2], name: m[1].trim() };
+    return { number: '', name: t };
+  };
+  const parseLines = (id) => $(id).value.split('\n').map(parsePlayer).filter(Boolean);
+  const buildSide = (p) => {
+    const start = parseLines(`mlu-${p}-start`); const subs = parseLines(`mlu-${p}-subs`);
+    if (!start.length && !subs.length) return null;
+    const formation = $(`mlu-${p}-form`).value.trim().replace(/\s+/g, '');
+    const counts = formation.split('-').map(Number);
+    if (counts.length >= 2 && counts.every((n) => n > 0) && counts.reduce((a, b) => a + b, 1) === start.length) { // حارس + خطوط
+      let i = 0; start[i++].grid = '1:1';
+      counts.forEach((n, r) => { for (let c = 1; c <= n; c++) start[i++].grid = `${r + 2}:${c}`; });
+    }
+    return { formation, coach: $(`mlu-${p}-coach`).value.trim(), start, subs };
+  };
+  const manualDetails = () => {
+    const home = buildSide('home'); const away = buildSide('away');
+    const out = {}; const hid = snap?.home_id ?? -1; const aid = snap?.away_id ?? -2;
+    if (home && away) out.manual_lineups = { home, away };
+    if (mEv.length) { out.events = mEv.map((e) => ({ minute: e.minute, extra: null, type: e.type, detail: e.detail, team_id: e.side === 'home' ? hid : aid, player: e.player, assist: e.assist || null })); }
+    if (mEv.length || (home && away)) { out.home_id = hid; out.away_id = aid; }
+    return { out, partial: Boolean((home || away) && !(home && away)) };
+  };
+  const fillManual = (d) => {
+    mEv = [];
+    const ml = d.manual_lineups || {};
+    ['home', 'away'].forEach((p) => {
+      const s = ml[p] || {}; const line = (x) => `${x.number ? `${x.number} ` : ''}${x.name}`;
+      $(`mlu-${p}-form`).value = s.formation || ''; $(`mlu-${p}-coach`).value = s.coach || '';
+      $(`mlu-${p}-start`).value = (s.start || []).map(line).join('\n'); $(`mlu-${p}-subs`).value = (s.subs || []).map(line).join('\n');
+    });
+    mEv = (d.events || []).filter((e) => ['goal', 'card', 'subst'].includes(e.type)).map((e) => ({ minute: e.minute ?? 0, type: e.type, detail: e.detail || (e.type === 'card' ? 'Yellow Card' : e.type === 'subst' ? 'Substitution' : 'Normal Goal'), side: e.team_id === d.away_id ? 'away' : 'home', player: e.player || '', assist: e.assist || '' }));
+    evRender(); if (Object.keys(ml).length || mEv.length) $('mlu-box').open = true;
+  };
+  evRender();
+
   /* ---------- نسخة كاملة من المباراة (تشكيلة + أحداث + إحصائيات) تتحفظ مع المباراة ---------- */
   let snap = null; // { fixture_id, home_id, away_id, events, lineups, stats, info, manual, saved_at }
   const snapSummary = (s) => !s ? 'لا يوجد. اختر مباراة من القائمة أعلاه لحفظ التشكيلة والأحداث والإحصائيات مع المباراة.'
