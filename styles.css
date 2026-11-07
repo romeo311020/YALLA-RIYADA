@@ -1,5 +1,5 @@
 /* يلا رياضة — هوية أبيض وأسود. الألوان كلها متغيّرات في الأعلى: غيّرها من هنا فقط. */
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Lalezar&display=swap');
 
 :root{
   --bg:#000; --bg2:#0b0b0b; --panel:#111; --panel2:#1b1b1b; --line:#2c2c2c;
@@ -1008,3 +1008,62 @@ a.news-card{color:inherit;display:block}
 :root[data-theme="light"] .crest{background:#fff;border-color:#d9e8de}
 :root[data-theme="light"] footer{background:#e7f1ea}
 :root[data-theme="light"] .match-player{background:#fff}
+
+
+/* ===== v40: مشغّل يوتيوب الخاص ===== */
+.yr-player{--yacc:#c6ff3d}
+/* ===== المشغّل ===== */
+.yr-player{position:absolute;inset:0;background:#000;overflow:hidden;user-select:none;-webkit-user-select:none;box-shadow:0 30px 70px -30px rgba(0,0,0,.8)}
+.yr-video{position:absolute;inset:0}
+.yr-video iframe,.yr-video>div{position:absolute;inset:0;width:100%!important;height:100%!important;border:0}
+.yr-video iframe{pointer-events:none} /* الضغط بيروح لطبقتنا مش ليوتيوب */
+.yr-hit{position:absolute;inset:0;z-index:2;cursor:pointer}
+
+/* الشعار فوق على اليمين */
+.yr-top{position:absolute;inset:0 0 auto 0;z-index:4;padding:12px 14px 40px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:linear-gradient(180deg,rgba(0,0,0,.65),transparent);pointer-events:none;transition:opacity .35s}
+.yr-logo{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:5px 10px 5px 8px}
+.yr-logo svg{width:34px;height:34px;border-radius:9px}
+.yr-logo b{font-family:Lalezar,Cairo,sans-serif;font-size:22px;line-height:1;font-weight:400;letter-spacing:.3px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.7),0 0 18px rgba(198,255,61,.35)}
+.yr-logo small{display:block;margin-top:2px;font-size:9px;letter-spacing:2px;color:#b7c4bb;font-weight:700}
+.yr-title{font-size:14px;font-weight:700;opacity:.9;text-shadow:0 1px 6px #000;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* تحميل */
+.yr-load{position:absolute;inset:0;z-index:6;display:grid;place-content:center;justify-items:center;gap:14px;background:radial-gradient(80% 80% at 50% 40%,#0f1a13,#000);text-align:center;transition:opacity .45s}
+.yr-load.done{opacity:0;pointer-events:none}
+.yr-load i{width:42px;height:42px;border-radius:50%;border:4px solid rgba(198,255,61,.25);border-top-color:var(--yacc);animation:spin .9s linear infinite}
+.yr-bar{width:min(300px,64vw);height:6px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden}
+.yr-bar b{display:block;height:100%;width:2%;border-radius:inherit;background:linear-gradient(90deg,var(--yacc),#e8ffa6);transition:width .3s}
+.yr-load small{color:#b7c4bb;font-variant-numeric:tabular-nums}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* زر تشغيل كبير */
+.yr-big{position:absolute;inset:0;z-index:3;display:grid;place-items:center;pointer-events:none;transition:opacity .25s,transform .25s}
+.yr-big span{width:84px;height:84px;border-radius:50%;background:var(--yacc);color:#000;display:grid;place-items:center;font-size:34px;box-shadow:0 0 0 10px rgba(198,255,61,.2),0 18px 40px -10px rgba(0,0,0,.7);animation:pulse 2s infinite}
+.yr-player.playing .yr-big{opacity:0;transform:scale(1.3)}
+@keyframes pulse{50%{box-shadow:0 0 0 18px rgba(198,255,61,0),0 18px 40px -10px rgba(0,0,0,.7)}}
+
+/* شريط التحكم */
+.yr-ctl{position:absolute;inset:auto 0 0 0;z-index:5;padding:34px 12px 10px;background:linear-gradient(0deg,rgba(0,0,0,.85),transparent);transition:opacity .35s,transform .35s}
+.yr-player.idle.playing .yr-ctl,.yr-player.idle.playing .yr-top{opacity:0;pointer-events:none}
+.yr-player.idle.playing{cursor:none}
+.yr-seek{position:relative;height:18px;display:flex;align-items:center;cursor:pointer;direction:ltr}
+.yr-track{position:relative;width:100%;height:5px;border-radius:99px;background:rgba(255,255,255,.22);transition:height .15s}
+.yr-seek:hover .yr-track{height:8px}
+.yr-buf,.yr-prog{position:absolute;inset:0 auto 0 0;border-radius:inherit}
+.yr-buf{background:rgba(255,255,255,.28)}.yr-prog{background:var(--yacc)}
+.yr-knob{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--yacc);box-shadow:0 0 0 4px rgba(198,255,61,.25);transform:scale(0);transition:transform .15s}
+.yr-seek:hover .yr-knob,.yr-seek.drag .yr-knob{transform:scale(1)}
+.yr-row{display:flex;align-items:center;gap:6px;margin-top:4px}
+.yr-btn{width:40px;height:40px;border:0;border-radius:12px;background:transparent;color:#fff;font-size:18px;cursor:pointer;display:grid;place-items:center;transition:background .2s,transform .2s}
+.yr-btn:hover{background:rgba(255,255,255,.14)}.yr-btn:active{transform:scale(.92)}
+.yr-btn.main{background:var(--yacc);color:#000}.yr-btn.main:hover{background:#d8ff7a}
+.yr-time{font-size:13px;color:#dfe8e2;font-variant-numeric:tabular-nums;direction:ltr;padding:0 6px;white-space:nowrap}
+.yr-sp{flex:1}
+.yr-vol{display:flex;align-items:center;direction:ltr}
+.yr-vol input{width:0;opacity:0;transition:width .25s,opacity .25s;accent-color:var(--yacc);height:4px;cursor:pointer}
+.yr-vol:hover input,.yr-vol input:focus{width:84px;opacity:1;margin-inline:4px}
+.yr-speed{font-size:13px;font-weight:800;width:auto;padding:0 10px}
+.yr-live{display:none;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#fff;background:#e5383b;border-radius:8px;padding:3px 9px}
+.yr-toast{position:absolute;top:50%;left:50%;z-index:7;transform:translate(-50%,-50%);background:rgba(0,0,0,.7);padding:8px 16px;border-radius:12px;font-weight:800;opacity:0;transition:opacity .2s;pointer-events:none}
+.yr-toast.on{opacity:1}
+.yr-player{color:#fff;font-family:Cairo,"Segoe UI",Tahoma,Arial,sans-serif}.yr-player *{color:inherit}.yr-player .yr-btn.main{color:#000}.yr-player .yr-time{color:#dfe8e2}.yr-player .yr-load small{color:#b7c4bb}.yr-player .yr-big span{color:#000}.yr-player input{accent-color:#c6ff3d}

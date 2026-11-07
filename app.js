@@ -123,7 +123,16 @@ window.yrMountPlayer = function (url, title) {
   const player = document.getElementById('match-player'); const box = document.getElementById('match-player-frame'); const bar = document.getElementById('match-player-bar');
   const actions = document.getElementById('match-actions');
   if (!player || !box) return null;
+  const ytId = window.yrYT ? window.yrYT.parse(url) : (String(url).match(/(?:embed\/|watch\?v=|youtu\.be\/)([\w-]{11})/) || [])[1];
+  let ytCtl = null;
+  const buildYT = () => {
+    // فيديو يوتيوب: مشغّل يلا رياضة الخاص (شعار + أزرار + شريط تحميل). أي رابط تاني بيفضل في الإطار العادي.
+    const go = () => { if (ytCtl) ytCtl.destroy(); ytCtl = window.yrYT.mount(box, ytId, title || '', url); };
+    if (window.yrYT) { go(); return; }
+    const sc = document.createElement('script'); sc.src = 'yt-player.js'; sc.onload = go; sc.onerror = () => { box.replaceChildren(); const f = document.createElement('iframe'); f.src = url; f.allowFullscreen = true; f.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0'; box.appendChild(f); }; document.head.appendChild(sc);
+  };
   const build = () => {
+    if (ytId && /(^|\.)youtube(-nocookie)?\.com|youtu\.be/.test((() => { try { return new URL(url).hostname; } catch (e) { return ''; } })())) { buildYT(); return null; }
     const frame = document.createElement('iframe');
     frame.src = url; frame.title = title || 'مشغّل المباراة';
     frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
