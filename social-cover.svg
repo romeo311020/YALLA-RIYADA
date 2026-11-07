@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="500" viewBox="0 0 1500 500"><rect width="1500" height="500" fill="#000"/><g fill="none" stroke="#fff" stroke-opacity=".09" stroke-width="3">
-  <circle cx="750" cy="250" r="190"/><circle cx="750" cy="250" r="15.200000000000001" fill="#fff" fill-opacity=".09"/>
-  <line x1="750" y1="0" x2="750" y2="500"/>
-  <rect x="-30" y="79" width="171" height="342"/>
-  <rect x="1359" y="79" width="171" height="342"/></g><g transform="translate(395 150) scale(1.5625)">
-  <rect width="128" height="128" rx="30" fill="#fff"/>
-  <path d="M32 40L64 78M96 40L64 78M64 78V106" stroke="#000" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <circle cx="64" cy="37" r="12.5" fill="#15803d"/>
-</g><text x="870" y="250" text-anchor="middle" direction="rtl" font-family="Cairo, 'DejaVu Sans', 'Noto Sans Arabic', Arial, sans-serif" font-weight="800" font-size="104" fill="#fff">يلا رياضة</text><text x="870" y="304" text-anchor="middle" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="34" letter-spacing="14" fill="#fff">YALLA RIYADA</text><text x="870" y="356" text-anchor="middle" direction="rtl" font-family="Cairo, 'DejaVu Sans', 'Noto Sans Arabic', Arial, sans-serif" font-weight="600" font-size="30" fill="#fff" fill-opacity=".7">المنصة الأقوى في الوطن العربي</text></svg>
