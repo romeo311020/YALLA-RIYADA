@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080"><rect width="1080" height="1080" fill="#000"/><g fill="none" stroke="#fff" stroke-opacity=".09" stroke-width="3">
-  <circle cx="540" cy="540" r="330"/><circle cx="540" cy="540" r="26.400000000000002" fill="#fff" fill-opacity=".09"/>
-  <line x1="540" y1="0" x2="540" y2="1080"/>
-  <rect x="-21.6" y="243" width="297" height="594"/>
-  <rect x="804.6" y="243" width="297" height="594"/></g><g transform="translate(290 250) scale(3.90625)">
-  <rect width="128" height="128" rx="30" fill="#fff"/>
-  <path d="M32 40L64 78M96 40L64 78M64 78V106" stroke="#000" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <circle cx="64" cy="37" r="12.5" fill="#15803d"/>
-</g><text x="540" y="860" text-anchor="middle" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="46" letter-spacing="16" fill="#fff">YALLA RIYADA</text></svg>
