@@ -112,6 +112,15 @@
 
   const dayOff = (v) => { const n = { yesterday: -1, today: 0, tomorrow: 1 }[v] ?? parseInt(v, 10); return Number.isFinite(n) ? Math.max(-7, Math.min(7, n)) : 0; };
   /* تعديلات الأدمن على مباريات الـ API (تأجيل/إلغاء/نتيجة/موعد) */
+  /* أشهر الفرق عند الجمهور المصري (ترتيب تقديري حسب الشعبية). بيتطابق بالاسم الإنجليزي من الـ API أو العربي */
+  const TOP_TEAMS = [
+    /al[ -]?ahly(?! tripoli| benghazi)|الأهلي(?! السعودي)/i, /zamalek|الزمالك/i, /^egypt$|مصر$/i, /pyramids|بيراميدز/i, /ismaily|الإسماعيلي/i, /ittihad.*alex|alex.*ittihad|الاتحاد السكندري/i, /al[ -]?masry|المصري البورسعيدي/i,
+    /real madrid|ريال مدريد/i, /barcelona|برشلونة/i, /liverpool|ليفربول/i, /manchester city|مانشستر سيتي/i, /manchester united|مانشستر يونايتد/i, /chelsea|تشيلسي/i, /arsenal|أرسنال/i,
+    /bayern|بايرن/i, /juventus|يوفنتوس/i, /paris saint|psg|باريس سان/i,
+    /inter miami|إنتر ميامي/i, /trabzonspor|طرابزون/i,
+    /al[- ]?hilal|الهلال/i, /al[- ]?nassr|النصر/i, /^al[- ]?ittihad( jeddah)?$|^الاتحاد$|الاتحاد السعودي/i,
+  ];
+  const teamRank = (m) => { let best = 99; [m.home_team, m.away_team].forEach((n) => { const i = TOP_TEAMS.findIndex((re) => re.test(String(n || '').trim())); if (i >= 0 && i < best) best = i; }); return best; };
   const applyOverrides = async (fixtures) => {
     const ids = fixtures.filter((m) => m.sport !== 'basketball' && Number.isSafeInteger(Number(m.fixture_id))).map((m) => Number(m.fixture_id));
     if (!db || !ids.length) return fixtures;
@@ -445,10 +454,12 @@
       const groups = new Map();
       rows.forEach((m) => { if (!groups.has(m.league_key)) groups.set(m.league_key, []); groups.get(m.league_key).push(m); });
       const rank = (m) => (m.status === 'live' ? 0 : 1);
-      const byTime = (a, b) => rank(a) - rank(b) || new Date(a.kickoff || 0) - new Date(b.kickoff || 0);
+      const byTime = (a, b) => rank(a) - rank(b) || teamRank(a) - teamRank(b) || new Date(a.kickoff || 0) - new Date(b.kickoff || 0);
       const keys = [...groups.keys()].sort((a, b) => pos(a, groups.get(a)[0].league_label) - pos(b, groups.get(b)[0].league_label));
       const card = (m) => (m.manual ? manualCard(m) : fixtureCard(m, state));
-      const star = rows.filter((m) => m.featured).sort(byTime);
+      // مهمة = اللي الأدمن علّمها ⭐ + مباريات أشهر الفرق عند الجمهور المصري (بحد أقصى ٨)، والمباشر الأول
+      const auto = rows.filter((m) => !m.featured && teamRank(m) < 99).sort((a, b) => rank(a) - rank(b) || teamRank(a) - teamRank(b) || new Date(a.kickoff || 0) - new Date(b.kickoff || 0)).slice(0, 8);
+      const star = [...rows.filter((m) => m.featured), ...auto].sort((a, b) => rank(a) - rank(b) || (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || teamRank(a) - teamRank(b) || new Date(a.kickoff || 0) - new Date(b.kickoff || 0));
       const featuredHtml = star.length && state.league === 'all' ? `<section class="league-group featured-group" aria-label="مباريات مهمة"><h2 class="league-title"><span>⭐ مباريات مهمة</span><small>${star.length}</small></h2><div class="match-grid">${star.map(card).join('')}</div></section>` : '';
       host.innerHTML = featuredHtml + keys.map((k) => {
         const items = groups.get(k).sort(byTime);
