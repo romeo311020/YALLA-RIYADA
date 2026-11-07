@@ -502,16 +502,32 @@
     return { number: '', name: t };
   };
   const parseLines = (id) => $(id).value.split('\n').map(parsePlayer).filter(Boolean);
+  /* المراكز لكل طريقة لعب: من الشمال لليمين كما يراها المشاهد (الحارس أولًا ثم الدفاع فالوسط فالهجوم) */
+  const BK = { 4: ['ظهير أيسر', 'قلب دفاع (يسار)', 'قلب دفاع (يمين)', 'ظهير أيمن'], 3: ['قلب دفاع أيسر', 'قلب دفاع', 'قلب دفاع أيمن'], 5: ['ظهير جناح أيسر', 'قلب دفاع أيسر', 'قلب دفاع', 'قلب دفاع أيمن', 'ظهير جناح أيمن'] };
+  const MD = { 1: ['وسط دفاعي'], 2: ['وسط (يسار)', 'وسط (يمين)'], 3: ['وسط أيسر', 'وسط', 'وسط أيمن'], 4: ['جناح أيسر', 'وسط (يسار)', 'وسط (يمين)', 'جناح أيمن'], 5: ['جناح أيسر', 'وسط (يسار)', 'وسط', 'وسط (يمين)', 'جناح أيمن'] };
+  const AM = { 1: ['صانع ألعاب'], 2: ['وسط هجومي (يسار)', 'وسط هجومي (يمين)'], 3: ['جناح أيسر', 'صانع ألعاب', 'جناح أيمن'] };
+  const FW = { 1: ['رأس حربة'], 2: ['مهاجم (يسار)', 'مهاجم (يمين)'], 3: ['جناح أيسر', 'رأس حربة', 'جناح أيمن'] };
+  const FORMS = ['4-3-3', '4-4-2', '4-2-3-1', '4-1-4-1', '4-5-1', '4-3-2-1', '3-5-2', '3-4-3', '3-4-1-2', '5-3-2', '5-4-1'];
+  const slotLabels = (f) => {
+    const n = f.split('-').map(Number); const rows = [['حارس مرمى']]; rows.push(BK[n[0]]);
+    const mids = n.slice(1, -1);
+    mids.forEach((c, i) => rows.push((mids.length > 1 && i === mids.length - 1 && AM[c] ? AM : MD)[c]));
+    rows.push(FW[n[n.length - 1]]); return rows;
+  };
+  const slotRender = (p, f, keep) => {
+    const rows = slotLabels(f); const box = $(`mlu-${p}-slots`);
+    box.innerHTML = rows.map((r, ri) => `<div class="slot-row">${r.map((l, ci) => { const old = keep?.get(`${ri + 1}:${ci + 1}`) || {}; return `<label class="slot"><span>${l}</span><div><input class="sn" data-g="${ri + 1}:${ci + 1}" inputmode="numeric" maxlength="2" placeholder="#" value="${esc(old.number || '')}" aria-label="رقم ${l}"><input class="sp" maxlength="40" placeholder="اسم اللاعب" value="${esc(old.name || '')}" aria-label="${l}"></div></label>`; }).join('')}</div>`).join('');
+  };
+  const slotRead = (p) => [...$(`mlu-${p}-slots`).querySelectorAll('.slot')].map((s) => ({ number: s.querySelector('.sn').value.trim(), name: s.querySelector('.sp').value.trim(), grid: s.querySelector('.sn').dataset.g })).filter((x) => x.name);
+  ['home', 'away'].forEach((p) => {
+    $(`mlu-${p}-form`).innerHTML = FORMS.map((f) => `<option value="${f}">${f}</option>`).join('');
+    $(`mlu-${p}-form`).addEventListener('change', () => { const keep = new Map(slotRead(p).map((x) => [x.grid, x])); slotRender(p, $(`mlu-${p}-form`).value, keep); });
+    slotRender(p, '4-3-3');
+  });
   const buildSide = (p) => {
-    const start = parseLines(`mlu-${p}-start`); const subs = parseLines(`mlu-${p}-subs`);
+    const start = slotRead(p); const subs = parseLines(`mlu-${p}-subs`);
     if (!start.length && !subs.length) return null;
-    const formation = $(`mlu-${p}-form`).value.trim().replace(/\s+/g, '');
-    const counts = formation.split('-').map(Number);
-    if (counts.length >= 2 && counts.every((n) => n > 0) && counts.reduce((a, b) => a + b, 1) === start.length) { // حارس + خطوط
-      let i = 0; start[i++].grid = '1:1';
-      counts.forEach((n, r) => { for (let c = 1; c <= n; c++) start[i++].grid = `${r + 2}:${c}`; });
-    }
-    return { formation, coach: $(`mlu-${p}-coach`).value.trim(), start, subs };
+    return { formation: $(`mlu-${p}-form`).value, coach: $(`mlu-${p}-coach`).value.trim(), start, subs };
   };
   const manualDetails = () => {
     const home = buildSide('home'); const away = buildSide('away');
@@ -526,8 +542,10 @@
     const ml = d.manual_lineups || {};
     ['home', 'away'].forEach((p) => {
       const s = ml[p] || {}; const line = (x) => `${x.number ? `${x.number} ` : ''}${x.name}`;
-      $(`mlu-${p}-form`).value = s.formation || ''; $(`mlu-${p}-coach`).value = s.coach || '';
-      $(`mlu-${p}-start`).value = (s.start || []).map(line).join('\n'); $(`mlu-${p}-subs`).value = (s.subs || []).map(line).join('\n');
+      const f = FORMS.includes(s.formation) ? s.formation : '4-3-3'; $(`mlu-${p}-form`).value = f; $(`mlu-${p}-coach`).value = s.coach || '';
+      const withGrid = (s.start || []).every((x) => /^\d+:\d+$/.test(String(x.grid || '')));
+      const keep = new Map((s.start || []).map((x, i) => [withGrid ? x.grid : (i === 0 ? '1:1' : null), x]).filter(([g]) => g));
+      slotRender(p, f, keep); $(`mlu-${p}-subs`).value = (s.subs || []).map(line).join('\n');
     });
     mEv = (d.events || []).filter((e) => ['goal', 'card', 'subst'].includes(e.type)).map((e) => ({ minute: e.minute ?? 0, type: e.type, detail: e.detail || (e.type === 'card' ? 'Yellow Card' : e.type === 'subst' ? 'Substitution' : 'Normal Goal'), side: e.team_id === d.away_id ? 'away' : 'home', player: e.player || '', assist: e.assist || '' }));
     evRender(); if (Object.keys(ml).length || mEv.length) $('mlu-box').open = true;

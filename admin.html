@@ -107,15 +107,15 @@
             </div>
             <details class="acc" id="mlu-box">
               <summary>✍️ تشكيلة وملخص المباراة يدويًا (من غير الإحصائيات)</summary>
-              <p class="note">اكتب اللاعبين بالترتيب من الحارس للمهاجمين، وطريقة اللعب (مثل 4-3-3) هتتحول لرسم الملعب لوحدها. لو سبت الخانات فاضية مش هتظهر.</p>
+              <p class="note">اختار طريقة اللعب وهتظهر ١١ خانة، كل خانة مكتوب عليها المركز (حارس، ظهير أيمن، قلب دفاع…). اكتب رقم واسم اللاعب في مكانه، ورسم الملعب بيتعمل لوحده. الخانات الفاضية مش بتظهر.</p>
               <div class="mlu-grid">
                 <div class="mlu-side"><h5>الفريق الأول</h5>
-                <div class="row"><label>طريقة اللعب<input id="mlu-home-form" maxlength="12" dir="ltr" placeholder="4-3-3"></label><label>المدرب<input id="mlu-home-coach" maxlength="60"></label></div>
-                <label>التشكيل الأساسي (١١ لاعب، سطر لكل لاعب: الرقم ثم الاسم)<textarea id="mlu-home-start" rows="11" placeholder="1 الشناوي&#10;2 ياسر إبراهيم&#10;…"></textarea></label>
+                <div class="row"><label>طريقة اللعب<select id="mlu-home-form" dir="ltr"></select></label><label>المدرب<input id="mlu-home-coach" maxlength="60"></label></div>
+                <div class="slots" id="mlu-home-slots" aria-label="التشكيل الأساسي"></div>
                 <label>الاحتياط (سطر لكل لاعب)<textarea id="mlu-home-subs" rows="5" placeholder="16 أبو جبل"></textarea></label></div>
                 <div class="mlu-side"><h5>الفريق الثاني</h5>
-                <div class="row"><label>طريقة اللعب<input id="mlu-away-form" maxlength="12" dir="ltr" placeholder="4-3-3"></label><label>المدرب<input id="mlu-away-coach" maxlength="60"></label></div>
-                <label>التشكيل الأساسي (١١ لاعب، سطر لكل لاعب: الرقم ثم الاسم)<textarea id="mlu-away-start" rows="11" placeholder="1 الشناوي&#10;2 ياسر إبراهيم&#10;…"></textarea></label>
+                <div class="row"><label>طريقة اللعب<select id="mlu-away-form" dir="ltr"></select></label><label>المدرب<input id="mlu-away-coach" maxlength="60"></label></div>
+                <div class="slots" id="mlu-away-slots" aria-label="التشكيل الأساسي"></div>
                 <label>الاحتياط (سطر لكل لاعب)<textarea id="mlu-away-subs" rows="5" placeholder="16 أبو جبل"></textarea></label></div>
               </div>
               <h4>ملخص المباراة (الأحداث)</h4>
