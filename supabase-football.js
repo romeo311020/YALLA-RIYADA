@@ -24,13 +24,14 @@
   const tn = (name) => (window.YR_NAMES ? window.YR_NAMES.team(name) : name);
   const pn = (name) => (window.YR_NAMES ? window.YR_NAMES.player(name) : name);
 
-  /* كاش في المتصفح لتقليل طلبات الـ API: نفس الطلب لا يتكرر خلال مدة صلاحيته، وعند الفشل نعرض آخر نسخة محفوظة */
+  /* كاش مؤقت في الذاكرة: نفس الطلب لا يتكرر خلال مدة صلاحيته، وعند الفشل نعرض آخر نسخة من نفس الجلسة */
   const TTL = { fixtures: (b) => (b.date === localDate(0) ? 3 : 30) * 60e3, fixture: () => 2 * 60e3, team: () => 12 * 3600e3, form: () => 2 * 3600e3, player: () => 12 * 3600e3 };
-  const cacheRead = (k) => { try { return JSON.parse(localStorage.getItem(`yr-c:${k}`) || 'null'); } catch { return null; } };
-  const cacheWrite = (k, v) => {
-    const put = () => localStorage.setItem(`yr-c:${k}`, JSON.stringify({ t: Date.now(), v }));
-    try { put(); } catch { try { Object.keys(localStorage).filter((x) => x.startsWith('yr-c:')).forEach((x) => localStorage.removeItem(x)); put(); } catch { /* التخزين غير متاح */ } }
-  };
+  /* الكاش في ذاكرة الصفحة فقط (مش بيتحفظ على جهاز الزائر): بيختفي بمجرد إغلاق/تحديث الصفحة.
+     الدالة نفسها على السيرفر عندها كاش، فمفيش داعي لتخزين بيانات المباريات على الجهاز. */
+  const memCache = new Map();
+  const cacheRead = (k) => memCache.get(k) || null;
+  const cacheWrite = (k, v) => { memCache.set(k, { t: Date.now(), v }); if (memCache.size > 60) memCache.delete(memCache.keys().next().value); };
+  try { Object.keys(localStorage).filter((x) => x.startsWith('yr-c:')).forEach((x) => localStorage.removeItem(x)); } catch { /* التخزين غير متاح */ } // تنظيف نسخ قديمة اتحفظت قبل كده
   const inflight = new Map();
   const request = async (body) => {
     if (!db) throw new Error('إعدادات Supabase غير مكتملة.');
