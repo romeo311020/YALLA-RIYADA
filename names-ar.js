@@ -28,7 +28,7 @@
     'el gounah': 'الجونة', 'el gouna': 'الجونة', 'ghazl el mahalla': 'غزل المحلة', 'baladiyat el mahalla': 'بلدية المحلة', 'talaea el gaish': 'طلائع الجيش', 'tala a el gaish': 'طلائع الجيش',
     'petrojet': 'بتروجت', 'national bank of egypt': 'البنك الأهلي', 'national bank': 'البنك الأهلي', 'kahrabaa ismailia': 'كهرباء الإسماعيلية', 'zed': 'زد', 'haras el hodood': 'حرس الحدود',
     'el entag el harby': 'الإنتاج الحربي', 'al mokawloon al arab': 'المقاولون العرب', 'arab contractors': 'المقاولون العرب', 'telecom egypt': 'وي', 'we': 'وي', 'aswan': 'أسوان',
-    'el dakhleya': 'الداخلية', 'ittihad alexandria': 'الاتحاد السكندري', 'al ittihad': 'الاتحاد', 'ala ab el tala a': 'طلائع الجيش', 'ceramica': 'سيراميكا كليوباترا',
+    'el dakhleya': 'الداخلية', 'ittihad alexandria': 'الاتحاد السكندري', 'al ittihad alexandria': 'الاتحاد السكندري', 'al ittihad alexandria sc': 'الاتحاد السكندري', 'ittihad alexandria sc': 'الاتحاد السكندري', 'al ittihad': 'الاتحاد', 'ala ab el tala a': 'طلائع الجيش', 'ceramica': 'سيراميكا كليوباترا',
 
     /* ===== أبطال أوروبا والدوري الأوروبي ===== */
     'bayern munich': 'بايرن ميونخ', 'bayern munchen': 'بايرن ميونخ', 'borussia dortmund': 'بوروسيا دورتموند', 'bayer leverkusen': 'باير ليفركوزن', 'rb leipzig': 'لايبزيغ', 'eintracht frankfurt': 'آينتراخت فرانكفورت',

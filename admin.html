@@ -39,6 +39,7 @@
         <button type="button" class="atab active" role="tab" data-atab="overview" aria-selected="true"><i class="ti" aria-hidden="true">📊</i>نظرة عامة</button>
         <button type="button" class="atab" role="tab" data-atab="matches" aria-selected="false"><i class="ti" aria-hidden="true">⚽</i>المباريات</button>
         <button type="button" class="atab" role="tab" data-atab="leagues" aria-selected="false"><i class="ti" aria-hidden="true">🏆</i>البطولات</button>
+        <button type="button" class="atab" role="tab" data-atab="teams" aria-selected="false"><i class="ti" aria-hidden="true">👕</i>الفرق</button>
         <button type="button" class="atab" role="tab" data-atab="streams" aria-selected="false"><i class="ti" aria-hidden="true">📺</i>المشغّلات</button>
         <button type="button" class="atab" role="tab" data-atab="store" aria-selected="false"><i class="ti" aria-hidden="true">🛍️</i>المتجر</button>
         <button type="button" class="atab" role="tab" data-atab="orders" aria-selected="false"><i class="ti" aria-hidden="true">📦</i>الطلبات <b id="orders-badge" class="badge" hidden></b></button>
@@ -164,6 +165,38 @@
           <ol id="lg-list" class="lg-list"></ol>
           <div class="row"><button class="btn primary" id="lg-save" type="button">حفظ الترتيب</button><button class="btn outline" id="lg-reset" type="button">رجوع للترتيب الافتراضي</button></div>
           <p class="note" id="lg-msg" role="status"></p>
+        </div>
+      </section>
+
+      <!-- الفرق -->
+      <section class="admin-pane" id="pane-teams" role="tabpanel" hidden>
+        <div class="panel admin-section">
+          <div class="admin-section-heading">
+            <div><span class="tag">الفرق</span><h2>الفرق الأكثر متابعة (بتظهر مبارياتها الأول)</h2></div>
+            <p class="note">مباريات الفرق دي هي اللي بتظهر في «⭐ مباريات مهمة» وبتتقدّم جوه كل بطولة. الترتيب من فوق لتحت حسب الشعبية.</p>
+          </div>
+          <div class="lg-add row">
+            <select id="tm-pick" aria-label="فريق"><option value="">— اختر فريق من مباريات اليوم —</option></select>
+            <button class="btn outline" id="tm-add" type="button">إضافة</button>
+            <input id="tm-custom" maxlength="60" placeholder="أو اكتب اسم فريق (بالعربي أو الإنجليزي زي ما في الـ API)" aria-label="اسم فريق">
+            <button class="btn outline" id="tm-add-custom" type="button">إضافة بالاسم</button>
+          </div>
+          <ol id="tm-list" class="lg-list"></ol>
+          <div class="row"><button class="btn primary" id="tm-save" type="button">حفظ الفرق</button><button class="btn outline" id="tm-reset" type="button">رجوع للقائمة الأساسية</button></div>
+          <p class="note" id="tm-msg" role="status"></p>
+          <p class="note">لو الفريق من بطولة مش في القائمة، اكتب اسمه بالإنجليزي زي ما بيظهر في الـ API عشان مبارياته تظهر (التعديل بيوصل للزوار خلال دقائق).</p>
+        </div>
+        <div class="panel admin-section">
+          <div class="admin-section-heading">
+            <div><span class="tag">الأسماء</span><h2>تعديل أسماء الفرق بالعربي</h2></div>
+            <p class="note">اختار اليوم، وعدّل اسم أي فريق وحفظه. التعديل بيظهر في كل الموقع. استخدم شريط البحث فوق للوصول لفريق معيّن.</p>
+          </div>
+          <div class="row"><select id="nm-day" aria-label="اليوم"><option value="0">اليوم</option><option value="1">غدًا</option><option value="2">بعد غد</option><option value="-1">أمس</option><option value="-2">أول أمس</option><option value="3">+٣ أيام</option><option value="-3">-٣ أيام</option></select>
+          <button class="btn outline" id="nm-load" type="button">تحميل فرق اليوم</button></div>
+          <div id="nm-list"></div>
+          <p class="note" id="nm-msg" role="status"></p>
+          <h3 class="admin-list-title">الأسماء اللي عدّلتها</h3>
+          <div id="nm-saved"></div>
         </div>
       </section>
 

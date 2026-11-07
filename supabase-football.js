@@ -120,7 +120,22 @@
     /inter miami|إنتر ميامي/i, /trabzonspor|طرابزون/i,
     /al[- ]?hilal|الهلال/i, /al[- ]?nassr|النصر/i, /^al[- ]?ittihad( jeddah)?$|^الاتحاد$|الاتحاد السعودي/i,
   ];
-  const teamRank = (m) => { let best = 99; [m.home_team, m.away_team].forEach((n) => { const i = TOP_TEAMS.findIndex((re) => re.test(String(n || '').trim())); if (i >= 0 && i < best) best = i; }); return best; };
+  let customTop = null; // [{en, ar}] من لوحة التحكم (site_settings.top_teams) — لو فاضي بنستخدم القائمة الأساسية
+  const nz = (t) => String(t || '').toLowerCase().replace(/[\u064B-\u0652\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/[-.]/g, ' ').replace(/\s+/g, ' ').trim();
+  const isEgyLeague = (m) => String(m.league_key) === '233' || /مصر/.test(String(m.league_label || ''));
+  const teamRank = (m) => {
+    let best = 99;
+    [m.home_team, m.away_team].forEach((n) => {
+      const raw = String(n || '').trim(); let i = -1;
+      if (customTop && customTop.length) {
+        const ar = nz(window.YR_NAMES ? window.YR_NAMES.team(raw) : raw); const en = nz(raw);
+        i = customTop.findIndex((t) => (t.en && nz(t.en) === en) || (t.ar && nz(t.ar) === ar) || (t.ar && nz(t.ar) === en));
+      } else if (/^al[- ]?ittihad$|^الاتحاد$/i.test(raw)) i = isEgyLeague(m) ? 5 : 20;
+      else i = TOP_TEAMS.findIndex((re) => re.test(raw));
+      if (i >= 0 && i < best) best = i;
+    });
+    return best;
+  };
   const applyOverrides = async (fixtures) => {
     const ids = fixtures.filter((m) => m.sport !== 'basketball' && Number.isSafeInteger(Number(m.fixture_id))).map((m) => Number(m.fixture_id));
     if (!db || !ids.length) return fixtures;
@@ -145,6 +160,7 @@
   let leagueOrder = null;
   const loadLeagueOrder = async () => {
     if (leagueOrder !== null || !db) return leagueOrder || [];
+    try { const { data: tt } = await db.from('site_settings').select('value').eq('key', 'top_teams').maybeSingle(); customTop = Array.isArray(tt?.value) ? tt.value : null; } catch { /* اختياري */ }
     try { const { data } = await db.from('site_settings').select('value').eq('key', 'league_order').maybeSingle(); leagueOrder = Array.isArray(data?.value) ? data.value : []; } catch { leagueOrder = []; }
     return leagueOrder;
   };

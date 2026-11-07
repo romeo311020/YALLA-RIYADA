@@ -90,6 +90,7 @@
     users: () => loadUsers(true),
     audit: () => loadAudit(),
     leagues: () => loadLeagueOrderAdmin(),
+    teams: () => Promise.all([loadTopTeamsAdmin(), loadSavedNames()]),
   };
   /* ---------- شريط البحث: بيفلتر عناصر القسم المفتوح ---------- */
   const normQ = (t) => String(t || '').toLowerCase().replace(/[\u064B-\u0652\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').trim();
@@ -322,6 +323,71 @@
   $('ov-clear').addEventListener('click', () => { const id = $('ov-fixture').value; if (id) ovDelete(id); else say('ov-msg', 'اختر مباراة الأول.'); });
   $('ov-list').addEventListener('click', (e) => { const b = e.target.closest('[data-ov-del]'); if (b) ovDelete(b.dataset.ovDel); });
   ovRefreshList();
+
+  /* ---------- الفرق: الأكثر متابعة + تعديل الأسماء ---------- */
+  const DEFAULT_TOP = [['Al Ahly', 'الأهلي'], ['Zamalek', 'الزمالك'], ['Pyramids', 'بيراميدز'], ['Ismaily', 'الإسماعيلي'], ['Al Ittihad Alexandria', 'الاتحاد السكندري'], ['Al Masry', 'المصري'],
+    ['Real Madrid', 'ريال مدريد'], ['Barcelona', 'برشلونة'], ['Liverpool', 'ليفربول'], ['Manchester City', 'مانشستر سيتي'], ['Manchester United', 'مانشستر يونايتد'], ['Chelsea', 'تشيلسي'], ['Arsenal', 'أرسنال'],
+    ['Bayern Munich', 'بايرن ميونخ'], ['Juventus', 'يوفنتوس'], ['Paris Saint Germain', 'باريس سان جيرمان'], ['Al-Hilal', 'الهلال'], ['Al-Nassr', 'النصر'], ['Al-Ittihad', 'الاتحاد'], ['Inter Miami', 'إنتر ميامي'], ['Trabzonspor', 'طرابزون سبور']].map(([en, ar]) => ({ en, ar }));
+  let tmList = []; let tmSeen = new Map(); // en -> ar
+  const tmRender = () => {
+    $('tm-list').innerHTML = tmList.map((t, i) => `<li><span class="lg-n">${i + 1}</span><b>${esc(t.ar || t.en)}${t.en && t.ar ? ` <small class="note">${esc(t.en)}</small>` : ''}</b><span class="lg-btns"><button type="button" data-tm="top" data-i="${i}" title="للأول">⤒</button><button type="button" data-tm="up" data-i="${i}" title="لفوق">▲</button><button type="button" data-tm="down" data-i="${i}" title="لتحت">▼</button><button type="button" data-tm="del" data-i="${i}" title="حذف">✕</button></span></li>`).join('');
+    const taken = new Set(tmList.map((t) => String(t.en).toLowerCase()));
+    $('tm-pick').innerHTML = '<option value="">— اختر فريق من مباريات اليوم —</option>' + [...tmSeen].filter(([en]) => !taken.has(en.toLowerCase())).sort((a, b) => a[1].localeCompare(b[1])).map(([en, a]) => `<option value="${esc(en)}">${esc(a)} — ${esc(en)}</option>`).join('');
+  };
+  async function loadTopTeamsAdmin() {
+    try { const d = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(0) }); (d?.fixtures || []).forEach((f) => { [f.home_team, f.away_team].forEach((n) => n && tmSeen.set(n, ar(n))); }); } catch { /* اختياري */ }
+    const { data } = await client.from('site_settings').select('value').eq('key', 'top_teams').maybeSingle();
+    tmList = Array.isArray(data?.value) && data.value.length ? data.value.map((t) => ({ en: t.en || '', ar: t.ar || '' })) : DEFAULT_TOP.map((t) => ({ ...t }));
+    tmRender();
+  }
+  $('tm-list').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tm]'); if (!b) return; const i = Number(b.dataset.i); const a = b.dataset.tm;
+    if (a === 'del') tmList.splice(i, 1); else if (a === 'top' && i > 0) tmList.unshift(...tmList.splice(i, 1));
+    else if (a === 'up' && i > 0) [tmList[i - 1], tmList[i]] = [tmList[i], tmList[i - 1]];
+    else if (a === 'down' && i < tmList.length - 1) [tmList[i + 1], tmList[i]] = [tmList[i], tmList[i + 1]];
+    tmRender();
+  });
+  $('tm-add').addEventListener('click', () => { const en = $('tm-pick').value; if (en) { tmList.push({ en, ar: ar(en) }); tmRender(); } });
+  $('tm-add-custom').addEventListener('click', () => {
+    const v = $('tm-custom').value.trim(); if (!v) return;
+    tmList.push(/[a-z]/i.test(v) ? { en: v, ar: ar(v) } : { en: '', ar: v }); $('tm-custom').value = ''; tmRender();
+  });
+  $('tm-save').addEventListener('click', async () => {
+    const { error } = await client.from('site_settings').upsert({ key: 'top_teams', value: tmList, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    say('tm-msg', error ? `تعذّر الحفظ: ${error.message}` : 'تم حفظ الفرق ✓');
+  });
+  $('tm-reset').addEventListener('click', async () => {
+    const { error } = await client.from('site_settings').delete().eq('key', 'top_teams');
+    tmList = DEFAULT_TOP.map((t) => ({ ...t })); tmRender(); say('tm-msg', error ? error.message : 'رجعنا للقائمة الأساسية ✓');
+  });
+  // تعديل الأسماء (جدول name_translations)
+  let nmSaved = new Map();
+  async function loadSavedNames() {
+    const { data, error } = await client.from('name_translations').select('id,en,ar').eq('kind', 'team').order('en').limit(1000);
+    if (error) { $('nm-saved').innerHTML = ''; say('nm-msg', 'جدول الأسماء غير موجود — شغّل supabase-admin-upgrade.sql.'); return; }
+    nmSaved = new Map((data || []).map((r) => [r.en.toLowerCase(), r]));
+    $('nm-saved').innerHTML = (data || []).length ? data.map((r) => `<article class="admin-list-item"><div><strong>${esc(r.ar)}</strong><small dir="ltr">${esc(r.en)}</small></div><div class="row"><button type="button" class="btn outline" data-nm-del="${esc(r.id)}">حذف</button></div></article>`).join('') : '<p class="note">لسه ما عدّلتش أي اسم.</p>';
+  }
+  const nmRows = (teams) => teams.map((en) => `<article class="admin-list-item" data-nm-row="${esc(en)}"><div><strong dir="ltr">${esc(en)}</strong></div><div class="row"><input class="nm-in" value="${esc(ar(en))}" maxlength="60" aria-label="الاسم بالعربي"><button type="button" class="btn primary" data-nm-save="${esc(en)}">حفظ</button></div></article>`).join('');
+  $('nm-load').addEventListener('click', async () => {
+    $('nm-list').innerHTML = '<p class="note">جارٍ التحميل…</p>';
+    try {
+      const d = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(Number($('nm-day').value) || 0) });
+      const set = new Set(); (d?.fixtures || []).forEach((f) => { [f.home_team, f.away_team].forEach((n) => n && set.add(n)); });
+      (d?.fixtures || []).forEach((f) => { [f.home_team, f.away_team].forEach((n) => n && tmSeen.set(n, ar(n))); });
+      $('nm-list').innerHTML = set.size ? nmRows([...set].sort()) : '<p class="note">لا توجد مباريات لهذا اليوم.</p>';
+    } catch (e) { $('nm-list').innerHTML = ''; say('nm-msg', e.message); }
+  });
+  $('nm-list').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-nm-save]'); if (!b) return; const row = b.closest('[data-nm-row]'); const en = b.dataset.nmSave; const val = row.querySelector('.nm-in').value.trim();
+    if (!val) { say('nm-msg', 'اكتب الاسم بالعربي.'); return; }
+    const { error } = await client.from('name_translations').upsert({ kind: 'team', en, ar: val }, { onConflict: 'kind,en' });
+    say('nm-msg', error ? `تعذّر الحفظ: ${error.message}` : `تم حفظ «${val}» ✓ (هيظهر للزوار بعد تحديث الصفحة)`); if (!error) loadSavedNames();
+  });
+  $('nm-saved').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-nm-del]'); if (!b) return;
+    const { error } = await client.from('name_translations').delete().eq('id', b.dataset.nmDel); say('nm-msg', error ? error.message : 'تم الحذف.'); loadSavedNames();
+  });
   /* ---------- نسخة كاملة من المباراة (تشكيلة + أحداث + إحصائيات) تتحفظ مع المباراة ---------- */
   let snap = null; // { fixture_id, home_id, away_id, events, lineups, stats, info, manual, saved_at }
   const snapSummary = (s) => !s ? 'لا يوجد. اختر مباراة من القائمة أعلاه لحفظ التشكيلة والأحداث والإحصائيات مع المباراة.'
