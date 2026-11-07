@@ -19,7 +19,7 @@
     <div class="admin-title-row">
       <div>
         <h1>لوحة الإدارة</h1>
-        <p class="sub">تحكّم كامل في المباريات والتشكيلات والمشغّلات والمتجر والأخبار والمستخدمين.</p>
+        <p class="sub">تحكّم كامل في المباريات والمشغّلات والمتجر والأخبار والمستخدمين.</p>
       </div>
       <button class="btn outline" id="admin-logout" type="button" hidden>تسجيل الخروج</button>
     </div>
@@ -40,12 +40,16 @@
         <button type="button" class="atab" role="tab" data-atab="matches" aria-selected="false"><i class="ti" aria-hidden="true">⚽</i>المباريات</button>
         <button type="button" class="atab" role="tab" data-atab="leagues" aria-selected="false"><i class="ti" aria-hidden="true">🏆</i>البطولات</button>
         <button type="button" class="atab" role="tab" data-atab="streams" aria-selected="false"><i class="ti" aria-hidden="true">📺</i>المشغّلات</button>
-        <button type="button" class="atab" role="tab" data-atab="lineups" aria-selected="false"><i class="ti" aria-hidden="true">📋</i>التشكيلات</button>
         <button type="button" class="atab" role="tab" data-atab="store" aria-selected="false"><i class="ti" aria-hidden="true">🛍️</i>المتجر</button>
         <button type="button" class="atab" role="tab" data-atab="orders" aria-selected="false"><i class="ti" aria-hidden="true">📦</i>الطلبات <b id="orders-badge" class="badge" hidden></b></button>
         <button type="button" class="atab" role="tab" data-atab="news" aria-selected="false"><i class="ti" aria-hidden="true">📰</i>الأخبار</button>
         <button type="button" class="atab" role="tab" data-atab="users" aria-selected="false"><i class="ti" aria-hidden="true">👥</i>المستخدمون</button>
         <button type="button" class="atab" role="tab" data-atab="audit" aria-selected="false"><i class="ti" aria-hidden="true">🧾</i>السجل</button>
+      </div>
+
+      <div class="admin-search" role="search">
+        <input id="admin-search" type="search" placeholder="🔍 ابحث في القسم الحالي…  (اضغط / للبحث)" autocomplete="off" aria-label="بحث في القسم الحالي">
+        <span id="admin-search-count" class="note" aria-live="polite"></span>
       </div>
 
       <!-- نظرة عامة -->
@@ -184,51 +188,6 @@
           <p id="stream-message" class="note" role="status" aria-live="polite"></p>
           <h3 class="admin-list-title">المشغّلات المضافة</h3>
           <div id="admin-streams"></div>
-        </div>
-      </section>
-
-      <!-- التشكيلات اليدوية -->
-      <section class="admin-pane" id="pane-lineups" role="tabpanel" hidden>
-        <div class="panel admin-section">
-          <div class="admin-section-heading">
-            <div><span class="tag">التشكيلة</span><h2>تشكيلة وتفاصيل المباراة</h2></div>
-            <p class="note">اختر المباراة وسيتحمّل ما حفظته قبل كده. التشكيلة اليدوية تحل محل التلقائية، وتفاصيل القناة والمعلق تظهر في تبويب «التفاصيل» داخل المباراة. كل قسم اختياري.</p>
-          </div>
-          <form id="lineup-form" class="form-stack admin-form">
-            <input id="lineup-edit-id" type="hidden">
-            <label>اليوم<select id="lineup-fixture-day"><option value="yesterday">أمس</option><option value="today" selected>اليوم</option><option value="tomorrow">غدًا</option></select></label>
-            <label>اختر المباراة<select id="lineup-fixture-select"><option value="">جارٍ تحميل المباريات...</option></select></label>
-            <label>أو اكتب رقم المباراة<input id="lineup-fixture-id" type="number" min="1" inputmode="numeric" placeholder="مثال: 1234567" required></label>
-            <p id="lineup-fixture-status" class="note" role="status" aria-live="polite"></p>
-            <fieldset class="lineup-team info-fields"><legend>تفاصيل المباراة (اختياري)</legend>
-              <label>القناة الناقلة<input id="info-channel" maxlength="120" placeholder="مثال: beIN Sports 1 HD"></label>
-              <label>المعلّق<input id="info-commentator" maxlength="120" placeholder="مثال: عصام الشوالي"></label>
-              <label>ملاحظات<textarea id="info-notes" rows="2" maxlength="400" placeholder="أي معلومة إضافية للمشاهد"></textarea></label>
-            </fieldset>
-            <div class="lineup-edit-grid">
-              <fieldset class="lineup-team"><legend id="lineup-home-title">الفريق الأول (صاحب الأرض)</legend>
-                <label>اسم الفريق<input id="lineup-home-name" maxlength="80"></label>
-                <label>الخطة (مثال 4-3-3)<input id="lineup-home-formation" maxlength="12" dir="ltr" placeholder="4-3-3"></label>
-                <label>المدرب<input id="lineup-home-coach" maxlength="80"></label>
-                <label>الأساسيون (سطر لكل لاعب: الرقم ثم الاسم، الحارس أولًا ثم الدفاع فالوسط فالهجوم)<textarea id="lineup-home-start" rows="11" placeholder="1 الشناوي&#10;2 ربيعة&#10;..."></textarea></label>
-                <label>الاحتياط<textarea id="lineup-home-subs" rows="5" placeholder="12 مصطفى شوبير"></textarea></label>
-              </fieldset>
-              <fieldset class="lineup-team"><legend id="lineup-away-title">الفريق الثاني (الضيف)</legend>
-                <label>اسم الفريق<input id="lineup-away-name" maxlength="80"></label>
-                <label>الخطة (مثال 4-4-2)<input id="lineup-away-formation" maxlength="12" dir="ltr" placeholder="4-4-2"></label>
-                <label>المدرب<input id="lineup-away-coach" maxlength="80"></label>
-                <label>الأساسيون<textarea id="lineup-away-start" rows="11"></textarea></label>
-                <label>الاحتياط<textarea id="lineup-away-subs" rows="5"></textarea></label>
-              </fieldset>
-            </div>
-            <div class="row">
-              <button class="btn primary" id="lineup-save" type="submit">حفظ</button>
-              <button class="btn outline" id="lineup-cancel-edit" type="button" hidden>إلغاء التعديل</button>
-            </div>
-          </form>
-          <p id="lineup-message" class="note" role="status" aria-live="polite"></p>
-          <h3 class="admin-list-title">التشكيلات المحفوظة</h3>
-          <div id="admin-lineups"></div>
         </div>
       </section>
 
