@@ -11,21 +11,15 @@
   
   <script>(function(){var d=document.documentElement,t="light";try{if(localStorage.getItem("yr-theme")==="dark")t="dark"}catch(e){}if(t==="light")d.setAttribute("data-theme","light")})()</script>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="يلا رياضة"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="robots" content="noindex,nofollow"></head>
-<body>
+<body class="adm">
   <div id="shared-header"></div>
-  <main class="wrap page admin-page">
-    <span class="kicker">SECURE ADMIN</span>
-    <div class="admin-title-row">
-      <div>
-        <h1>لوحة الإدارة</h1>
-        <p class="sub">تحكّم كامل في المباريات والمشغّلات والمتجر والأخبار والمستخدمين.</p>
-      </div>
-      <button class="btn outline" id="admin-logout" type="button" hidden>تسجيل الخروج</button>
-    </div>
-
-    <section class="panel" id="admin-login-panel">
+  <main class="adm-root">
+    <section class="panel adm-login" id="admin-login-panel">
+      <div class="adm-logo"><span>يلا</span> رياضة</div>
       <h2>دخول المسؤول</h2>
+      <p class="note">لوحة الإدارة — للمسؤولين فقط.</p>
       <form id="admin-login-form" class="form-stack">
         <label>البريد الإلكتروني<input id="admin-email" type="email" autocomplete="username" required></label>
         <label>كلمة المرور<input id="admin-password" type="password" autocomplete="current-password" required></label>
@@ -34,25 +28,43 @@
       <p id="admin-auth-message" class="note" role="status" aria-live="polite"></p>
     </section>
 
-    <div id="admin-workspace" hidden>
-      <div class="admin-tabs" role="tablist" aria-label="أقسام لوحة الإدارة">
+    <div id="admin-workspace" class="adm-shell" hidden>
+      <aside class="adm-side" id="adm-side">
+        <div class="adm-brand"><span class="adm-mark">⚽</span><div><b>يلا رياضة</b><small>لوحة الإدارة</small></div></div>
+        <div class="admin-tabs" role="tablist" aria-label="أقسام لوحة الإدارة">
+        <span class="nav-label">الرئيسية</span>
         <button type="button" class="atab active" role="tab" data-atab="overview" aria-selected="true"><i class="ti" aria-hidden="true">📊</i>نظرة عامة</button>
+        <span class="nav-label">كرة القدم</span>
         <button type="button" class="atab" role="tab" data-atab="matches" aria-selected="false"><i class="ti" aria-hidden="true">⚽</i>المباريات</button>
         <button type="button" class="atab" role="tab" data-atab="leagues" aria-selected="false"><i class="ti" aria-hidden="true">🏆</i>البطولات</button>
         <button type="button" class="atab" role="tab" data-atab="teams" aria-selected="false"><i class="ti" aria-hidden="true">👕</i>الفرق</button>
         <button type="button" class="atab" role="tab" data-atab="streams" aria-selected="false"><i class="ti" aria-hidden="true">📺</i>المشغّلات</button>
+        <span class="nav-label">المحتوى والمتجر</span>
         <button type="button" class="atab" role="tab" data-atab="store" aria-selected="false"><i class="ti" aria-hidden="true">🛍️</i>المتجر</button>
         <button type="button" class="atab" role="tab" data-atab="orders" aria-selected="false"><i class="ti" aria-hidden="true">📦</i>الطلبات <b id="orders-badge" class="badge" hidden></b></button>
         <button type="button" class="atab" role="tab" data-atab="news" aria-selected="false"><i class="ti" aria-hidden="true">📰</i>الأخبار</button>
+        <span class="nav-label">النظام</span>
         <button type="button" class="atab" role="tab" data-atab="users" aria-selected="false"><i class="ti" aria-hidden="true">👥</i>المستخدمون</button>
         <button type="button" class="atab" role="tab" data-atab="audit" aria-selected="false"><i class="ti" aria-hidden="true">🧾</i>السجل</button>
       </div>
-
-      <div class="admin-search" role="search">
-        <input id="admin-search" type="search" placeholder="🔍 ابحث في كل حاجة: مباراة، فريق، خبر، منتج، طلب…  (اضغط / للبحث)" autocomplete="off" aria-label="بحث في القسم الحالي">
-        <span id="admin-search-count" class="note" aria-live="polite"></span>
-        <div id="gsearch" class="gsearch" hidden></div>
-      </div>
+        <div class="adm-side-foot">
+          <a class="adm-lnk" href="index.html" target="_blank" rel="noopener">↗ فتح الموقع</a>
+          <button type="button" class="adm-lnk" id="adm-theme">🌓 تبديل المظهر</button>
+          <button class="adm-lnk danger" id="admin-logout" type="button" hidden>⎋ تسجيل الخروج</button>
+        </div>
+      </aside>
+      <div class="adm-scrim" id="adm-scrim"></div>
+      <div class="adm-main">
+      <header class="adm-top">
+        <button type="button" class="adm-burger" id="adm-burger" aria-label="القائمة">☰</button>
+        <div class="adm-pt"><h1 id="adm-title">نظرة عامة</h1><p id="adm-desc"></p></div>
+        <div class="admin-search" role="search">
+          <input id="admin-search" type="search" placeholder="ابحث في كل حاجة…  ( / )" autocomplete="off" aria-label="بحث">
+          <span id="admin-search-count" class="note" aria-live="polite"></span>
+          <div id="gsearch" class="gsearch" hidden></div>
+        </div>
+      </header>
+      <div class="adm-content">
 
       <!-- نظرة عامة -->
       <section class="admin-pane" id="pane-overview" role="tabpanel">
@@ -291,7 +303,25 @@
               <select id="news-category"><option>أخبار</option><option>الدوري المصري</option><option>كأس مصر</option><option>الأهلي والزمالك</option><option>المنتخب</option><option>أوروبا</option><option>انتقالات</option><option>أفريقيا</option><option>مباريات</option><option>تحليلات</option></select>
             </label>
             <label>ملخص قصير يظهر تحت العنوان (اختياري)<input id="news-excerpt" maxlength="220"></label>
-            <label>نص الخبر<textarea id="news-body" rows="12"></textarea></label>
+            <div class="ed">
+              <div class="ed-label">نص الخبر</div>
+              <div class="ed-bar" role="toolbar" aria-label="أدوات التنسيق">
+                <button type="button" data-ed="h2" title="عنوان">H2</button>
+                <button type="button" data-ed="h3" title="عنوان فرعي">H3</button>
+                <button type="button" data-ed="b" title="غامق"><b>B</b></button>
+                <button type="button" data-ed="q" title="اقتباس">❝</button>
+                <button type="button" data-ed="li" title="نقطة">•</button>
+                <button type="button" data-ed="a" title="رابط">🔗</button>
+                <button type="button" data-ed="img" title="صورة">🖼️</button>
+                <span class="ed-sep"></span>
+                <button type="button" data-ed="emb" class="ed-emb" title="تضمين منشور X / إنستجرام / تيك توك / يوتيوب / فيسبوك">＋ تضمين منشور</button>
+              </div>
+              <div class="ed-split">
+                <textarea id="news-body" rows="14" placeholder="اكتب الخبر… للتضمين: الصق رابط المنشور في سطر لوحده."></textarea>
+                <div class="ed-prev"><div class="ed-prev-h">معاينة مباشرة</div><div id="news-preview" class="art-body"></div></div>
+              </div>
+              <p class="note">للتضمين: الصق رابط منشور <b>X</b> أو <b>إنستجرام</b> أو <b>تيك توك</b> أو <b>يوتيوب</b> أو <b>فيسبوك</b> في سطر لوحده وهيتحوّل لمنشور مدمج في صفحة الخبر.</p>
+            </div>
             <p class="note">تنسيق اختياري: <code>## عنوان</code> · <code>### عنوان فرعي</code> · <code>&gt; اقتباس</code> · <code>- نقطة</code> · <code>**غامق**</code> · <code>![وصف](https://رابط-صورة)</code> سطر لوحده · <code>[نص](https://رابط)</code>. سطر فاضي بين الفقرات.</p>
             <label>رابط صورة (اختياري)<input id="news-image" type="url" inputmode="url"></label>
             <label>رابط المصدر (اختياري)<input id="news-source" type="url" inputmode="url"></label>
@@ -335,6 +365,8 @@
           <div id="admin-audit"></div>
         </div>
       </section>
+      </div>
+      </div>
     </div>
 
     <dialog id="user-dialog" class="admin-dialog" aria-labelledby="ud-title">
@@ -364,6 +396,7 @@
   <script src="supabase-config.js"></script>
   <script src="supabase-client.js"></script>
   <script src="names-ar.js"></script>
+  <script src="richtext.js"></script>
   <script src="supabase-admin.js"></script>
 <script src="install.js" defer></script></body>
 </html>

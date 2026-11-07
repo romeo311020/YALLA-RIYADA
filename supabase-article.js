@@ -8,26 +8,7 @@
   const fdate = (v) => v ? new Date(v).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', dateStyle: 'long', timeStyle: 'short' }) : '';
   const id = new URLSearchParams(location.search).get('id') || new URLSearchParams(location.search).get('n');
 
-  /* تنسيق بسيط آمن: ## عنوان · ### عنوان فرعي · > اقتباس · - نقطة · **غامق** · [نص](https://رابط) · ![](https://صورة) */
-  const inline = (t) => esc(t)
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\[([^\]]+)\]\((https:\/\/[^\s)]+)\)/g, (m, a, u) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${a}</a>`);
-  const render = (body) => {
-    const out = []; let list = null; let para = [];
-    const flush = () => { if (para.length) { out.push(`<p>${inline(para.join(' '))}</p>`); para = []; } if (list) { out.push(`<ul>${list.map((x) => `<li>${inline(x)}</li>`).join('')}</ul>`); list = null; } };
-    String(body || '').replace(/\r/g, '').split('\n').forEach((raw) => {
-      const l = raw.trim();
-      if (!l) { flush(); return; }
-      let m;
-      if ((m = l.match(/^!\[([^\]]*)\]\((https:\/\/[^\s)]+)\)$/))) { flush(); out.push(`<figure><img src="${esc(m[2])}" alt="${esc(m[1])}" loading="lazy">${m[1] ? `<figcaption>${esc(m[1])}</figcaption>` : ''}</figure>`); }
-      else if (l.startsWith('### ')) { flush(); out.push(`<h3>${inline(l.slice(4))}</h3>`); }
-      else if (l.startsWith('## ')) { flush(); out.push(`<h2>${inline(l.slice(3))}</h2>`); }
-      else if (l.startsWith('> ')) { flush(); out.push(`<blockquote>${inline(l.slice(2))}</blockquote>`); }
-      else if (/^[-•] /.test(l)) { if (para.length) flush(); (list = list || []).push(l.slice(2)); }
-      else { if (list) flush(); para.push(l); }
-    });
-    flush(); return out.join('');
-  };
+  const render = (body) => window.yrRich.render(body);
   const minutes = (t) => Math.max(1, Math.round(String(t || '').split(/\s+/).length / 180));
 
   const setMeta = (n, img) => {
@@ -70,6 +51,7 @@
       <div class="art-body">${render(n.body)}</div>
       ${src ? `<p class="art-source">المصدر: <a href="${esc(src)}" target="_blank" rel="noopener noreferrer">${esc(new URL(src).hostname.replace(/^www\./, ''))} ↗</a></p>` : ''}
       ${shareBar(n)}`;
+    window.yrRich.hydrate(host.querySelector('.art-body'));
     host.querySelectorAll('#art-copy').forEach((b) => b.addEventListener('click', async () => { try { await navigator.clipboard.writeText(location.href); b.textContent = 'تم النسخ ✓'; } catch { b.textContent = location.href; } }));
     // عدّاد المشاهدات: مرة واحدة لكل جلسة
     try { if (!sessionStorage.getItem(`yr-v:${id}`)) { sessionStorage.setItem(`yr-v:${id}`, '1'); db.rpc('news_view', { p_id: id }).then(() => {}, () => {}); } } catch { /* اختياري */ }

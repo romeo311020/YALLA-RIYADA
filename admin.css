@@ -1,0 +1,132 @@
+/* ===== لوحة الإدارة v41 — تصميم تطبيق: قائمة جانبية + شريط علوي ===== */
+body.adm{
+  --bg:#f4f6fb;--panel:#fff;--panel2:#f1f4fa;--line:#e3e8f2;--text:#0f172a;--muted:#64748b;
+  --acc:#4f46e5;--on-acc:#fff;--side:#0f172a;--side2:#1b2540;--side-t:#cbd5e1;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;
+  background:var(--bg);color:var(--text);font-family:inherit
+}
+:root:not([data-theme="light"]) body.adm{
+  --bg:#0a0f1e;--panel:#121a30;--panel2:#18223d;--line:#243052;--text:#e8edf9;--muted:#94a3c4;--acc:#7c83ff;--on-acc:#0a0f1e;--side:#080c18;--side2:#141c35
+}
+body.adm #shared-header,body.adm #shared-footer{display:none!important}
+body.adm [hidden]{display:none!important}
+.adm-root{min-height:100vh}
+.adm-login{max-width:400px;margin:12vh auto;padding:34px 28px;border-radius:24px;text-align:center;background:var(--panel);border:1px solid var(--line);box-shadow:0 30px 60px -30px rgba(15,23,42,.35)}
+.adm-login .form-stack{text-align:start}
+.adm-logo{font-family:'Lalezar',inherit;font-size:34px;margin-bottom:6px}.adm-logo span{color:var(--acc)}
+.adm-shell{display:grid;grid-template-columns:264px 1fr;min-height:100vh}
+.adm-side{position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--side);color:var(--side-t);padding:18px 14px;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin}
+.adm-brand{display:flex;align-items:center;gap:12px;padding:6px 8px 18px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:8px}
+.adm-mark{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:22px;background:linear-gradient(135deg,#6366f1,#22c55e)}
+.adm-brand b{display:block;color:#fff;font-size:17px}.adm-brand small{color:#94a3b8;font-size:12px}
+.adm-side .admin-tabs{display:flex;flex-direction:column;gap:2px;position:static;overflow:visible;background:none;box-shadow:none;border:0;padding:0;margin:0;grid-row:auto}
+.nav-label{font-size:11px;letter-spacing:.04em;color:#64748b;padding:14px 10px 6px;font-weight:800}
+body.adm .atab{width:100%;display:flex;align-items:center;gap:12px;min-height:44px;padding:8px 12px;border:0;border-radius:12px;background:transparent;color:var(--side-t);font-weight:700;font-size:14.5px;text-align:start;position:relative;box-shadow:none;transform:none}
+body.adm .atab .ti{font-style:normal;width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:rgba(255,255,255,.06);font-size:15px}
+body.adm .atab:hover{background:var(--side2);color:#fff}
+body.adm .atab.active{background:var(--side2);color:#fff;box-shadow:none}
+body.adm .atab.active::before{content:"";position:absolute;inset-inline-start:-14px;top:10px;bottom:10px;width:4px;border-radius:4px;background:var(--acc)}
+body.adm .atab.active .ti{background:var(--acc);color:#fff}
+body.adm .atab .badge{margin-inline-start:auto;background:#ef4444;color:#fff;border-radius:999px;font-size:11px;padding:1px 7px}
+.adm-side-foot{margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);display:grid;gap:2px}
+.adm-lnk{display:block;width:100%;text-align:start;padding:10px 12px;border:0;background:transparent;color:var(--side-t);border-radius:10px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;text-decoration:none}
+.adm-lnk:hover{background:var(--side2);color:#fff}.adm-lnk.danger{color:#fca5a5}
+.adm-main{min-width:0;display:flex;flex-direction:column}
+.adm-top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;padding:14px clamp(16px,3vw,32px);background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.adm-pt{min-width:0}.adm-pt h1{margin:0;font-size:22px;line-height:1.2}.adm-pt p{margin:3px 0 0;color:var(--muted);font-size:13px;max-width:520px}
+.adm-burger{display:none;width:42px;height:42px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);font-size:20px;cursor:pointer}
+body.adm .admin-search{position:relative;margin:0 auto 0 0;flex:0 1 420px;min-width:180px;top:auto}
+body.adm .admin-search input{width:100%;min-height:44px;border-radius:12px;background:var(--panel);border:1px solid var(--line);box-shadow:none;padding:0 14px}
+body.adm .admin-search input:focus{outline:2px solid var(--acc);border-color:transparent}
+body.adm .admin-search .note{position:absolute;inset-inline-end:12px;top:12px;margin:0;font-size:12px}
+body.adm .gsearch{background:var(--panel);border-color:var(--line)}
+.adm-content{padding:clamp(16px,3vw,32px);max-width:1180px;width:100%}
+body.adm .panel,body.adm .admin-section{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:0 1px 2px rgba(15,23,42,.04);padding:clamp(16px,2.4vw,26px);margin-bottom:18px}
+body.adm .admin-section-heading{margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line);align-items:center}
+body.adm .admin-section-heading .tag{display:none}
+body.adm .admin-section-heading h2,body.adm .panel h2{margin:0;font-size:17px}
+body.adm .admin-section-heading p{font-size:13px;color:var(--muted)}
+body.adm h4{margin:18px 0 8px;font-size:14px;color:var(--muted)}
+/* نماذج */
+body.adm label{font-weight:700;font-size:13px;color:var(--text)}
+body.adm input:not([type=checkbox]):not([type=radio]),body.adm select,body.adm textarea{background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--text);min-height:42px;padding:8px 12px;font:inherit;font-size:14.5px;width:100%}
+body.adm textarea{min-height:120px}
+body.adm input:focus,body.adm select:focus,body.adm textarea:focus{outline:2px solid color-mix(in srgb,var(--acc) 55%,transparent);border-color:var(--acc)}
+body.adm .admin-form{max-width:none}
+body.adm .btn{border-radius:10px;min-height:42px;font-weight:800;font-size:14px;box-shadow:none}
+body.adm .btn.primary{background:var(--acc);color:var(--on-acc);border:0}
+body.adm .btn.primary:hover{filter:brightness(1.08)}
+body.adm .btn.outline{background:var(--panel);border:1px solid var(--line);color:var(--text)}
+body.adm .btn.outline:hover{border-color:var(--acc);color:var(--acc)}
+body.adm .btn.danger{background:#fee2e2;color:#b91c1c;border:0}
+body.adm details.acc{border:1px solid var(--line);border-radius:14px;background:var(--panel2);margin-bottom:14px}
+body.adm details.acc>summary{padding:14px 16px;font-weight:800;cursor:pointer}
+body.adm details.acc[open]>summary{border-bottom:1px solid var(--line)}
+body.adm details.acc>*:not(summary){margin-inline:16px}
+/* صفوف القوائم */
+body.adm .admin-list-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;margin:0 0 8px;border:1px solid var(--line);border-radius:12px;background:var(--panel);transition:border-color .15s,box-shadow .15s}
+body.adm .admin-list-item:hover{background:var(--panel);border-color:color-mix(in srgb,var(--acc) 45%,var(--line));box-shadow:0 6px 18px -14px rgba(15,23,42,.4)}
+body.adm .admin-list-item strong{font-size:14.5px}
+body.adm .admin-list-item small{color:var(--muted);font-size:12.5px}
+body.adm .admin-list-item .btn{min-height:34px;padding:4px 12px;font-size:12.5px}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:var(--panel2);color:var(--muted);margin-inline-end:6px}
+.pill.ok{background:#dcfce7;color:#15803d}.pill.off{background:#f1f5f9;color:#64748b}.pill.star{background:#fef3c7;color:#b45309}
+:root:not([data-theme="light"]) .pill.ok{background:#12351f;color:#4ade80}:root:not([data-theme="light"]) .pill.off{background:#232d4a;color:#9fb0d6}:root:not([data-theme="light"]) .pill.star{background:#3b2f0e;color:#fbbf24}
+/* نظرة عامة */
+body.adm .stat-cards{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:0 0 18px}
+body.adm .stat-card{padding:18px;border-radius:16px;border:1px solid var(--line);background:var(--panel);position:relative;overflow:hidden}
+body.adm .stat-card::after{content:"";position:absolute;inset-inline-end:-18px;top:-18px;width:70px;height:70px;border-radius:50%;background:color-mix(in srgb,var(--acc) 14%,transparent)}
+body.adm .stat-card b{font-size:32px;color:var(--text)}
+body.adm .quick-actions{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin:0 0 18px}
+body.adm .qa{border-radius:16px;background:var(--panel);border:1px solid var(--line)}
+body.adm .qa i{background:color-mix(in srgb,var(--acc) 13%,var(--panel2))}
+body.adm .qa:hover{border-color:var(--acc)}
+body.adm .checklist li{padding:10px 12px;border-radius:10px;background:var(--panel2);margin-bottom:6px;list-style:none}
+body.adm .checklist li.ok span{color:var(--ok)}body.adm .checklist li.bad span{color:var(--bad)}body.adm .checklist li.warn span{color:var(--warn)}
+/* قائمة الترتيب */
+body.adm .lg-list li{background:var(--panel);border:1px solid var(--line)}
+/* محرر الأخبار */
+.ed-label{font-weight:700;font-size:13px;margin-bottom:6px}
+.ed-bar{display:flex;flex-wrap:wrap;gap:6px;padding:8px;border:1px solid var(--line);border-bottom:0;border-radius:12px 12px 0 0;background:var(--panel2)}
+.ed-bar button{min-width:38px;height:36px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--text);font:inherit;font-weight:800;cursor:pointer}
+.ed-bar button:hover{border-color:var(--acc);color:var(--acc)}
+.ed-bar .ed-emb{background:var(--acc);color:var(--on-acc);border-color:transparent}.ed-bar .ed-emb:hover{color:var(--on-acc);filter:brightness(1.1)}
+.ed-sep{flex:1}
+.ed-split{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:0 0 12px 12px;overflow:hidden}
+.ed-split textarea{border:0!important;border-radius:0!important;min-height:380px!important;resize:vertical;outline:0!important;line-height:1.8}
+.ed-prev{border-inline-start:1px solid var(--line);background:var(--bg);max-height:520px;overflow:auto;padding:12px 16px}
+.ed-prev-h{font-size:11px;font-weight:800;color:var(--muted);margin-bottom:8px;letter-spacing:.04em}
+.ed-prev .emb{margin:14px auto}
+@media(max-width:900px){.ed-split{grid-template-columns:1fr}.ed-prev{border-inline-start:0;border-top:1px solid var(--line)}}
+/* جوال */
+@media(max-width:999px){
+  .adm-shell{grid-template-columns:1fr}
+  .adm-side{position:fixed;top:0;bottom:0;inset-inline-start:0;width:284px;z-index:80;transform:translateX(100%);transition:transform .28s var(--ease,ease);box-shadow:0 0 40px rgba(0,0,0,.4)}
+  .adm-burger{display:grid;place-items:center}
+  body.adm-open .adm-side{transform:none}
+  .adm-scrim{position:fixed;inset:0;background:rgba(2,6,23,.55);z-index:70;opacity:0;pointer-events:none;transition:opacity .25s}
+  body.adm-open .adm-scrim{opacity:1;pointer-events:auto}
+  .adm-top{flex-wrap:wrap;gap:10px}.adm-pt{flex:1}.adm-pt p{display:none}
+  body.adm .admin-search{flex:1 1 100%;order:3;margin:0}
+  body.adm .admin-list-item{flex-direction:column;align-items:flex-start}
+  body.adm .admin-list-item .row{width:100%}
+}
+@media(min-width:1000px){.adm-scrim{display:none}}
+html:has(body.adm){scroll-padding-top:96px}
+body.adm .ed-bar{scroll-margin-top:96px}
+/* تعطيل قواعد الشبكة القديمة */
+@media(min-width:1000px){
+  body.adm #admin-workspace:not([hidden]){display:grid;grid-template-columns:264px minmax(0,1fr);gap:0;align-items:stretch}
+  body.adm #admin-workspace>*{grid-column:auto}
+  body.adm #admin-workspace>.adm-side{grid-column:1;grid-row:auto}
+  body.adm #admin-workspace>.adm-main{grid-column:2}
+}
+@media(max-width:999px){body.adm #admin-workspace:not([hidden]){display:block}}
+:root[data-theme="light"] body.adm .atab.active,body.adm .atab.active{background:var(--side2)!important;color:#fff!important}
+:root[data-theme="light"] body.adm .btn.primary{background:var(--acc);color:var(--on-acc)}
+body.adm .adm-side .admin-tabs{grid-column:auto;grid-row:auto}
+body.adm .quick-actions{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+body.adm .stat-cards{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+body.adm .checklist li span{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;color:#fff!important;font-size:12px;margin-inline-end:10px;background:var(--muted)}
+body.adm .checklist li.ok span{background:var(--ok)}body.adm .checklist li.bad span{background:var(--bad)}body.adm .checklist li.warn span{background:var(--warn)}
+body.adm .panel>h2{margin-bottom:12px}
+.ed-split textarea{font-size:14px!important;line-height:1.7!important;text-align:start}

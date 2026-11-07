@@ -153,11 +153,25 @@
     }
     if (!e.target.closest('.admin-search')) box.hidden = true;
   });
+  const PAGE_META = {
+    overview: ['نظرة عامة', 'ملخص سريع لحالة الموقع واختصارات للمهام اليومية.'],
+    matches: ['المباريات', 'أضف مباراة يدوية أو عدّل أي مباراة من المصدر (تأجيل، نتيجة، مهمة).'],
+    leagues: ['البطولات', 'رتّب البطولات اللي تظهر للزوار أولًا.'],
+    teams: ['الفرق', 'الفرق ذات الأولوية وتعديل أسماء الفرق واللاعبين بالعربي.'],
+    streams: ['المشغّلات', 'اربط روابط المشاهدة بالمباريات لتظهر للأعضاء.'],
+    store: ['المتجر', 'المنتجات وإعدادات فتح المتجر.'],
+    orders: ['الطلبات', 'متابعة طلبات العملاء وتغيير حالتها.'],
+    news: ['الأخبار', 'اكتب أخبارًا حصرية وضمّن منشورات X وإنستجرام وتيك توك ويوتيوب.'],
+    users: ['المستخدمون', 'إدارة الحسابات والصلاحيات والحظر.'],
+    audit: ['السجل', 'آخر عمليات المسؤولين.'],
+  };
   function openTab(name) {
     if ($('admin-search')) { $('admin-search').value = ''; setTimeout(applySearch, 0); }
     if (!loaders[name]) name = 'overview';
     document.querySelectorAll('[data-atab]').forEach((b) => { const on = b.dataset.atab === name; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
     document.querySelectorAll('.admin-pane').forEach((p) => { p.hidden = p.id !== `pane-${name}`; });
+    const meta = PAGE_META[name] || PAGE_META.overview; if ($('adm-title')) { $('adm-title').textContent = meta[0]; $('adm-desc').textContent = meta[1]; }
+    document.body.classList.remove('adm-open'); window.scrollTo({ top: 0 });
     try { const p = new URLSearchParams(location.search); p.set('tab', name); history.replaceState(null, '', `?${p}`); } catch { /* لا مشكلة */ }
     if (!loaded.has(name)) { loaded.add(name); Promise.resolve(loaders[name]()).catch((e) => console.error(`admin tab ${name}:`, e)); }
   }
@@ -241,7 +255,7 @@
     const { data, error } = await client.from('matches').select('*').order('created_at', { ascending: false }).limit(50);
     if (error) { host.textContent = `تعذّر تحميل المباريات: ${error.message}`; return; }
     host.innerHTML = (data || []).map((m) => `<article class="admin-list-item">
-      <div><strong>${esc(ar(m.home_team))} × ${esc(ar(m.away_team))}</strong><small>${esc(m.league || 'كرة القدم')} · ${m.featured ? '⭐ مهمة · ' : ''}${m.is_published ? 'منشورة' : 'مخفية'}${m.details && (m.details.lineups || []).length ? ' · 📋 بيانات كاملة' : ''}</small></div>
+      <div><strong>${esc(ar(m.home_team))} × ${esc(ar(m.away_team))}</strong><small>${esc(m.league || 'كرة القدم')} · ${m.featured ? '<span class="pill star">⭐ مهمة</span>' : ''}<span class="pill ${m.is_published ? 'ok' : 'off'}">${m.is_published ? 'منشورة' : 'مخفية'}</span>${m.details && (m.details.lineups || []).length ? ' · 📋 بيانات كاملة' : ''}</small></div>
       <div class="row"><button type="button" class="btn outline" data-edit-match="${esc(m.id)}">تعديل</button><button type="button" class="btn outline" data-delete-match="${esc(m.id)}">حذف</button></div>
     </article>`).join('') || '<p class="note">لا توجد مباريات يدوية بعد.</p>';
     host.querySelectorAll('[data-edit-match]').forEach((b) => b.addEventListener('click', () => {
@@ -694,7 +708,7 @@
     let { data, error } = await client.from('news').select('id,title,body,image_url,source_url,is_published,created_at,category,excerpt,views').order('created_at', { ascending: false }).limit(100);
     if (error) ({ data, error } = await client.from('news').select('id,title,body,image_url,source_url,is_published,created_at').order('created_at', { ascending: false }).limit(100));
     if (error) { host.textContent = `تعذّر تحميل الأخبار: ${error.message}`; return; }
-    host.innerHTML = (data || []).map((n) => `<article class="admin-list-item"><div><strong>${esc(n.title)}</strong><small>${esc(fmt(n.created_at))} · ${n.is_published ? 'منشور' : 'مخفي'}${n.views != null ? ` · ${n.views} مشاهدة` : ''}</small></div>
+    host.innerHTML = (data || []).map((n) => `<article class="admin-list-item"><div><strong>${esc(n.title)}</strong><small>${esc(fmt(n.created_at))} · <span class="pill ${n.is_published ? 'ok' : 'off'}">${n.is_published ? 'منشور' : 'مخفي'}</span>${n.views != null ? ` · ${n.views} مشاهدة` : ''}</small></div>
       <div class="row"><button type="button" class="btn outline" data-toggle-news="${esc(n.id)}">${n.is_published ? 'إخفاء' : 'نشر'}</button><button type="button" class="btn outline" data-edit-news="${esc(n.id)}">تعديل</button><button type="button" class="btn outline" data-delete-news="${esc(n.id)}">حذف</button></div></article>`).join('') || '<p class="note">لا توجد أخبار.</p>';
     host.querySelectorAll('[data-toggle-news]').forEach((b) => b.addEventListener('click', async () => {
       const n = data.find((x) => x.id === b.dataset.toggleNews); if (!n) return;
@@ -789,4 +803,42 @@
   $('audit-refresh').addEventListener('click', loadAudit);
 
   checkSession();
+
+  /* ======================== واجهة اللوحة: قائمة جانبية / مظهر / محرر الأخبار ======================== */
+  $('adm-burger').addEventListener('click', () => document.body.classList.toggle('adm-open'));
+  $('adm-scrim').addEventListener('click', () => document.body.classList.remove('adm-open'));
+  $('adm-theme').addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') !== 'light';
+    if (dark) document.documentElement.setAttribute('data-theme', 'light'); else document.documentElement.removeAttribute('data-theme');
+    try { localStorage.setItem('yr-theme', dark ? 'light' : 'dark'); } catch { /* اختياري */ }
+  });
+  const body = $('news-body');
+  let prevTimer; let lastPrev = null;
+  const paintPrev = () => {
+    const v = body.value; if (v === lastPrev) return; lastPrev = v;
+    const box = $('news-preview'); box.innerHTML = v.trim() ? window.yrRich.render(v) : '<p class="note">المعاينة هتظهر هنا.</p>';
+    window.yrRich.hydrate(box);
+  };
+  const schedulePrev = () => { clearTimeout(prevTimer); prevTimer = setTimeout(paintPrev, 450); };
+  body.addEventListener('input', schedulePrev);
+  new MutationObserver(schedulePrev).observe(body, { attributes: true });
+  $('news-form').addEventListener('reset', () => setTimeout(() => { lastPrev = null; paintPrev(); }, 0));
+  const wrap = (pre, post, ph) => {
+    const s = body.selectionStart; const e = body.selectionEnd; const sel = body.value.slice(s, e) || ph;
+    body.setRangeText(pre + sel + post, s, e, 'end'); body.focus(); body.dispatchEvent(new Event('input'));
+  };
+  const lineStart = (txt) => { const s = body.selectionStart; const before = body.value.slice(0, s); const pad = !before || before.endsWith('\n') ? '' : '\n'; body.setRangeText(pad + txt, s, body.selectionEnd, 'end'); body.focus(); body.dispatchEvent(new Event('input')); };
+  document.querySelector('.ed-bar').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-ed]'); if (!b) return;
+    const k = b.dataset.ed;
+    if (k === 'b') wrap('**', '**', 'نص غامق');
+    else if (k === 'h2') lineStart('## عنوان\n');
+    else if (k === 'h3') lineStart('### عنوان فرعي\n');
+    else if (k === 'q') lineStart('> اقتباس\n');
+    else if (k === 'li') lineStart('- نقطة\n');
+    else if (k === 'a') { const u = prompt('الصق الرابط (https://…)'); if (u && /^https:\/\//.test(u.trim())) wrap('[', `](${u.trim()})`, 'نص الرابط'); }
+    else if (k === 'img') { const u = prompt('رابط الصورة (https://…)'); if (u && /^https:\/\//.test(u.trim())) lineStart(`![وصف الصورة](${u.trim()})\n`); }
+    else if (k === 'emb') { const u = prompt('الصق رابط المنشور (X / إنستجرام / تيك توك / يوتيوب / فيسبوك)'); if (u && /^https:\/\//.test(u.trim())) lineStart(`\n${u.trim()}\n\n`); else if (u) toast('الرابط لازم يبدأ بـ https://'); }
+  });
+  paintPrev();
 })();
