@@ -367,26 +367,33 @@
     ovMap = new Map((data || []).map((o) => [String(o.fixture_id), o]));
     $('ov-list').innerHTML = (data || []).length ? '<h4>التعديلات الحالية</h4>' + data.map((o) => `<article class="admin-list-item"><div><strong>${o.featured ? '⭐ ' : ''}${esc(o.title || ovLabel(o.fixture_id))}</strong><small>${esc(ST_AR[o.status] || 'بدون تغيير حالة')}${o.home_score != null ? ` · ${o.home_score}-${o.away_score ?? ''}` : ''}${o.note ? ` · ${esc(o.note)}` : ''}</small></div><div class="row"><button class="btn outline" type="button" data-ov-del="${esc(o.fixture_id)}">حذف</button></div></article>`).join('') : '';
   }
+  /* مباريات محفوظة (نسخة احتياطية) ليوم معيّن — بتتضاف للقوائم لما الـ API يخلص أو يرجّع فاضي */
+  const dayOf = (k) => (k ? new Date(k).toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' }) : '');
+  async function snapForDay(iso) {
+    try { const { data } = await client.from('fixture_overrides').select('snapshot').not('snapshot', 'is', null).limit(300); return (data || []).map((o) => o.snapshot).filter((s) => s && s.fixture_id && dayOf(s.kickoff) === iso); } catch { return []; }
+  }
+  const mergeFx = (api, snap) => { const m = new Map(api.map((f) => [String(f.fixture_id), f])); snap.forEach((s) => { if (!m.has(String(s.fixture_id))) m.set(String(s.fixture_id), s); }); return [...m.values()]; };
   $('ov-load').addEventListener('click', async () => {
     const sel = $('ov-fixture'); sel.innerHTML = '<option value="">جارٍ التحميل...</option>'; say('ov-msg', '');
     try {
-      const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(Number($('ov-day').value) || 0) });
-      const fx = Array.isArray(data?.fixtures) ? data.fixtures : []; fx.forEach((f) => { fixtureCache.set(String(f.fixture_id), f); ovFx.set(String(f.fixture_id), f); });
+      const iso = cairoDate(Number($('ov-day').value) || 0); let api = []; let apiErr = '';
+      try { const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: iso }); api = Array.isArray(data?.fixtures) ? data.fixtures : []; } catch (e) { apiErr = e.message; }
+      const fx = mergeFx(api, await snapForDay(iso)); if (!fx.length && apiErr) throw new Error(apiErr); fx.forEach((f) => { fixtureCache.set(String(f.fixture_id), f); ovFx.set(String(f.fixture_id), f); });
       sel.innerHTML = '<option value="">— اختر مباراة —</option>' + fx.map((f) => `<option value="${esc(f.fixture_id)}">${esc(`${ar(f.home_team)} × ${ar(f.away_team)} · ${f.league_label || f.league}`)}</option>`).join('');
       if (!fx.length) say('ov-msg', 'لا توجد مباريات لهذا اليوم.');
     } catch (e) { sel.innerHTML = '<option value="">— اختر مباراة —</option>'; say('ov-msg', e.message); }
   });
   $('ov-fixture').addEventListener('change', () => {
     const id = $('ov-fixture').value; const f = ovFx.get(id); const o = ovMap.get(id);
-    $('ov-status').value = o?.status || ''; $('ov-kickoff').value = localDT(o?.kickoff || ''); $('ov-home').value = o?.home_score ?? ''; $('ov-away').value = o?.away_score ?? ''; $('ov-note').value = o?.note || ''; $('ov-featured').checked = !!o?.featured;
+    $('ov-status').value = o?.status || ''; $('ov-kickoff').value = localDT(o?.kickoff || ''); $('ov-home').value = o?.home_score ?? ''; $('ov-away').value = o?.away_score ?? ''; $('ov-note').value = o?.note || ''; $('ov-featured').checked = !!o?.featured; $('ov-hide').checked = !!o?.hide_important;
     if (f && !o) { $('ov-home').value = f.home_score ?? ''; $('ov-away').value = f.away_score ?? ''; }
   });
   $('ov-form').addEventListener('submit', async (e) => {
     e.preventDefault(); const id = $('ov-fixture').value; if (!id) { say('ov-msg', 'اختر مباراة الأول.'); return; }
     const k = $('ov-kickoff').value; const n = (v) => (v === '' ? null : Number(v));
-    const row = { fixture_id: Number(id), status: $('ov-status').value || null, kickoff: k ? new Date(k).toISOString() : null, home_score: n($('ov-home').value), away_score: n($('ov-away').value), note: $('ov-note').value.trim() || null, featured: $('ov-featured').checked, title: ovLabel(id), updated_at: new Date().toISOString() };
+    const row = { fixture_id: Number(id), status: $('ov-status').value || null, kickoff: k ? new Date(k).toISOString() : null, home_score: n($('ov-home').value), away_score: n($('ov-away').value), note: $('ov-note').value.trim() || null, featured: $('ov-featured').checked && !$('ov-hide').checked, hide_important: $('ov-hide').checked, title: ovLabel(id), updated_at: new Date().toISOString() };
     let { error } = await client.from('fixture_overrides').upsert(row);
-    if (error && /featured/.test(error.message)) { const { featured, ...plain } = row; ({ error } = await client.from('fixture_overrides').upsert(plain)); if (!error) { say('ov-msg', 'اتحفظ التعديل بس «مباراة مهمة» محتاجة تشغّل supabase-admin-v34.sql.'); ovRefreshList(); return; } }
+    if (error && /featured|hide_important/.test(error.message)) { const { featured, hide_important, ...plain } = row; ({ error } = await client.from('fixture_overrides').upsert(plain)); if (!error) { say('ov-msg', 'اتحفظ التعديل بس «مهمة / إخفاء» محتاجة تشغّل supabase-admin-v34.sql و supabase-hide-important.sql.'); ovRefreshList(); return; } }
     say('ov-msg', error ? (/fixture_overrides|relation/.test(error.message) ? 'شغّل ملف supabase-overrides.sql في Supabase الأول.' : error.message) : 'تم حفظ التعديل ✓ (هيظهر للزوار فورًا بعد تحديث الصفحة).');
     if (!error) ovRefreshList();
   });
@@ -397,7 +404,7 @@
 
 
   /* ---------- المباريات المهمة حسب التاريخ ---------- */
-  const impFx = new Map(); let impSavedMap = new Map();
+  const impFx = new Map(); let impSavedMap = new Map(); let impOv = new Map();
   const isTopFx = (f) => {
     const keys = new Set(); tmList.forEach((t) => { if (t.en) keys.add(normQ(t.en)); if (t.ar) keys.add(normQ(t.ar)); });
     return [f.home_team, f.away_team].some((n) => n && (keys.has(normQ(n)) || keys.has(normQ(ar(n)))));
@@ -408,15 +415,25 @@
   async function loadImportant() {
     if (!$('imp-date').value) $('imp-date').value = cairoDate(0);
     if (!tmList.length) await loadTopTeamsAdmin();
-    const { data } = await client.from('fixture_overrides').select('fixture_id,title,featured,snapshot,updated_at').not('snapshot', 'is', null).limit(300);
-    impSavedMap = new Map((data || []).map((o) => [Number(o.fixture_id), o]));
+    let { data: all, error: ee } = await client.from('fixture_overrides').select('fixture_id,title,featured,hide_important,snapshot').limit(500);
+    if (ee) ({ data: all } = await client.from('fixture_overrides').select('fixture_id,title,featured,snapshot').limit(500));
+    impOv = new Map((all || []).map((o) => [Number(o.fixture_id), o]));
+    const data = (all || []).filter((o) => o.snapshot);
+    impSavedMap = new Map(data.map((o) => [Number(o.fixture_id), o]));
     const rows = (data || []).slice().sort((a, b) => String(a.snapshot?.kickoff || '').localeCompare(String(b.snapshot?.kickoff || '')));
-    $('imp-saved').innerHTML = rows.length ? rows.map((o) => { const s = o.snapshot || {}; return `<article class="admin-list-item"><div><strong>${esc(ar(s.home_team))} × ${esc(ar(s.away_team))}</strong><small>${esc(s.league_label || s.league || '')} · ${s.kickoff ? esc(new Date(s.kickoff).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) : ''}</small></div><button type="button" class="btn outline" data-imp-del="${esc(o.fixture_id)}">حذف</button></article>`; }).join('') : '<p class="note">لسه مفيش مباريات محفوظة. حمّل مباريات واحفظ المهم منها.</p>';
+    $('imp-saved').innerHTML = rows.length ? rows.map((o) => { const s = o.snapshot || {}; return `<article class="admin-list-item"><div><strong>${esc(ar(s.home_team))} × ${esc(ar(s.away_team))}</strong><small>${esc(s.league_label || s.league || '')} · ${s.kickoff ? esc(new Date(s.kickoff).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) : ''}</small></div><div class="row"><button type="button" class="btn outline" data-imp-ov="${esc(o.fixture_id)}">🛠️ تعديل</button><button type="button" class="btn outline" data-imp-lu="${esc(o.fixture_id)}">📋 تشكيلة وأحداث</button><button type="button" class="btn outline" data-imp-del="${esc(o.fixture_id)}">إزالة من المهمة</button></div></article>`; }).join('') : '<p class="note">لسه مفيش مباريات محفوظة. حمّل مباريات واحفظ المهم منها.</p>';
   }
   $('imp-saved').addEventListener('click', async (e) => {
-    const b = e.target.closest('[data-imp-del]'); if (!b) return;
-    const { error } = await client.from('fixture_overrides').update({ snapshot: null, featured: false }).eq('fixture_id', Number(b.dataset.impDel));
-    if (error) say('imp-msg', error.message); else { say('imp-msg', 'تم الحذف.'); loadImportant(); }
+    const bo = e.target.closest('[data-imp-ov]'); const bl = e.target.closest('[data-imp-lu]'); const b = e.target.closest('[data-imp-del]');
+    if (bo || bl) {
+      const id = Number((bo || bl).dataset.impOv || (bo || bl).dataset.impLu); const f = impSavedMap.get(id)?.snapshot; if (!f) return;
+      if (bl) { openTab('lineups'); $('lu-src').value = 'api'; await luSrcChange(); luRows.set(String(id), f); const s = $('lu-match'); s.innerHTML = `<option value="${id}">${esc(ar(f.home_team))} × ${esc(ar(f.away_team))}</option>`; s.value = String(id); await luPick(); }
+      else { openTab('apimatches'); await ovRefreshList(); ovFx.set(String(id), f); const s = $('ov-fixture'); s.innerHTML = `<option value="${id}">${esc(ar(f.home_team))} × ${esc(ar(f.away_team))}</option>`; s.value = String(id); s.dispatchEvent(new Event('change')); }
+      return;
+    }
+    if (!b) return;
+    const id = Number(b.dataset.impDel); const { error } = await client.from('fixture_overrides').update({ snapshot: null, featured: false, hide_important: true }).eq('fixture_id', id);
+    if (error) say('imp-msg', /hide_important/.test(error.message) ? 'شغّل ملف supabase-hide-important.sql في Supabase الأول.' : error.message); else { say('imp-msg', 'اتشالت من المباريات المهمة (المباراة نفسها لسه ظاهرة في بطولتها).'); loadImportant(); }
   });
   $('imp-load').addEventListener('click', async () => {
     const btn = $('imp-load'); btn.disabled = true; $('imp-list').innerHTML = ''; $('imp-tools').hidden = true; impFx.clear();
@@ -426,11 +443,12 @@
       for (let i = 0; i < n; i++) {
         const d = new Date(`${start}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + i); const iso = d.toISOString().slice(0, 10);
         say('imp-msg', `جارٍ تحميل ${impDayLabel(iso)} (${i + 1} من ${n})…`);
-        try { const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: iso }); const fx = (data?.fixtures || []).filter((f) => f.fixture_id && !f.manual); fx.forEach((f) => impFx.set(Number(f.fixture_id), f)); days.push([iso, fx]); } catch { fails++; days.push([iso, []]); }
+        let api = []; try { const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: iso }); api = (data?.fixtures || []).filter((f) => f.fixture_id && !f.manual); } catch { fails++; }
+        const fx = mergeFx(api, await snapForDay(iso)); fx.forEach((f) => impFx.set(Number(f.fixture_id), f)); days.push([iso, fx]);
       }
       $('imp-list').innerHTML = days.map(([iso, fx]) => `<h4>${esc(impDayLabel(iso))} <small>(${fx.length})</small></h4>` + (fx.length ? fx.map((f) => {
-        const id = Number(f.fixture_id); const pre = isTopFx(f) || impSavedMap.get(id)?.featured;
-        return `<label class="imp-row"><input type="checkbox" data-fx="${id}" data-top="${isTopFx(f) ? 1 : 0}"${pre ? ' checked' : ''}><span><b>${esc(ar(f.home_team))} × ${esc(ar(f.away_team))}</b><small>${esc(f.league_label || f.league || '')} · ${esc(impTime(f.kickoff))}${impSavedMap.get(id) ? ' · <i class="pill ok">محفوظة</i>' : ''}${isTopFx(f) ? ' · <i class="pill star">فريق مهم</i>' : ''}</small></span></label>`;
+        const id = Number(f.fixture_id); const hid = impOv.get(id)?.hide_important; const pre = !hid && (isTopFx(f) || impOv.get(id)?.featured);
+        return `<label class="imp-row"><input type="checkbox" data-fx="${id}" data-top="${isTopFx(f) ? 1 : 0}"${pre ? ' checked' : ''}><span><b>${esc(ar(f.home_team))} × ${esc(ar(f.away_team))}</b><small>${esc(f.league_label || f.league || '')} · ${esc(impTime(f.kickoff))}${impSavedMap.get(id) ? ' · <i class="pill ok">محفوظة</i>' : ''}${isTopFx(f) ? ' · <i class="pill star">فريق مهم</i>' : ''}${hid ? ' · <i class="pill off">مخفية</i>' : ''}</small></span></label>`;
       }).join('') : '<p class="note">لا توجد مباريات.</p>')).join('');
       const total = impFx.size; $('imp-tools').hidden = !total; impCount();
       say('imp-msg', total ? `تم تحميل ${total} مباراة. علّم المهم واضغط حفظ.${fails ? ` (تعذّر تحميل ${fails} يوم — ممكن الحصة خلصت)` : ''}` : (fails ? 'تعذّر تحميل المباريات (ممكن حصة الـ API خلصت).' : 'لا توجد مباريات في الفترة دي.'));
@@ -442,16 +460,20 @@
   $('imp-all').addEventListener('click', () => impSet(() => true));
   $('imp-none').addEventListener('click', () => impSet(() => false));
   $('imp-save').addEventListener('click', async () => {
-    const ids = [...$('imp-list').querySelectorAll('input[type=checkbox]:checked')].map((c) => Number(c.dataset.fx));
-    if (!ids.length) { say('imp-msg', 'مفيش مباريات محددة.'); return; }
-    const btn = $('imp-save'); btn.disabled = true;
+    const boxes = [...$('imp-list').querySelectorAll('input[type=checkbox]')];
+    if (!boxes.length) return; const btn = $('imp-save'); btn.disabled = true;
     try {
-      const { data: old } = await client.from('fixture_overrides').select('*').in('fixture_id', ids);
-      const oldMap = new Map((old || []).map((o) => [Number(o.fixture_id), o]));
-      const rows = ids.map((id) => { const f = impFx.get(id); const o = oldMap.get(id) || {}; return { ...o, fixture_id: id, featured: true, title: `${ar(f.home_team)} × ${ar(f.away_team)}`, snapshot: f, updated_at: new Date().toISOString() }; });
+      const now = new Date().toISOString(); const rows = []; let on = 0; let off = 0;
+      boxes.forEach((c) => {
+        const id = Number(c.dataset.fx); const f = impFx.get(id); const o = impOv.get(id); if (!f) return;
+        const title = `${ar(f.home_team)} × ${ar(f.away_team)}`;
+        if (c.checked) { rows.push({ ...(o || {}), fixture_id: id, featured: true, hide_important: false, title, snapshot: f, updated_at: now }); on++; }
+        else if (c.dataset.top === '1' || o?.featured || o?.snapshot) { rows.push({ ...(o || {}), fixture_id: id, featured: false, hide_important: true, title, snapshot: null, updated_at: now }); off++; }
+      });
+      if (!rows.length) { say('imp-msg', 'مفيش تغييرات للحفظ.'); return; }
       const { error } = await client.from('fixture_overrides').upsert(rows);
-      if (error) { say('imp-msg', /snapshot/.test(error.message) ? 'شغّل ملف supabase-snapshot.sql في Supabase الأول.' : error.message); return; }
-      say('imp-msg', `تم حفظ ${rows.length} مباراة مهمة ✓`); await loadImportant(); impCount();
+      if (error) { say('imp-msg', /snapshot/.test(error.message) ? 'شغّل ملف supabase-snapshot.sql في Supabase الأول.' : /hide_important/.test(error.message) ? 'شغّل ملف supabase-hide-important.sql في Supabase الأول.' : error.message); return; }
+      say('imp-msg', `تم ✓ — مهمة: ${on}${off ? ` · مخفية من المهمة: ${off}` : ''}`); await loadImportant(); impCount();
     } catch (e) { say('imp-msg', e.message); } finally { btn.disabled = false; }
   });
 
@@ -472,8 +494,9 @@
   $('lu-load').addEventListener('click', async () => {
     const sel = $('lu-match'); sel.innerHTML = '<option value="">جارٍ التحميل…</option>'; luRows.clear();
     try {
-      const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(Number($('lu-day').value) || 0) });
-      const fx = (data?.fixtures || []).filter((f) => f.fixture_id && !f.manual); fx.forEach((f) => luRows.set(String(f.fixture_id), f));
+      const iso = cairoDate(Number($('lu-day').value) || 0); let api = []; let apiErr = '';
+      try { const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: iso }); api = data?.fixtures || []; } catch (e) { apiErr = e.message; }
+      const fx = mergeFx(api, await snapForDay(iso)).filter((f) => f.fixture_id && !f.manual); if (!fx.length && apiErr) throw new Error(apiErr); fx.forEach((f) => luRows.set(String(f.fixture_id), f));
       sel.innerHTML = '<option value="">— اختر مباراة —</option>' + fx.map((f) => `<option value="${esc(f.fixture_id)}">${esc(`${ar(f.home_team)} × ${ar(f.away_team)} · ${f.league_label || f.league}`)}</option>`).join('');
       say('lu-msg', fx.length ? '' : 'لا توجد مباريات لهذا اليوم.');
     } catch (e) { sel.innerHTML = '<option value="">— اختر مباراة —</option>'; say('lu-msg', e.message); }

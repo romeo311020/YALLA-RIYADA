@@ -176,6 +176,15 @@ window.yrMountPlayer = function (url, title) {
   return frame;
 };
 
+/* فك قفل اتجاه الشاشة: القفل على landscape (بعد ملء الشاشة) كان بيفضل شغّال ويمنع تدوير الشاشة */
+(function () {
+  const unlock = () => { try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) { /* غير مدعوم */ } };
+  unlock();
+  const onFs = () => { if (!document.fullscreenElement && !document.webkitFullscreenElement) unlock(); };
+  document.addEventListener('fullscreenchange', onFs); document.addEventListener('webkitfullscreenchange', onFs);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && !document.fullscreenElement) unlock(); });
+})();
+
 /* منع التكبير والتصغير (زوم) */
 (function () {
   const stop = (e) => e.preventDefault();

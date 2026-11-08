@@ -6,6 +6,7 @@
   "start_url": "./matches.html",
   "scope": "./",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#000000",
   "theme_color": "#000000",
   "icons": [
@@ -34,7 +35,6 @@
     "sports",
     "news"
   ],
-  "orientation": "portrait",
   "shortcuts": [
     {
       "name": "مباريات اليوم",
