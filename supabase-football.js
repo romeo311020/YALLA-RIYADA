@@ -154,8 +154,7 @@
     if (o.home_score != null) r.home_score = o.home_score;
     if (o.away_score != null) r.away_score = o.away_score;
     if (o.note) r.status_note = o.note;
-    if (o.hide_important) r.hide_important = true;
-    else if (o.featured) r.featured = true;
+    if (o.featured) r.featured = true;
     return r;
   };
   /* نسخة احتياطية للمباريات المهمة (fixture_overrides.snapshot) — تُعرض لما الـ API يفشل أو يرجع فاضي */
@@ -485,7 +484,7 @@
       const keys = [...groups.keys()].sort((a, b) => pos(a, groups.get(a)[0].league_label) - pos(b, groups.get(b)[0].league_label));
       const card = (m) => (m.manual ? manualCard(m) : fixtureCard(m, state));
       // مهمة = اللي الأدمن علّمها ⭐ + مباريات أشهر الفرق عند الجمهور المصري (بحد أقصى ٨)، والمباشر الأول
-      const auto = rows.filter((m) => !m.featured && !m.manual && !m.hide_important && teamRank(m) < 99).sort((a, b) => rank(a) - rank(b) || teamRank(a) - teamRank(b) || new Date(a.kickoff || 0) - new Date(b.kickoff || 0)).slice(0, 8);
+      const auto = rows.filter((m) => !m.featured && !m.manual && teamRank(m) < 99).sort((a, b) => rank(a) - rank(b) || teamRank(a) - teamRank(b) || new Date(a.kickoff || 0) - new Date(b.kickoff || 0)).slice(0, 8);
       const star = [...rows.filter((m) => m.featured), ...auto].sort((a, b) => rank(a) - rank(b) || (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || teamRank(a) - teamRank(b) || new Date(a.kickoff || 0) - new Date(b.kickoff || 0));
       const featuredHtml = star.length && state.league === 'all' ? `<section class="league-group featured-group" aria-label="مباريات مهمة"><h2 class="league-title"><span>⭐ مباريات مهمة</span><small>${star.length}</small></h2><div class="match-grid">${star.map(card).join('')}</div></section>` : '';
       host.innerHTML = featuredHtml + keys.map((k) => {
