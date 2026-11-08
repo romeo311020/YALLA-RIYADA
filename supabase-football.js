@@ -378,6 +378,7 @@
       m = { ...m0, home_id: m0.home_id ?? -1, away_id: m0.away_id ?? -2 };
       res = { ...res0, lineups: [manualSide(manual.home, m.home_id), manualSide(manual.away, m.away_id)] };
     }
+    if (manual?.events?.length) res = { ...res, events: manual.events.map((e) => ({ ...e, team_id: e.side === 'away' ? m.away_id : m.home_id })) };
     const body = $('match-body');
     $('tab-summary').innerHTML = renderSummary(m, res);
     $('tab-lineup').innerHTML = renderLineup(m, res);

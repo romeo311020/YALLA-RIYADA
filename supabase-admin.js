@@ -84,6 +84,10 @@
   const loaders = {
     overview: () => loadOverview(),
     matches: () => loadMatches(),
+    apimatches: () => ovRefreshList(),
+    important: () => loadImportant(),
+    lineups: () => luSrcChange(),
+    names: () => loadSavedNames(),
     streams: () => Promise.all([loadStreams(), loadApiFixtures('stream')]),
     store: () => Promise.all([loadStoreSetting(), loadProducts(), loadCategories()]),
     orders: () => loadOrders(),
@@ -91,7 +95,7 @@
     users: () => loadUsers(true),
     audit: () => loadAudit(),
     leagues: () => loadLeagueOrderAdmin(),
-    teams: () => Promise.all([loadTopTeamsAdmin(), loadSavedNames()]),
+    teams: () => loadTopTeamsAdmin(),
   };
   /* ---------- شريط البحث: بيفلتر عناصر القسم المفتوح ---------- */
   const normQ = (t) => String(t || '').toLowerCase().replace(/[\u064B-\u0652\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').trim();
@@ -110,7 +114,7 @@
   let searchTimer; new MutationObserver((muts) => { if (!$('admin-search').value || muts.every((m) => m.target.closest?.('.admin-search') || m.target.classList?.contains('search-none') || m.target === $('admin-search-count'))) return; clearTimeout(searchTimer); searchTimer = setTimeout(applySearch, 60); }).observe(document.getElementById('admin-workspace'), { childList: true, subtree: true });
 
   /* ---------- بحث شامل: مباريات، فرق، أخبار، منتجات، طلبات، أقسام ---------- */
-  const TABS = [['overview', 'نظرة عامة'], ['matches', 'المباريات'], ['leagues', 'البطولات وترتيبها'], ['teams', 'الفرق وأسماؤها'], ['streams', 'المشغّلات'], ['store', 'المتجر'], ['orders', 'الطلبات'], ['news', 'الأخبار'], ['users', 'المستخدمون'], ['audit', 'السجل']];
+  const TABS = [['overview', 'نظرة عامة'], ['apimatches', 'تعديل مباراة API'], ['matches', 'مباريات يدوية'], ['important', 'المباريات المهمة'], ['lineups', 'التشكيلات والأحداث'], ['streams', 'المشغّلات'], ['leagues', 'ترتيب البطولات'], ['teams', 'الفرق المهمة'], ['names', 'أسماء الفرق'], ['news', 'الأخبار'], ['store', 'المتجر'], ['orders', 'الطلبات'], ['users', 'المستخدمون'], ['audit', 'السجل']];
   let gTimer; let gSeq = 0;
   const likeQ = (q) => q.replace(/[%,()*]/g, ' ').trim();
   const gRow = (icon, title, sub, attrs) => `<button type="button" class="g-row" ${attrs}><i>${icon}</i><span><b>${esc(title)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span></button>`;
@@ -156,9 +160,13 @@
   });
   const PAGE_META = {
     overview: ['نظرة عامة', 'ملخص سريع لحالة الموقع واختصارات للمهام اليومية.'],
-    matches: ['المباريات', 'أضف مباراة يدوية أو عدّل أي مباراة من المصدر (تأجيل، نتيجة، مهمة).'],
+    apimatches: ['تعديل مباراة API', 'تأجيل أو إلغاء أو تغيير النتيجة والموعد لأي مباراة قادمة من الـ API.'],
+    matches: ['المباريات اليدوية', 'أضف مباراة بنفسك وعدّل بياناتها ومشغّلها.'],
+    important: ['المباريات المهمة', 'اختار التاريخ وحمّل المباريات واحفظ المهم منها دفعة واحدة.'],
+    lineups: ['التشكيلات والأحداث', 'تشكيلة الفريقين وملخص الأحداث لأي مباراة (يدوية أو API).'],
+    names: ['أسماء الفرق', 'عدّل اسم أي فريق أو لاعب بالعربي.'],
     leagues: ['البطولات', 'رتّب البطولات اللي تظهر للزوار أولًا.'],
-    teams: ['الفرق', 'الفرق ذات الأولوية وتعديل أسماء الفرق واللاعبين بالعربي.'],
+    teams: ['الفرق المهمة', 'الفرق اللي مبارياتها بتظهر الأول.'],
     streams: ['المشغّلات', 'اربط روابط المشاهدة بالمباريات لتظهر للأعضاء.'],
     store: ['المتجر', 'المنتجات وإعدادات فتح المتجر.'],
     orders: ['الطلبات', 'متابعة طلبات العملاء وتغيير حالتها.'],
@@ -222,8 +230,6 @@
     const embedUrl = $('match-embed').value.trim();
     if (embedUrl && !httpsOk(embedUrl)) { say('match-message', 'يجب أن يكون رابط المشغّل آمنًا ويبدأ بـ https://'); return; }
     say('match-message', 'جارٍ حفظ المباراة...');
-    const manual = manualDetails();
-    if (manual.partial) { say('match-message', 'اكتب تشكيلة الفريقين معًا (أو سيب الاتنين فاضيين).'); return; }
     const k = $('match-kickoff').value;
     const row = {
       sport: 'football', home_team: $('match-home').value.trim(), away_team: $('match-away').value.trim(), league: $('match-league').value.trim(),
@@ -235,7 +241,6 @@
       fixture_id: snap?.fixture_id ?? null, featured: $('match-featured').checked,
       details: {
         ...(snap || {}),
-        ...manual.out,
         info_manual: { channel: $('match-info-channel').value.trim(), commentator: $('match-info-commentator').value.trim(), notes: $('match-info-notes').value.trim() },
       },
     };
@@ -251,7 +256,7 @@
     const savedMsg = $('match-message').textContent; resetMatchForm(); say('match-message', /لم تُحفظ|بدون/.test(savedMsg) ? savedMsg : editId ? 'تم تحديث المباراة (مع التشكيلة والإحصائيات والتفاصيل).' : 'تمت إضافة المباراة (مع التشكيلة والإحصائيات والتفاصيل).'); await loadMatches();
   });
   function resetMatchForm() {
-    $('match-form').reset(); $('match-edit-id').value = ''; $('match-published').checked = true; $('match-featured').checked = false; snap = null; paintSnap(); fillManual({});
+    $('match-form').reset(); $('match-edit-id').value = ''; $('match-published').checked = true; $('match-featured').checked = false; snap = null; paintSnap();
     $('match-save').textContent = 'حفظ المباراة'; $('match-cancel-edit').hidden = true;
   }
   $('match-cancel-edit').addEventListener('click', resetMatchForm);
@@ -261,15 +266,16 @@
     if (error) { host.textContent = `تعذّر تحميل المباريات: ${error.message}`; return; }
     host.innerHTML = (data || []).map((m) => `<article class="admin-list-item">
       <div><strong>${esc(ar(m.home_team))} × ${esc(ar(m.away_team))}</strong><small>${esc(m.league || 'كرة القدم')} · ${m.featured ? '<span class="pill star">⭐ مهمة</span>' : ''}<span class="pill ${m.is_published ? 'ok' : 'off'}">${m.is_published ? 'منشورة' : 'مخفية'}</span>${m.details && (m.details.lineups || []).length ? ' · 📋 بيانات كاملة' : ''}</small></div>
-      <div class="row"><button type="button" class="btn outline" data-edit-match="${esc(m.id)}">تعديل</button><button type="button" class="btn outline" data-delete-match="${esc(m.id)}">حذف</button></div>
+      <div class="row"><button type="button" class="btn outline" data-edit-match="${esc(m.id)}">تعديل</button><button type="button" class="btn outline" data-lu-match="${esc(m.id)}">📋 تشكيلة وأحداث</button><button type="button" class="btn outline" data-delete-match="${esc(m.id)}">حذف</button></div>
     </article>`).join('') || '<p class="note">لا توجد مباريات يدوية بعد.</p>';
+    host.querySelectorAll('[data-lu-match]').forEach((b) => b.addEventListener('click', () => { openTab('lineups'); $('lu-src').value = 'manual'; luSrcChange().then(() => { $('lu-match').value = b.dataset.luMatch; luPick(); }); }));
     host.querySelectorAll('[data-edit-match]').forEach((b) => b.addEventListener('click', () => {
       const m = data.find((x) => x.id === b.dataset.editMatch); if (!m) return;
       $('match-edit-id').value = m.id; $('match-home').value = m.home_team; $('match-away').value = m.away_team; $('match-league').value = m.league || '';
       $('match-kickoff').value = localDT(m.kickoff); $('match-status').value = m.status; $('match-home-score').value = m.home_score ?? ''; $('match-away-score').value = m.away_score ?? '';
       $('match-home-logo').value = m.home_logo || ''; $('match-away-logo').value = m.away_logo || '';
       const d = m.details || {}; snap = d.fixture_id || m.fixture_id ? { ...d, fixture_id: m.fixture_id ?? d.fixture_id } : null; paintSnap();
-      fillManual(d); const im = d.info_manual || {}; $('match-info-channel').value = im.channel || ''; $('match-info-commentator').value = im.commentator || ''; $('match-info-notes').value = im.notes || '';
+      const im = d.info_manual || {}; $('match-info-channel').value = im.channel || ''; $('match-info-commentator').value = im.commentator || ''; $('match-info-notes').value = im.notes || '';
       $('match-embed').value = m.embed_url || ''; $('match-published').checked = m.is_published; $('match-featured').checked = !!m.featured; $('match-save').textContent = 'حفظ التعديلات'; $('match-cancel-edit').hidden = false;
       $('match-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }));
@@ -390,30 +396,125 @@
   ovRefreshList();
 
 
-  /* ---------- حفظ جميع المباريات المهمة (نسخة احتياطية) ---------- */
-  $('ov-saveall').addEventListener('click', async () => {
-    const btn = $('ov-saveall'); btn.disabled = true; say('ov-allmsg', 'جارٍ تحميل المباريات…');
+  /* ---------- المباريات المهمة حسب التاريخ ---------- */
+  const impFx = new Map(); let impSavedMap = new Map();
+  const isTopFx = (f) => {
+    const keys = new Set(); tmList.forEach((t) => { if (t.en) keys.add(normQ(t.en)); if (t.ar) keys.add(normQ(t.ar)); });
+    return [f.home_team, f.away_team].some((n) => n && (keys.has(normQ(n)) || keys.has(normQ(ar(n)))));
+  };
+  const impDayLabel = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
+  const impCount = () => { const n = $('imp-list').querySelectorAll('input[type=checkbox]:checked').length; $('imp-count').textContent = `${n} محددة`; };
+  const impTime = (k) => (k ? new Date(k).toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit' }) : '');
+  async function loadImportant() {
+    if (!$('imp-date').value) $('imp-date').value = cairoDate(0);
+    if (!tmList.length) await loadTopTeamsAdmin();
+    const { data } = await client.from('fixture_overrides').select('fixture_id,title,featured,snapshot,updated_at').not('snapshot', 'is', null).limit(300);
+    impSavedMap = new Map((data || []).map((o) => [Number(o.fixture_id), o]));
+    const rows = (data || []).slice().sort((a, b) => String(a.snapshot?.kickoff || '').localeCompare(String(b.snapshot?.kickoff || '')));
+    $('imp-saved').innerHTML = rows.length ? rows.map((o) => { const s = o.snapshot || {}; return `<article class="admin-list-item"><div><strong>${esc(ar(s.home_team))} × ${esc(ar(s.away_team))}</strong><small>${esc(s.league_label || s.league || '')} · ${s.kickoff ? esc(new Date(s.kickoff).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) : ''}</small></div><button type="button" class="btn outline" data-imp-del="${esc(o.fixture_id)}">حذف</button></article>`; }).join('') : '<p class="note">لسه مفيش مباريات محفوظة. حمّل مباريات واحفظ المهم منها.</p>';
+  }
+  $('imp-saved').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-imp-del]'); if (!b) return;
+    const { error } = await client.from('fixture_overrides').update({ snapshot: null, featured: false }).eq('fixture_id', Number(b.dataset.impDel));
+    if (error) say('imp-msg', error.message); else { say('imp-msg', 'تم الحذف.'); loadImportant(); }
+  });
+  $('imp-load').addEventListener('click', async () => {
+    const btn = $('imp-load'); btn.disabled = true; $('imp-list').innerHTML = ''; $('imp-tools').hidden = true; impFx.clear();
     try {
       if (!tmList.length) await loadTopTeamsAdmin();
-      const keys = new Set(); tmList.forEach((t) => { if (t.en) keys.add(normQ(t.en)); if (t.ar) keys.add(normQ(t.ar)); });
-      const isTop = (f) => [f.home_team, f.away_team].some((n) => n && (keys.has(normQ(n)) || keys.has(normQ(ar(n)))));
-      const { data: old } = await client.from('fixture_overrides').select('*').limit(500);
-      const oldMap = new Map((old || []).map((o) => [Number(o.fixture_id), o]));
-      const picked = new Map(); let fails = 0;
-      for (let d = 0; d <= 3; d++) {
-        say('ov-allmsg', `جارٍ تحميل اليوم ${d + 1} من 4…`);
-        try {
-          const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(d) });
-          (data?.fixtures || []).forEach((f) => { f.fixture_id && !f.manual && (isTop(f) || oldMap.get(Number(f.fixture_id))?.featured) && picked.set(Number(f.fixture_id), f); });
-        } catch { fails++; }
+      const start = $('imp-date').value || cairoDate(0); const n = Number($('imp-days').value) || 1; let fails = 0; const days = [];
+      for (let i = 0; i < n; i++) {
+        const d = new Date(`${start}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + i); const iso = d.toISOString().slice(0, 10);
+        say('imp-msg', `جارٍ تحميل ${impDayLabel(iso)} (${i + 1} من ${n})…`);
+        try { const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: iso }); const fx = (data?.fixtures || []).filter((f) => f.fixture_id && !f.manual); fx.forEach((f) => impFx.set(Number(f.fixture_id), f)); days.push([iso, fx]); } catch { fails++; days.push([iso, []]); }
       }
-      if (!picked.size) { say('ov-allmsg', fails ? 'تعذّر تحميل المباريات (ممكن حصة الـ API خلصت). جرّب بعدين.' : 'مفيش مباريات مهمة في الأيام الجاية.'); return; }
-      const rows = [...picked.values()].map((f) => { const o = oldMap.get(Number(f.fixture_id)) || {}; return { ...o, fixture_id: Number(f.fixture_id), featured: true, title: `${ar(f.home_team)} × ${ar(f.away_team)}`, snapshot: f, updated_at: new Date().toISOString() }; });
+      $('imp-list').innerHTML = days.map(([iso, fx]) => `<h4>${esc(impDayLabel(iso))} <small>(${fx.length})</small></h4>` + (fx.length ? fx.map((f) => {
+        const id = Number(f.fixture_id); const pre = isTopFx(f) || impSavedMap.get(id)?.featured;
+        return `<label class="imp-row"><input type="checkbox" data-fx="${id}" data-top="${isTopFx(f) ? 1 : 0}"${pre ? ' checked' : ''}><span><b>${esc(ar(f.home_team))} × ${esc(ar(f.away_team))}</b><small>${esc(f.league_label || f.league || '')} · ${esc(impTime(f.kickoff))}${impSavedMap.get(id) ? ' · <i class="pill ok">محفوظة</i>' : ''}${isTopFx(f) ? ' · <i class="pill star">فريق مهم</i>' : ''}</small></span></label>`;
+      }).join('') : '<p class="note">لا توجد مباريات.</p>')).join('');
+      const total = impFx.size; $('imp-tools').hidden = !total; impCount();
+      say('imp-msg', total ? `تم تحميل ${total} مباراة. علّم المهم واضغط حفظ.${fails ? ` (تعذّر تحميل ${fails} يوم — ممكن الحصة خلصت)` : ''}` : (fails ? 'تعذّر تحميل المباريات (ممكن حصة الـ API خلصت).' : 'لا توجد مباريات في الفترة دي.'));
+    } catch (e) { say('imp-msg', e.message); } finally { btn.disabled = false; }
+  });
+  $('imp-list').addEventListener('change', impCount);
+  const impSet = (fn) => { $('imp-list').querySelectorAll('input[type=checkbox]').forEach((c) => { c.checked = fn(c); }); impCount(); };
+  $('imp-auto').addEventListener('click', () => impSet((c) => c.dataset.top === '1'));
+  $('imp-all').addEventListener('click', () => impSet(() => true));
+  $('imp-none').addEventListener('click', () => impSet(() => false));
+  $('imp-save').addEventListener('click', async () => {
+    const ids = [...$('imp-list').querySelectorAll('input[type=checkbox]:checked')].map((c) => Number(c.dataset.fx));
+    if (!ids.length) { say('imp-msg', 'مفيش مباريات محددة.'); return; }
+    const btn = $('imp-save'); btn.disabled = true;
+    try {
+      const { data: old } = await client.from('fixture_overrides').select('*').in('fixture_id', ids);
+      const oldMap = new Map((old || []).map((o) => [Number(o.fixture_id), o]));
+      const rows = ids.map((id) => { const f = impFx.get(id); const o = oldMap.get(id) || {}; return { ...o, fixture_id: id, featured: true, title: `${ar(f.home_team)} × ${ar(f.away_team)}`, snapshot: f, updated_at: new Date().toISOString() }; });
       const { error } = await client.from('fixture_overrides').upsert(rows);
-      if (error) { say('ov-allmsg', /snapshot/.test(error.message) ? 'شغّل ملف supabase-snapshot.sql في Supabase الأول.' : error.message); return; }
-      say('ov-allmsg', `تم حفظ ${rows.length} مباراة مهمة ✓${fails ? ` (تعذّر تحميل ${fails} يوم)` : ''}`);
-      ovRefreshList();
-    } catch (e) { say('ov-allmsg', e.message); } finally { btn.disabled = false; }
+      if (error) { say('imp-msg', /snapshot/.test(error.message) ? 'شغّل ملف supabase-snapshot.sql في Supabase الأول.' : error.message); return; }
+      say('imp-msg', `تم حفظ ${rows.length} مباراة مهمة ✓`); await loadImportant(); impCount();
+    } catch (e) { say('imp-msg', e.message); } finally { btn.disabled = false; }
+  });
+
+  /* ---------- التشكيلات والأحداث (مباراة يدوية أو من الـ API) ---------- */
+  let luRows = new Map(); let luCur = null; // { kind:'manual'|'api', id, row }
+  async function luSrcChange() {
+    const api = $('lu-src').value === 'api'; $('lu-day-wrap').hidden = !api; $('lu-load').hidden = !api; $('lu-editor').hidden = true; luCur = null; luRows.clear();
+    const sel = $('lu-match'); sel.innerHTML = '<option value="">— اختر مباراة —</option>';
+    if (api) { say('lu-msg', 'اختار اليوم واضغط «تحميل المباريات».'); return; }
+    say('lu-msg', '');
+    const { data, error } = await client.from('matches').select('id,home_team,away_team,league,details,kickoff').order('created_at', { ascending: false }).limit(60);
+    if (error) { say('lu-msg', error.message); return; }
+    (data || []).forEach((m) => luRows.set(m.id, m));
+    sel.innerHTML += (data || []).map((m) => `<option value="${esc(m.id)}">${esc(ar(m.home_team))} × ${esc(ar(m.away_team))}${m.league ? ` · ${esc(m.league)}` : ''}</option>`).join('');
+    if (!(data || []).length) say('lu-msg', 'مفيش مباريات يدوية. أضف مباراة من قسم «مباريات يدوية» الأول.');
+  }
+  $('lu-src').addEventListener('change', luSrcChange);
+  $('lu-load').addEventListener('click', async () => {
+    const sel = $('lu-match'); sel.innerHTML = '<option value="">جارٍ التحميل…</option>'; luRows.clear();
+    try {
+      const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(Number($('lu-day').value) || 0) });
+      const fx = (data?.fixtures || []).filter((f) => f.fixture_id && !f.manual); fx.forEach((f) => luRows.set(String(f.fixture_id), f));
+      sel.innerHTML = '<option value="">— اختر مباراة —</option>' + fx.map((f) => `<option value="${esc(f.fixture_id)}">${esc(`${ar(f.home_team)} × ${ar(f.away_team)} · ${f.league_label || f.league}`)}</option>`).join('');
+      say('lu-msg', fx.length ? '' : 'لا توجد مباريات لهذا اليوم.');
+    } catch (e) { sel.innerHTML = '<option value="">— اختر مباراة —</option>'; say('lu-msg', e.message); }
+  });
+  async function luPick() {
+    const id = $('lu-match').value; const row = luRows.get(id);
+    if (!id || !row) { $('lu-editor').hidden = true; luCur = null; return; }
+    const kind = $('lu-src').value; luCur = { kind, id, row };
+    $('lu-home').textContent = ar(row.home_team); $('lu-away').textContent = ar(row.away_team);
+    const hs = document.querySelectorAll('#mlu-box .mlu-side h5'); hs[0].textContent = ar(row.home_team); hs[1].textContent = ar(row.away_team);
+    const to = $('mev-team').options; to[0].textContent = ar(row.home_team); to[1].textContent = ar(row.away_team);
+    if (kind === 'manual') { const d = row.details || {}; fillManual(d, d.away_id ?? -2); }
+    else {
+      const { data } = await client.from('fixture_manual').select('lineups').eq('fixture_id', Number(id)).maybeSingle();
+      const l = data?.lineups || {}; fillManual({ manual_lineups: l.home && l.away ? { home: l.home, away: l.away } : {}, events: l.events || [] });
+    }
+    $('lu-editor').hidden = false; say('lu-msg', '');
+  }
+  $('lu-match').addEventListener('change', luPick);
+  $('lu-clear').addEventListener('click', () => { if (window.confirm('مسح التشكيلة والأحداث من الشاشة؟ (مش هيتحفظ غير لما تضغط حفظ)')) fillManual({}); });
+  $('lu-save').addEventListener('click', async () => {
+    if (!luCur) return; const btn = $('lu-save'); btn.disabled = true;
+    try {
+      const d = luCur.kind === 'manual' ? { ...(luCur.row.details || {}) } : {};
+      const hid = d.home_id ?? -1; const aid = d.away_id ?? -2; const m = manualDetails(hid, aid);
+      if (m.partial) { say('lu-msg', 'اكتب تشكيلة الفريقين معًا (أو سيب الاتنين فاضيين).'); return; }
+      if (luCur.kind === 'manual') {
+        delete d.manual_lineups; if (m.home && m.away) d.manual_lineups = { home: m.home, away: m.away };
+        d.events = m.events; if (m.events.length || (m.home && m.away)) { d.home_id = hid; d.away_id = aid; }
+        const { error } = await client.from('matches').update({ details: d }).eq('id', luCur.id);
+        if (error) { say('lu-msg', error.message); return; }
+        luCur.row.details = d;
+      } else {
+        const fid = Number(luCur.id);
+        if (!m.home && !m.away && !m.events.length) { await client.from('fixture_manual').delete().eq('fixture_id', fid); say('lu-msg', 'تم مسح التعديلات اليدوية لهذه المباراة.'); return; }
+        const lineups = { ...(m.home && m.away ? { home: m.home, away: m.away } : {}), events: m.events.map(({ minute, extra, type, detail, side, player, assist }) => ({ minute, extra, type, detail, side, player, assist })) };
+        const { error } = await client.from('fixture_manual').upsert({ fixture_id: fid, title: `${ar(luCur.row.home_team)} × ${ar(luCur.row.away_team)}`, lineups, updated_at: new Date().toISOString() });
+        if (error) { say('lu-msg', error.message); return; }
+      }
+      say('lu-msg', 'تم الحفظ ✓ — بيظهر في صفحة المباراة.');
+    } catch (e) { say('lu-msg', e.message); } finally { btn.disabled = false; }
   });
 
   /* ---------- الفرق: الأكثر متابعة + تعديل الأسماء ---------- */
@@ -485,7 +586,7 @@
   let mEv = [];
   const EV_LABEL = { 'goal|Normal Goal': '⚽ هدف', 'goal|Penalty': '⚽ ركلة جزاء', 'goal|Own Goal': '⚽ هدف عكسي', 'card|Yellow Card': '🟨 إنذار', 'card|Red Card': '🟥 طرد', 'subst|Substitution': '🔄 تبديل' };
   const evRender = () => {
-    $('mev-list').innerHTML = mEv.length ? mEv.map((e, i) => `<div class="mev-row"><b>${esc(e.minute)}'</b><span>${esc(EV_LABEL[`${e.type}|${e.detail}`] || e.type)} — <strong>${esc(e.player)}</strong>${e.assist ? ` <small>${e.type === 'subst' ? 'بدل' : 'صناعة'}: ${esc(e.assist)}</small>` : ''} <small>(${e.side === 'home' ? esc($('match-home').value || 'الأول') : esc($('match-away').value || 'الثاني')})</small></span><button type="button" class="btn outline" data-mev-del="${i}">حذف</button></div>`).join('') : '<p class="note">لا توجد أحداث بعد.</p>';
+    $('mev-list').innerHTML = mEv.length ? mEv.map((e, i) => `<div class="mev-row"><b>${esc(e.minute)}'</b><span>${esc(EV_LABEL[`${e.type}|${e.detail}`] || e.type)} — <strong>${esc(e.player)}</strong>${e.assist ? ` <small>${e.type === 'subst' ? 'بدل' : 'صناعة'}: ${esc(e.assist)}</small>` : ''} <small>(${e.side === 'home' ? esc($('lu-home').textContent || 'الأول') : esc($('lu-away').textContent || 'الثاني')})</small></span><button type="button" class="btn outline" data-mev-del="${i}">حذف</button></div>`).join('') : '<p class="note">لا توجد أحداث بعد.</p>';
   };
   $('mev-btn').addEventListener('click', () => {
     const min = $('mev-min').value.trim(); const player = $('mev-player').value.trim();
@@ -529,15 +630,12 @@
     if (!start.length && !subs.length) return null;
     return { formation: $(`mlu-${p}-form`).value, coach: $(`mlu-${p}-coach`).value.trim(), start, subs };
   };
-  const manualDetails = () => {
+  const manualDetails = (hid, aid) => {
     const home = buildSide('home'); const away = buildSide('away');
-    const out = {}; const hid = snap?.home_id ?? -1; const aid = snap?.away_id ?? -2;
-    if (home && away) out.manual_lineups = { home, away };
-    if (mEv.length) { out.events = mEv.map((e) => ({ minute: e.minute, extra: null, type: e.type, detail: e.detail, team_id: e.side === 'home' ? hid : aid, player: e.player, assist: e.assist || null })); }
-    if (mEv.length || (home && away)) { out.home_id = hid; out.away_id = aid; }
-    return { out, partial: Boolean((home || away) && !(home && away)) };
+    return { home, away, partial: Boolean((home || away) && !(home && away)),
+      events: mEv.map((e) => ({ minute: e.minute, extra: null, type: e.type, detail: e.detail, side: e.side, team_id: e.side === 'home' ? hid : aid, player: e.player, assist: e.assist || null })) };
   };
-  const fillManual = (d) => {
+  const fillManual = (d, away_id) => {
     mEv = [];
     const ml = d.manual_lineups || {};
     ['home', 'away'].forEach((p) => {
@@ -547,8 +645,8 @@
       const keep = new Map((s.start || []).map((x, i) => [withGrid ? x.grid : (i === 0 ? '1:1' : null), x]).filter(([g]) => g));
       slotRender(p, f, keep); $(`mlu-${p}-subs`).value = (s.subs || []).map(line).join('\n');
     });
-    mEv = (d.events || []).filter((e) => ['goal', 'card', 'subst'].includes(e.type)).map((e) => ({ minute: e.minute ?? 0, type: e.type, detail: e.detail || (e.type === 'card' ? 'Yellow Card' : e.type === 'subst' ? 'Substitution' : 'Normal Goal'), side: e.team_id === d.away_id ? 'away' : 'home', player: e.player || '', assist: e.assist || '' }));
-    evRender(); if (Object.keys(ml).length || mEv.length) $('mlu-box').open = true;
+    mEv = (d.events || []).filter((e) => ['goal', 'card', 'subst'].includes(e.type)).map((e) => ({ minute: e.minute ?? 0, type: e.type, detail: e.detail || (e.type === 'card' ? 'Yellow Card' : e.type === 'subst' ? 'Substitution' : 'Normal Goal'), side: e.side || (e.team_id === away_id ? 'away' : 'home'), player: e.player || '', assist: e.assist || '' }));
+    evRender();
   };
   evRender();
 

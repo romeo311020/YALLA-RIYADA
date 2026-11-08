@@ -31,18 +31,23 @@
     <div id="admin-workspace" class="adm-shell" hidden>
       <aside class="adm-side" id="adm-side">
         <div class="adm-brand"><span class="adm-mark">⚽</span><div><b>يلا رياضة</b><small>لوحة الإدارة</small></div></div>
-        <div class="admin-tabs" role="tablist" aria-label="أقسام لوحة الإدارة">
+        <div class="admin-tabs" role="tablist" aria-label="أقسام اللوحة">
         <span class="nav-label">الرئيسية</span>
         <button type="button" class="atab active" role="tab" data-atab="overview" aria-selected="true"><i class="ti" aria-hidden="true">📊</i>نظرة عامة</button>
-        <span class="nav-label">كرة القدم</span>
-        <button type="button" class="atab" role="tab" data-atab="matches" aria-selected="false"><i class="ti" aria-hidden="true">⚽</i>المباريات</button>
-        <button type="button" class="atab" role="tab" data-atab="leagues" aria-selected="false"><i class="ti" aria-hidden="true">🏆</i>البطولات</button>
-        <button type="button" class="atab" role="tab" data-atab="teams" aria-selected="false"><i class="ti" aria-hidden="true">👕</i>الفرق</button>
+        <span class="nav-label">المباريات</span>
+        <button type="button" class="atab" role="tab" data-atab="apimatches" aria-selected="false"><i class="ti" aria-hidden="true">🛠️</i>تعديل مباراة API</button>
+        <button type="button" class="atab" role="tab" data-atab="matches" aria-selected="false"><i class="ti" aria-hidden="true">⚽</i>مباريات يدوية</button>
+        <button type="button" class="atab" role="tab" data-atab="important" aria-selected="false"><i class="ti" aria-hidden="true">⭐</i>المباريات المهمة</button>
+        <button type="button" class="atab" role="tab" data-atab="lineups" aria-selected="false"><i class="ti" aria-hidden="true">📋</i>التشكيلات والأحداث</button>
         <button type="button" class="atab" role="tab" data-atab="streams" aria-selected="false"><i class="ti" aria-hidden="true">📺</i>المشغّلات</button>
+        <span class="nav-label">إعدادات الكرة</span>
+        <button type="button" class="atab" role="tab" data-atab="leagues" aria-selected="false"><i class="ti" aria-hidden="true">🏆</i>ترتيب البطولات</button>
+        <button type="button" class="atab" role="tab" data-atab="teams" aria-selected="false"><i class="ti" aria-hidden="true">👕</i>الفرق المهمة</button>
+        <button type="button" class="atab" role="tab" data-atab="names" aria-selected="false"><i class="ti" aria-hidden="true">🔤</i>أسماء الفرق</button>
         <span class="nav-label">المحتوى والمتجر</span>
+        <button type="button" class="atab" role="tab" data-atab="news" aria-selected="false"><i class="ti" aria-hidden="true">📰</i>الأخبار</button>
         <button type="button" class="atab" role="tab" data-atab="store" aria-selected="false"><i class="ti" aria-hidden="true">🛍️</i>المتجر</button>
         <button type="button" class="atab" role="tab" data-atab="orders" aria-selected="false"><i class="ti" aria-hidden="true">📦</i>الطلبات <b id="orders-badge" class="badge" hidden></b></button>
-        <button type="button" class="atab" role="tab" data-atab="news" aria-selected="false"><i class="ti" aria-hidden="true">📰</i>الأخبار</button>
         <span class="nav-label">النظام</span>
         <button type="button" class="atab" role="tab" data-atab="users" aria-selected="false"><i class="ti" aria-hidden="true">👥</i>المستخدمون</button>
         <button type="button" class="atab" role="tab" data-atab="audit" aria-selected="false"><i class="ti" aria-hidden="true">🧾</i>السجل</button>
@@ -69,7 +74,7 @@
       <!-- نظرة عامة -->
       <section class="admin-pane" id="pane-overview" role="tabpanel">
         <div class="quick-actions" aria-label="اختصارات سريعة">
-          <button type="button" class="qa" data-goto="matches"><i>⚽</i><b>مباراة / تعديل مباراة</b><small>إضافة أو تأجيل أو تمييز مهمة</small></button>
+          <button type="button" class="qa" data-goto="apimatches"><i>🛠️</i><b>تعديل مباراة</b><small>إضافة أو تأجيل أو تمييز مهمة</small></button>
           <button type="button" class="qa" data-goto="leagues"><i>🏆</i><b>ترتيب البطولات</b><small>اللي تظهر الأول</small></button>
           <button type="button" class="qa" data-goto="news"><i>📰</i><b>خبر جديد</b><small>حصري على يلا رياضة</small></button>
           <button type="button" class="qa" data-goto="streams"><i>📺</i><b>ربط مشغّل</b><small>زر شاهد للأعضاء</small></button>
@@ -86,8 +91,8 @@
       <section class="admin-pane" id="pane-matches" role="tabpanel" hidden>
         <div class="panel admin-section">
           <div class="admin-section-heading">
-            <div><span class="tag">المباريات</span><h2>إضافة مباراة وإدارتها</h2></div>
-            <p class="note">المباريات اليدوية تظهر للزوار عند تفعيل خيار النشر.</p>
+            <div><span class="tag">المباريات</span><h2>المباريات اليدوية</h2></div>
+            <p class="note">أضف مباراة بنفسك (للمباريات اللي مش في الـ API أو لو الحصة خلصت). التشكيلة والملخص من قسم «التشكيلات والأحداث».</p>
           </div>
           <details class="acc" open><summary>➕ إضافة / تعديل مباراة يدوية</summary>
           <form id="match-form" class="form-stack admin-form">
@@ -105,30 +110,7 @@
               <p class="note" id="match-snap-status">لا يوجد. اختر مباراة من القائمة أعلاه لحفظ التشكيلة والأحداث والإحصائيات مع المباراة.</p>
               <button class="btn outline" id="match-snap-refresh" type="button" hidden>🔄 تحديث البيانات من المصدر (طلب واحد)</button>
             </div>
-            <details class="acc" id="mlu-box">
-              <summary>✍️ تشكيلة وملخص المباراة يدويًا (من غير الإحصائيات)</summary>
-              <p class="note">اختار طريقة اللعب وهتظهر ١١ خانة، كل خانة مكتوب عليها المركز (حارس، ظهير أيمن، قلب دفاع…). اكتب رقم واسم اللاعب في مكانه، ورسم الملعب بيتعمل لوحده. الخانات الفاضية مش بتظهر.</p>
-              <div class="mlu-grid">
-                <div class="mlu-side"><h5>الفريق الأول</h5>
-                <div class="row"><label>طريقة اللعب<select id="mlu-home-form" dir="ltr"></select></label><label>المدرب<input id="mlu-home-coach" maxlength="60"></label></div>
-                <div class="slots" id="mlu-home-slots" aria-label="التشكيل الأساسي"></div>
-                <label>الاحتياط (سطر لكل لاعب)<textarea id="mlu-home-subs" rows="5" placeholder="16 أبو جبل"></textarea></label></div>
-                <div class="mlu-side"><h5>الفريق الثاني</h5>
-                <div class="row"><label>طريقة اللعب<select id="mlu-away-form" dir="ltr"></select></label><label>المدرب<input id="mlu-away-coach" maxlength="60"></label></div>
-                <div class="slots" id="mlu-away-slots" aria-label="التشكيل الأساسي"></div>
-                <label>الاحتياط (سطر لكل لاعب)<textarea id="mlu-away-subs" rows="5" placeholder="16 أبو جبل"></textarea></label></div>
-              </div>
-              <h4>ملخص المباراة (الأحداث)</h4>
-              <div class="mev-add">
-                <input id="mev-min" type="number" min="0" max="130" placeholder="الدقيقة" aria-label="الدقيقة">
-                <select id="mev-type" aria-label="نوع الحدث"><option value="goal|Normal Goal">⚽ هدف</option><option value="goal|Penalty">⚽ ركلة جزاء</option><option value="goal|Own Goal">⚽ هدف عكسي</option><option value="card|Yellow Card">🟨 إنذار</option><option value="card|Red Card">🟥 طرد</option><option value="subst|Substitution">🔄 تبديل</option></select>
-                <select id="mev-team" aria-label="الفريق"><option value="home">الفريق الأول</option><option value="away">الفريق الثاني</option></select>
-                <input id="mev-player" maxlength="60" placeholder="اللاعب (أو اللاعب الداخل)" aria-label="اللاعب">
-                <input id="mev-other" maxlength="60" placeholder="صانع الهدف / اللاعب الخارج (اختياري)" aria-label="لاعب آخر">
-                <button type="button" class="btn primary" id="mev-btn">＋ أضف</button>
-              </div>
-              <div id="mev-list"></div>
-            </details>
+            
             <fieldset class="admin-fieldset"><legend>التفاصيل (تظهر في تبويب «التفاصيل»)</legend>
               <label>القناة الناقلة<input id="match-info-channel" maxlength="120" placeholder="مثال: beIN Sports 1 HD"></label>
               <label>المعلّق<input id="match-info-commentator" maxlength="120"></label>
@@ -160,6 +142,17 @@
           </form>
           </details>
           <p id="match-message" class="note" role="status" aria-live="polite"></p>
+          
+          <h3 class="admin-list-title">المباريات اليدوية</h3>
+          <div id="admin-matches"></div>
+        </div>
+      </section>
+
+
+      <!-- مباريات الـ API -->
+      <section class="admin-pane" id="pane-apimatches" role="tabpanel" hidden>
+        <div class="panel admin-section">
+          <div class="admin-section-heading"><div><span class="tag">API</span><h2>تعديل مباراة من الـ API</h2></div><p class="note">تأجيل، إلغاء، تغيير النتيجة أو الموعد، وإضافة ملاحظة. اللي تسيبه فاضي بيفضل من الـ API.</p></div>
           <details class="acc" open><summary>🛠️ تعديل مباراة API — تأجيل / إلغاء / نتيجة / ⭐ مباراة مهمة</summary>
           <form id="ov-form" class="form-stack admin-form import-box">
             <p class="note">اختار اليوم ثم المباراة، وعدّل اللي محتاجه. اللي تسيبه فاضي هيفضل زي ما هو من الـ API. التعديل بيظهر للزوار في القائمة وصفحة المباراة.</p>
@@ -178,13 +171,77 @@
             <label>ملاحظة تظهر للزوار (اختياري)<input id="ov-note" maxlength="60" placeholder="مثال: تأجلت لظروف الطقس"></label>
             <div class="row"><button class="btn primary" id="ov-save" type="submit">حفظ التعديل</button><button class="btn outline" id="ov-clear" type="button">حذف التعديل (رجوع لبيانات الـ API)</button></div>
             <p class="note" id="ov-msg" role="status"></p>
-            <div class="bk-box"><div><strong>💾 نسخة احتياطية للمباريات المهمة</strong><small>بيحفظ مباريات الفرق المهمة (اليوم + ٣ أيام جاية) في قاعدة البيانات، فتفضل ظاهرة للزوار حتى لو الـ API خلص.</small></div><button class="btn primary" id="ov-saveall" type="button">حفظ جميع المباريات المهمة</button></div>
-            <p class="note" id="ov-allmsg" role="status"></p>
+            
             <div id="ov-list"></div>
           </form>
           </details>
-          <h3 class="admin-list-title">المباريات اليدوية</h3>
-          <div id="admin-matches"></div>
+        </div>
+      </section>
+
+      <!-- المباريات المهمة -->
+      <section class="admin-pane" id="pane-important" role="tabpanel" hidden>
+        <div class="panel admin-section">
+          <div class="admin-section-heading"><div><span class="tag">⭐</span><h2>إضافة المباريات المهمة حسب التاريخ</h2></div><p class="note">اختار تاريخ وعدد الأيام، حمّل المباريات، علّم اللي عايزه، واحفظها كلها مرة واحدة. بتفضل ظاهرة حتى لو الـ API خلص.</p></div>
+          <div class="imp-bar">
+            <label>من تاريخ<input id="imp-date" type="date"></label>
+            <label>عدد الأيام<select id="imp-days"><option value="1">يوم واحد</option><option value="2">يومين</option><option value="3" selected>٣ أيام</option><option value="5">٥ أيام</option><option value="7">أسبوع</option></select></label>
+            <button class="btn primary" id="imp-load" type="button">تحميل المباريات</button>
+          </div>
+          <p class="note" id="imp-msg" role="status"></p>
+          <div class="imp-tools" id="imp-tools" hidden>
+            <button class="btn outline" id="imp-auto" type="button">تحديد المهمة تلقائيًا</button>
+            <button class="btn outline" id="imp-all" type="button">تحديد الكل</button>
+            <button class="btn outline" id="imp-none" type="button">إلغاء التحديد</button>
+            <span id="imp-count" class="note"></span>
+            <button class="btn primary" id="imp-save" type="button">💾 حفظ المحدد كمباريات مهمة</button>
+          </div>
+          <div id="imp-list"></div>
+        </div>
+        <div class="panel admin-section">
+          <div class="admin-section-heading"><div><h2>المحفوظة حاليًا</h2></div><p class="note">دي المباريات اللي اتحفظت كمهمة. الحذف بيشيل ⭐ والنسخة الاحتياطية.</p></div>
+          <div id="imp-saved"></div>
+        </div>
+      </section>
+
+      <!-- التشكيلات والأحداث -->
+      <section class="admin-pane" id="pane-lineups" role="tabpanel" hidden>
+        <div class="panel admin-section">
+          <div class="admin-section-heading"><div><span class="tag">التشكيلة</span><h2>التشكيلات والأحداث</h2></div><p class="note">اختار المباراة (يدوية أو من الـ API) وعدّل التشكيلة وملخص الأحداث. من غير الإحصائيات.</p></div>
+          <div class="lu-pick">
+            <label>نوع المباراة<select id="lu-src"><option value="manual">مباراة يدوية</option><option value="api">مباراة من الـ API</option></select></label>
+            <label id="lu-day-wrap" hidden>اليوم<select id="lu-day"><option value="0">اليوم</option><option value="1">غدًا</option><option value="-1">أمس</option><option value="2">بعد غد</option><option value="-2">قبل أمس</option></select></label>
+            <button class="btn outline" id="lu-load" type="button" hidden>تحميل المباريات</button>
+            <label class="lu-grow">المباراة<select id="lu-match"><option value="">— اختر مباراة —</option></select></label>
+          </div>
+          <p class="note" id="lu-msg" role="status"></p>
+          <span id="lu-home" hidden></span><span id="lu-away" hidden></span>
+          <div id="lu-editor" hidden>
+            <details class="acc" id="mlu-box" open>
+              <summary>✍️ تشكيلة وملخص المباراة يدويًا (من غير الإحصائيات)</summary>
+              <p class="note">اختار طريقة اللعب وهتظهر ١١ خانة، كل خانة مكتوب عليها المركز (حارس، ظهير أيمن، قلب دفاع…). اكتب رقم واسم اللاعب في مكانه، ورسم الملعب بيتعمل لوحده. الخانات الفاضية مش بتظهر.</p>
+              <div class="mlu-grid">
+                <div class="mlu-side"><h5>الفريق الأول</h5>
+                <div class="row"><label>طريقة اللعب<select id="mlu-home-form" dir="ltr"></select></label><label>المدرب<input id="mlu-home-coach" maxlength="60"></label></div>
+                <div class="slots" id="mlu-home-slots" aria-label="التشكيل الأساسي"></div>
+                <label>الاحتياط (سطر لكل لاعب)<textarea id="mlu-home-subs" rows="5" placeholder="16 أبو جبل"></textarea></label></div>
+                <div class="mlu-side"><h5>الفريق الثاني</h5>
+                <div class="row"><label>طريقة اللعب<select id="mlu-away-form" dir="ltr"></select></label><label>المدرب<input id="mlu-away-coach" maxlength="60"></label></div>
+                <div class="slots" id="mlu-away-slots" aria-label="التشكيل الأساسي"></div>
+                <label>الاحتياط (سطر لكل لاعب)<textarea id="mlu-away-subs" rows="5" placeholder="16 أبو جبل"></textarea></label></div>
+              </div>
+              <h4>ملخص المباراة (الأحداث)</h4>
+              <div class="mev-add">
+                <input id="mev-min" type="number" min="0" max="130" placeholder="الدقيقة" aria-label="الدقيقة">
+                <select id="mev-type" aria-label="نوع الحدث"><option value="goal|Normal Goal">⚽ هدف</option><option value="goal|Penalty">⚽ ركلة جزاء</option><option value="goal|Own Goal">⚽ هدف عكسي</option><option value="card|Yellow Card">🟨 إنذار</option><option value="card|Red Card">🟥 طرد</option><option value="subst|Substitution">🔄 تبديل</option></select>
+                <select id="mev-team" aria-label="الفريق"><option value="home">الفريق الأول</option><option value="away">الفريق الثاني</option></select>
+                <input id="mev-player" maxlength="60" placeholder="اللاعب (أو اللاعب الداخل)" aria-label="اللاعب">
+                <input id="mev-other" maxlength="60" placeholder="صانع الهدف / اللاعب الخارج (اختياري)" aria-label="لاعب آخر">
+                <button type="button" class="btn primary" id="mev-btn">＋ أضف</button>
+              </div>
+              <div id="mev-list"></div>
+            </details>
+            <div class="row"><button class="btn primary" id="lu-save" type="button">💾 حفظ التشكيلة والأحداث</button><button class="btn outline" id="lu-clear" type="button">مسح الكل</button></div>
+          </div>
         </div>
       </section>
 
@@ -225,6 +282,11 @@
           <p class="note" id="tm-msg" role="status"></p>
           <p class="note">لو الفريق من بطولة مش في القائمة، اكتب اسمه بالإنجليزي زي ما بيظهر في الـ API عشان مبارياته تظهر (التعديل بيوصل للزوار خلال دقائق).</p>
         </div>
+      </section>
+
+
+      <!-- أسماء الفرق -->
+      <section class="admin-pane" id="pane-names" role="tabpanel" hidden>
         <div class="panel admin-section">
           <div class="admin-section-heading">
             <div><span class="tag">الأسماء</span><h2>تعديل أسماء الفرق بالعربي</h2></div>
@@ -238,7 +300,6 @@
           <div id="nm-saved"></div>
         </div>
       </section>
-
       <!-- المشغّلات -->
       <section class="admin-pane" id="pane-streams" role="tabpanel" hidden>
         <div class="panel admin-section">

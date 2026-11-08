@@ -155,3 +155,13 @@ body.adm .slot .sn{width:46px!important;flex:none!important}body.adm .slot .sp{f
 body.adm .slot>div{flex-direction:column;gap:4px}
 body.adm .slot .sn{width:100%!important;order:2;min-height:32px!important;font-size:12px!important}
 body.adm .slot .sp{width:100%!important;min-width:0!important;order:1;flex:none!important}
+
+.imp-bar{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px}.imp-bar label{min-width:150px}
+.imp-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);position:sticky;top:76px;z-index:5}
+.imp-tools .btn.primary{margin-inline-start:auto}
+.imp-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:6px;background:var(--panel);cursor:pointer}
+.imp-row:has(input:checked){border-color:var(--acc);background:color-mix(in srgb,var(--acc) 8%,var(--panel))}
+.imp-row input{width:20px!important;height:20px;min-height:0!important;flex:none}.imp-row small{display:block;color:var(--muted);font-weight:400}
+.lu-pick{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px}.lu-pick .lu-grow{flex:1;min-width:240px}
+body.adm .imp-row input[type=checkbox]{width:20px}
+body.adm .imp-row i.pill{width:auto;height:auto;min-height:0;display:inline-block;font-style:normal;padding:2px 9px;border-radius:999px;margin-inline-start:4px}
