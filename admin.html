@@ -44,6 +44,9 @@
         <button type="button" class="atab" role="tab" data-atab="leagues" aria-selected="false"><i class="ti" aria-hidden="true">🏆</i>ترتيب البطولات</button>
         <button type="button" class="atab" role="tab" data-atab="teams" aria-selected="false"><i class="ti" aria-hidden="true">👕</i>الفرق المهمة</button>
         <button type="button" class="atab" role="tab" data-atab="names" aria-selected="false"><i class="ti" aria-hidden="true">🔤</i>أسماء الفرق</button>
+        <span class="nav-label">الإشعارات</span>
+        <button type="button" class="atab" role="tab" data-atab="push" aria-selected="false"><i class="ti" aria-hidden="true">🔔</i>إرسال إشعار</button>
+        <button type="button" class="atab" role="tab" data-atab="pushtargets" aria-selected="false"><i class="ti" aria-hidden="true">🎯</i>فرق ولاعبو الإشعارات</button>
         <span class="nav-label">المحتوى والمتجر</span>
         <button type="button" class="atab" role="tab" data-atab="news" aria-selected="false"><i class="ti" aria-hidden="true">📰</i>الأخبار</button>
         <button type="button" class="atab" role="tab" data-atab="store" aria-selected="false"><i class="ti" aria-hidden="true">🛍️</i>المتجر</button>
@@ -286,6 +289,39 @@
       </section>
 
 
+
+      <!-- إرسال إشعار -->
+      <section class="admin-pane" id="pane-push" role="tabpanel" hidden>
+        <div class="stat-cards"><div class="stat-card"><span>أجهزة مشتركة</span><b id="push-devices">—</b></div><div class="stat-card"><span>فرق ولاعبين</span><b id="push-ntargets">—</b></div></div>
+        <div class="panel admin-section">
+          <div class="admin-section-heading"><div><span class="tag">🔔</span><h2>إرسال إشعار</h2></div><p class="note">بيوصل لأجهزة المستخدمين اللي فعّلوا الإشعارات.</p></div>
+          <form id="push-form" class="form-stack admin-form">
+            <label>إرسال خبر كإشعار (اختياري)<select id="push-news"><option value="">— اختر خبر لتعبئة الحقول —</option></select></label>
+            <label>العنوان<input id="push-title" maxlength="80" required placeholder="مثال: الأهلي يفوز على الزمالك"></label>
+            <label>النص<textarea id="push-body" rows="3" maxlength="200" placeholder="سطر أو اتنين"></textarea></label>
+            <label>الرابط عند الضغط (داخل الموقع)<input id="push-url" dir="ltr" value="news.html" placeholder="article.html?id=…"></label>
+            <label>المستلمون<select id="push-audience"><option value="all">كل المشتركين</option></select></label>
+            <div class="row"><button class="btn primary" id="push-send" type="submit">🚀 إرسال</button><button class="btn outline" id="push-test" type="button">إرسال تجريبي لجهازي بس</button></div>
+            <p class="note" id="push-msg" role="status"></p>
+          </form>
+        </div>
+        <div class="panel admin-section"><div class="admin-section-heading"><div><h2>المتابعون لكل فريق/لاعب</h2></div></div><div id="push-stats"></div></div>
+      </section>
+
+      <!-- فرق ولاعبين الإشعارات -->
+      <section class="admin-pane" id="pane-pushtargets" role="tabpanel" hidden>
+        <div class="panel admin-section">
+          <div class="admin-section-heading"><div><span class="tag">🔔</span><h2>الفرق واللاعبين المتاحين للمتابعة</h2></div><p class="note">دول اللي بيظهروا للمستخدم في «حسابي ← الإشعارات».</p></div>
+          <form id="pt-form" class="form-stack admin-form">
+            <div class="row"><label>النوع<select id="pt-kind"><option value="team">فريق</option><option value="player">لاعب</option></select></label>
+            <label>الاسم بالإنجليزي (زي ما بيظهر في الـ API)<input id="pt-en" dir="ltr" maxlength="80" required placeholder="Real Madrid"></label>
+            <label>الاسم بالعربي<input id="pt-ar" maxlength="80" required placeholder="ريال مدريد"></label></div>
+            <button class="btn primary" type="submit">＋ إضافة</button>
+            <p class="note" id="pt-msg" role="status"></p>
+          </form>
+          <div id="pt-list"></div>
+        </div>
+      </section>
       <!-- أسماء الفرق -->
       <section class="admin-pane" id="pane-names" role="tabpanel" hidden>
         <div class="panel admin-section">

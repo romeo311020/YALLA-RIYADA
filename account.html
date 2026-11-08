@@ -56,7 +56,7 @@
         <p class="account-message note" id="account-message" role="status" aria-live="polite"></p>
         </div>
         <section class="account-dashboard profile" id="account-dashboard" hidden aria-labelledby="profile-title">
-          <div class="profile-head">
+          <div class="acc-hero">
             <div class="avatar" id="profile-avatar">
               <img id="profile-avatar-img" alt="" hidden referrerpolicy="no-referrer">
               <span id="profile-initial" aria-hidden="true"></span>
@@ -71,45 +71,65 @@
               </div>
             </div>
           </div>
-          <div class="profile-actions" id="profile-actions">
-            <button class="btn primary" id="edit-profile" type="button">تعديل البيانات</button>
-            <a class="btn outline" id="admin-link" href="admin.html" hidden>لوحة التحكم</a>
-          </div>
-          <form id="profile-form" class="form-stack profile-edit" hidden>
-            <label class="account-field" for="profile-name">الاسم المعروض
-              <input id="profile-name" type="text" autocomplete="name" required maxlength="100">
-            </label>
-            <label class="account-field" for="profile-email">البريد الإلكتروني (لا يمكن تغييره من هنا)
-              <input id="profile-email" type="email" readonly>
-            </label>
-            <p class="note" id="avatar-note">صورة حسابك تأتي من Google وتبقى كما هي، ولا تتغير عند تعديل بياناتك.</p>
-            <div class="row">
-              <button class="btn primary" id="profile-save" type="submit">حفظ التغييرات</button>
-              <button class="btn outline" id="profile-cancel" type="button">إلغاء</button>
+
+          <nav class="acc-tiles" id="acc-tiles" aria-label="أقسام حسابي">
+            <a class="acc-tile" href="notifications.html"><i aria-hidden="true">🔔</i><b>الإشعارات</b><small>تابع فرقك ولاعبيك المفضلين</small></a>
+            <button class="acc-tile" type="button" data-pane="profile"><i aria-hidden="true">👤</i><b>بياناتي</b><small>الاسم والبريد</small></button>
+            <button class="acc-tile" type="button" data-pane="orders"><i aria-hidden="true">📦</i><b>طلباتي</b><small>تابع طلبات المتجر</small></button>
+            <button class="acc-tile" type="button" data-pane="security" id="tile-security"><i aria-hidden="true">🔐</i><b>الأمان</b><small>كلمة المرور</small></button>
+            <a class="acc-tile acc-admin" id="admin-link" href="admin.html" hidden><i aria-hidden="true">🛠️</i><b>لوحة التحكم</b><small>إدارة الموقع</small></a>
+          </nav>
+
+          <div class="acc-pane" data-pane-body="profile" hidden>
+            <button class="acc-back" type="button" data-back>→ رجوع</button>
+            <h3>بياناتي</h3>
+            <div class="profile-actions" id="profile-actions">
+              <button class="btn primary" id="edit-profile" type="button">تعديل البيانات</button>
             </div>
-          </form>
-          <p class="account-message note" id="profile-message" role="status" aria-live="polite"></p>
-          <div id="password-block">
-            <hr class="account-separator">
-            <h3>تغيير كلمة المرور</h3>
-            <form id="password-form" class="form-stack">
-              <label class="account-field" for="new-password">كلمة المرور الجديدة
-                <input id="new-password" type="password" autocomplete="new-password" required minlength="8">
+            <form id="profile-form" class="form-stack profile-edit" hidden>
+              <label class="account-field" for="profile-name">الاسم المعروض
+                <input id="profile-name" type="text" autocomplete="name" required maxlength="100">
               </label>
-              <label class="account-field" for="confirm-new-password">تأكيد كلمة المرور
-                <input id="confirm-new-password" type="password" autocomplete="new-password" required minlength="8">
+              <label class="account-field" for="profile-email">البريد الإلكتروني (لا يمكن تغييره من هنا)
+                <input id="profile-email" type="email" readonly>
               </label>
-              <button class="btn primary" id="password-save" type="submit">تحديث كلمة المرور</button>
+              <p class="note" id="avatar-note">صورة حسابك تأتي من Google وتبقى كما هي، ولا تتغير عند تعديل بياناتك.</p>
+              <div class="row">
+                <button class="btn primary" id="profile-save" type="submit">حفظ التغييرات</button>
+                <button class="btn outline" id="profile-cancel" type="button">إلغاء</button>
+              </div>
             </form>
-            <p class="account-message note" id="password-message" role="status" aria-live="polite"></p>
+            <p class="account-message note" id="profile-message" role="status" aria-live="polite"></p>
           </div>
-          <p class="note" id="google-note" hidden>تسجّل الدخول عبر Google، لذلك لا توجد كلمة مرور لهذا الحساب.</p>
-          <div id="my-notifs"></div>
-          <div id="my-orders"></div>
+
+          <div class="acc-pane" data-pane-body="security" hidden>
+            <button class="acc-back" type="button" data-back>→ رجوع</button>
+            <div id="password-block">
+              <h3>تغيير كلمة المرور</h3>
+              <form id="password-form" class="form-stack">
+                <label class="account-field" for="new-password">كلمة المرور الجديدة
+                  <input id="new-password" type="password" autocomplete="new-password" required minlength="8">
+                </label>
+                <label class="account-field" for="confirm-new-password">تأكيد كلمة المرور
+                  <input id="confirm-new-password" type="password" autocomplete="new-password" required minlength="8">
+                </label>
+                <button class="btn primary" id="password-save" type="submit">تحديث كلمة المرور</button>
+              </form>
+              <p class="account-message note" id="password-message" role="status" aria-live="polite"></p>
+            </div>
+            <p class="note" id="google-note" hidden>تسجّل الدخول عبر Google، لذلك لا توجد كلمة مرور لهذا الحساب.</p>
+          </div>
+
+          <div class="acc-pane" data-pane-body="orders" hidden>
+            <button class="acc-back" type="button" data-back>→ رجوع</button>
+            <div id="my-orders"></div>
+          </div>
+
           <div id="follow-us"></div>
-          <hr class="account-separator">
-          <p class="note">تحتاج مساعدة؟ <a class="account-contact-link" href="https://romeo311020.github.io/Romany-Profile/" target="_blank" rel="noopener noreferrer">تواصل معنا</a>.</p>
-          <button id="logout" class="btn outline" type="button">تسجيل الخروج</button>
+          <div class="acc-foot">
+            <p class="note">تحتاج مساعدة؟ <a class="account-contact-link" href="https://romeo311020.github.io/Romany-Profile/" target="_blank" rel="noopener noreferrer">تواصل معنا</a>.</p>
+            <button id="logout" class="btn outline" type="button">تسجيل الخروج</button>
+          </div>
         </section>
       </div>
     </section>
@@ -120,6 +140,6 @@
   <script src="supabase-config.js"></script>
   <script src="supabase-client.js"></script>
   <script src="supabase-account.js"></script>
-  <script src="supabase-push.js"></script>
+  <script src="account-ui.js"></script>
 <script src="install.js" defer></script></body>
 </html>

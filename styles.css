@@ -254,7 +254,7 @@ footer.footer{margin-top:40px;padding:32px 0 calc(32px + env(safe-area-inset-bot
 .account-dashboard h3{margin:0 0 10px;font-size:18px}
 
 [hidden]{display:none!important}
-.account-card.signed-in{grid-template-columns:1fr;max-width:640px}.account-card.signed-in .account-intro{display:none}
+.account-card.signed-in{grid-template-columns:1fr;max-width:760px}.account-card.signed-in .account-intro{display:none}
 
 /* ---------- مركز المباريات ---------- */
 .mc-toolbar{display:flex;gap:12px;align-items:stretch;flex-wrap:wrap;margin:18px 0 6px}
@@ -1086,3 +1086,28 @@ a.news-card{color:inherit;display:block}
 .pn-item:has(input:checked){border-color:var(--acc);background:color-mix(in srgb,var(--acc) 10%,var(--panel2))}
 .pn-item input{width:18px;height:18px;accent-color:var(--acc)}
 .pn-box .ok-note{color:var(--acc);font-weight:800}.pn-msg{min-height:1.4em}
+
+/* ===== v50: حسابي — مركز الحساب ===== */
+.account-card.signed-in .account-panel{padding:0}
+.account-dashboard{width:100%!important}
+.acc-hero{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:clamp(22px,4vw,34px);background:radial-gradient(ellipse at 85% 0,color-mix(in srgb,var(--acc) 30%,transparent),transparent 60%),linear-gradient(160deg,color-mix(in srgb,var(--acc) 12%,var(--bg2)),var(--bg2));border-bottom:1px solid var(--line)}
+.acc-hero .profile-id h2{margin:0;font-size:clamp(20px,3vw,26px)}
+.acc-hero .profile-email{margin:2px 0 8px;color:var(--muted);overflow-wrap:anywhere}
+.acc-hero.compact{padding:14px clamp(22px,4vw,34px)}.acc-hero.compact .avatar{width:54px;height:54px}.acc-hero.compact .profile-badges{display:none}
+.acc-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;padding:clamp(18px,3vw,28px)}
+.acc-tile{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:18px;border:1px solid var(--line);border-radius:18px;background:var(--panel2);color:var(--text);text-align:start;text-decoration:none;font:inherit;cursor:pointer;transition:transform .2s var(--ease,ease),border-color .2s,box-shadow .2s}
+.acc-tile:hover{transform:translateY(-3px);border-color:var(--acc);box-shadow:0 14px 30px -18px var(--acc)}
+.acc-tile i{font-style:normal;font-size:24px;width:48px;height:48px;display:grid;place-items:center;border-radius:14px;background:color-mix(in srgb,var(--acc) 14%,var(--panel));margin-bottom:8px}
+.acc-tile b{font-size:16px}.acc-tile small{color:var(--muted);font-size:12.5px}
+.acc-admin{border-style:dashed}
+.acc-pane{padding:clamp(18px,3vw,30px)}.acc-pane h3{margin:6px 0 14px}
+.acc-back{border:0;background:none;color:var(--muted);font:inherit;font-weight:800;cursor:pointer;padding:6px 0;margin-bottom:6px}.acc-back:hover{color:var(--acc)}
+.acc-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:16px clamp(18px,3vw,28px) 24px;border-top:1px solid var(--line)}
+.account-dashboard #follow-us{padding:0 clamp(18px,3vw,28px)}
+
+.np-page{max-width:760px}.np-back{display:inline-block;text-decoration:none;margin-bottom:8px}
+.np-head h1{margin:6px 0}.np-head{margin-bottom:18px}
+.np-card{padding:20px;border:1px solid var(--line);border-radius:20px;background:var(--panel);margin-bottom:16px}
+.np-card h3{margin:0 0 10px}.np-sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.np-sec-head h3{margin:0}
+.np-status{display:flex;gap:16px;align-items:flex-start}.np-ico{font-size:30px;width:60px;height:60px;display:grid;place-items:center;border-radius:18px;background:color-mix(in srgb,var(--acc) 14%,var(--panel2));flex:none}
+.np-txt{flex:1;min-width:0}.np-txt .profile-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.np-ios{margin-top:10px}

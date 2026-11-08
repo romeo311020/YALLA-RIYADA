@@ -15,7 +15,7 @@
 
   async function load() {
     const { data: u } = await db.auth.getUser(); user = u?.user || null;
-    if (!user) { host.innerHTML = ''; return; }
+    if (!user) { host.innerHTML = '<div class="np-card"><h3>سجّل دخولك الأول</h3><p class="note">الإشعارات مرتبطة بحسابك علشان نعرف تتابع إيه.</p><a class="btn primary" href="account.html" id="pn-login">تسجيل الدخول</a></div>'; try { localStorage.setItem('yr-next', 'notifications.html'); } catch { /* اختياري */ } return; }
     sub = await currentSub();
     const [t, f] = await Promise.all([
       db.from('push_targets').select('id,kind,name_ar').eq('active', true).order('sort_order'),
@@ -34,9 +34,14 @@
       ? '<p class="note ok-note">✓ الإشعارات شغّالة على الجهاز ده.</p><div class="profile-actions"><button class="btn outline" id="pn-test" type="button">جرّب إشعار على جهازي</button><button class="btn outline" id="pn-off" type="button">إيقاف على هذا الجهاز</button></div>'
       : '<button class="btn primary" id="pn-on" type="button">🔔 فعّل الإشعارات على هذا الجهاز</button>';
   }
-  const group = (kind, title) => { const l = targets.filter((x) => x.kind === kind); return l.length ? `<h4>${title}</h4><div class="pn-grid">${l.map((x) => `<label class="pn-item"><input type="checkbox" data-t="${esc(x.id)}"${follows.has(x.id) ? ' checked' : ''}><span>${esc(x.name_ar)}</span></label>`).join('')}</div>` : ''; };
+  const grid = (kind) => { const l = targets.filter((x) => x.kind === kind); return l.length ? `<div class="pn-grid">${l.map((x) => `<label class="pn-item"><input type="checkbox" data-t="${esc(x.id)}"${follows.has(x.id) ? ' checked' : ''}><span>${esc(x.name_ar)}</span></label>`).join('')}</div>` : '<p class="note">لا يوجد حاليًا.</p>'; };
+  const count = (kind) => targets.filter((x) => x.kind === kind && follows.has(x.id)).length;
   function render() {
-    host.innerHTML = `<div class="follow-box pn-box"><div class="follow-head"><span class="kicker">NOTIFICATIONS</span><h3>الإشعارات 🔔</h3></div>${stateBlock()}${isIOS && supported && !standalone ? '<p class="note">على الآيفون الإشعارات بتشتغل بس من التطبيق المثبّت على الشاشة الرئيسية.</p>' : ''}<p class="note">اختار اللي عايز تتابعه، وهنبعتلك إشعار لما يسجّل هدف أو تبدأ مبارياته.</p>${group('team', 'الفرق')}${group('player', 'اللاعبين')}<p class="note pn-msg" id="pn-msg" role="status">${esc(note)}</p></div>`;
+    const ios = isIOS && supported && !standalone ? '<p class="note np-ios">على الآيفون الإشعارات بتشتغل بس من التطبيق المثبّت على الشاشة الرئيسية.</p>' : '';
+    host.innerHTML = `<div class="np-card np-status"><div class="np-ico" aria-hidden="true">${sub ? '🔔' : '🔕'}</div><div class="np-txt"><h3>إشعارات هذا الجهاز</h3>${stateBlock()}${ios}</div></div>
+      <div class="np-card"><div class="np-sec-head"><h3>الفرق</h3><span class="tag">${count('team')} / ${targets.filter((x) => x.kind === 'team').length}</span></div>${grid('team')}</div>
+      <div class="np-card"><div class="np-sec-head"><h3>اللاعبين</h3><span class="tag">${count('player')} / ${targets.filter((x) => x.kind === 'player').length}</span></div>${grid('player')}</div>
+      <p class="note pn-msg" id="pn-msg" role="status">${esc(note)}</p>`;
     host.querySelectorAll('[data-t]').forEach((c) => c.addEventListener('change', () => toggle(c)));
     const on = host.querySelector('#pn-on'); if (on) on.addEventListener('click', enable);
     const off = host.querySelector('#pn-off'); if (off) off.addEventListener('click', disable);

@@ -92,6 +92,8 @@
     store: () => Promise.all([loadStoreSetting(), loadProducts(), loadCategories()]),
     orders: () => loadOrders(),
     news: () => loadNews(),
+    push: () => loadPush(),
+    pushtargets: () => loadPushTargets(),
     users: () => loadUsers(true),
     audit: () => loadAudit(),
     leagues: () => loadLeagueOrderAdmin(),
@@ -114,7 +116,7 @@
   let searchTimer; new MutationObserver((muts) => { if (!$('admin-search').value || muts.every((m) => m.target.closest?.('.admin-search') || m.target.classList?.contains('search-none') || m.target === $('admin-search-count'))) return; clearTimeout(searchTimer); searchTimer = setTimeout(applySearch, 60); }).observe(document.getElementById('admin-workspace'), { childList: true, subtree: true });
 
   /* ---------- بحث شامل: مباريات، فرق، أخبار، منتجات، طلبات، أقسام ---------- */
-  const TABS = [['overview', 'نظرة عامة'], ['apimatches', 'تعديل مباراة API'], ['matches', 'مباريات يدوية'], ['important', 'المباريات المهمة'], ['lineups', 'التشكيلات والأحداث'], ['streams', 'المشغّلات'], ['leagues', 'ترتيب البطولات'], ['teams', 'الفرق المهمة'], ['names', 'أسماء الفرق'], ['news', 'الأخبار'], ['store', 'المتجر'], ['orders', 'الطلبات'], ['users', 'المستخدمون'], ['audit', 'السجل']];
+  const TABS = [['overview', 'نظرة عامة'], ['apimatches', 'تعديل مباراة API'], ['matches', 'مباريات يدوية'], ['important', 'المباريات المهمة'], ['lineups', 'التشكيلات والأحداث'], ['streams', 'المشغّلات'], ['leagues', 'ترتيب البطولات'], ['teams', 'الفرق المهمة'], ['names', 'أسماء الفرق'], ['push', 'إرسال إشعار'], ['pushtargets', 'فرق ولاعبو الإشعارات'], ['news', 'الأخبار'], ['store', 'المتجر'], ['orders', 'الطلبات'], ['users', 'المستخدمون'], ['audit', 'السجل']];
   let gTimer; let gSeq = 0;
   const likeQ = (q) => q.replace(/[%,()*]/g, ' ').trim();
   const gRow = (icon, title, sub, attrs) => `<button type="button" class="g-row" ${attrs}><i>${icon}</i><span><b>${esc(title)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span></button>`;
@@ -170,6 +172,8 @@
     streams: ['المشغّلات', 'اربط روابط المشاهدة بالمباريات لتظهر للأعضاء.'],
     store: ['المتجر', 'المنتجات وإعدادات فتح المتجر.'],
     orders: ['الطلبات', 'متابعة طلبات العملاء وتغيير حالتها.'],
+    push: ['إرسال إشعار', 'ابعت إشعار لكل المشتركين أو لمتابعي فريق/لاعب، أو حوّل خبر لإشعار.'],
+    pushtargets: ['فرق ولاعبو الإشعارات', 'تحكم في الفرق واللاعبين اللي المستخدم يقدر يتابعهم.'],
     news: ['الأخبار', 'اكتب أخبارًا حصرية وضمّن منشورات X وإنستجرام وتيك توك ويوتيوب.'],
     users: ['المستخدمون', 'إدارة الحسابات والصلاحيات والحظر.'],
     audit: ['السجل', 'آخر عمليات المسؤولين.'],
@@ -934,7 +938,8 @@
     if (error) ({ data, error } = await client.from('news').select('id,title,body,image_url,source_url,is_published,created_at').order('created_at', { ascending: false }).limit(100));
     if (error) { host.textContent = `تعذّر تحميل الأخبار: ${error.message}`; return; }
     host.innerHTML = (data || []).map((n) => `<article class="admin-list-item"><div><strong>${esc(n.title)}</strong><small>${esc(fmt(n.created_at))} · <span class="pill ${n.is_published ? 'ok' : 'off'}">${n.is_published ? 'منشور' : 'مخفي'}</span>${n.views != null ? ` · ${n.views} مشاهدة` : ''}</small></div>
-      <div class="row"><button type="button" class="btn outline" data-toggle-news="${esc(n.id)}">${n.is_published ? 'إخفاء' : 'نشر'}</button><button type="button" class="btn outline" data-edit-news="${esc(n.id)}">تعديل</button><button type="button" class="btn outline" data-delete-news="${esc(n.id)}">حذف</button></div></article>`).join('') || '<p class="note">لا توجد أخبار.</p>';
+      <div class="row"><button type="button" class="btn outline" data-toggle-news="${esc(n.id)}">${n.is_published ? 'إخفاء' : 'نشر'}</button><button type="button" class="btn outline" data-push-news="${esc(n.id)}">🔔 إشعار</button><button type="button" class="btn outline" data-edit-news="${esc(n.id)}">تعديل</button><button type="button" class="btn outline" data-delete-news="${esc(n.id)}">حذف</button></div></article>`).join('') || '<p class="note">لا توجد أخبار.</p>';
+    host.querySelectorAll('[data-push-news]').forEach((b) => b.addEventListener('click', async () => { openTab('push'); await loadPush(); $('push-news').value = b.dataset.pushNews; $('push-news').dispatchEvent(new Event('change')); }));
     host.querySelectorAll('[data-toggle-news]').forEach((b) => b.addEventListener('click', async () => {
       const n = data.find((x) => x.id === b.dataset.toggleNews); if (!n) return;
       const { error: e } = await client.from('news').update({ is_published: !n.is_published }).eq('id', n.id);
@@ -1070,4 +1075,55 @@
     else if (k === 'emb') { const u = prompt('الصق رابط المنشور (X / إنستجرام / تيك توك / يوتيوب / فيسبوك)'); if (u && /^https:\/\//.test(u.trim())) lineStart(`\n${u.trim()}\n\n`); else if (u) toast('الرابط لازم يبدأ بـ https://'); }
   });
   paintPrev();
+
+  /* ======================== الإشعارات ======================== */
+  let pushNews = [];
+  async function loadPush(keep) {
+    if (!keep) say('push-msg', '');
+    try {
+      const st = await callFn('send-push', { action: 'stats' });
+      $('push-devices').textContent = st.devices; const ts = st.targets || []; $('push-ntargets').textContent = ts.filter((t) => t.active).length;
+      $('push-audience').innerHTML = `<option value="all">كل المشتركين (${st.devices} جهاز)</option>` + ts.map((t) => `<option value="${esc(t.id)}">متابعو: ${esc(t.name_ar)} (${t.followers})</option>`).join('');
+      $('push-stats').innerHTML = ts.length ? ts.map((t) => `<article class="admin-list-item"><div><strong>${t.kind === 'team' ? '👕' : '⚽'} ${esc(t.name_ar)}</strong><small>${t.active ? 'ظاهر للمستخدمين' : 'مخفي'}</small></div><span class="pill ${t.followers ? 'ok' : 'off'}">${t.followers} متابع</span></article>`).join('') : '<p class="note">لا يوجد.</p>';
+    } catch (e) { if (!keep) say('push-msg', /الدالة|send-push|Failed|غير/.test(e.message) ? `الدالة send-push مش جاهزة: ${e.message}` : e.message); }
+    const { data } = await client.from('news').select('id,title,excerpt,body').eq('is_published', true).order('created_at', { ascending: false }).limit(25);
+    pushNews = data || [];
+    $('push-news').innerHTML = '<option value="">— اختر خبر لتعبئة الحقول —</option>' + pushNews.map((n) => `<option value="${esc(n.id)}">${esc(n.title)}</option>`).join('');
+  }
+  $('push-news').addEventListener('change', () => {
+    const n = pushNews.find((x) => String(x.id) === $('push-news').value); if (!n) return;
+    $('push-title').value = n.title.slice(0, 80); $('push-body').value = String(n.excerpt || n.body || '').replace(/[#>*\[\]()!-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180); $('push-url').value = `article.html?id=${n.id}`;
+  });
+  const pushRun = async (action) => {
+    const title = $('push-title').value.trim(); if (!title) { say('push-msg', 'اكتب عنوان الإشعار.'); return; }
+    const aud = $('push-audience').value; const label = $('push-audience').selectedOptions[0]?.textContent || '';
+    if (action === 'send' && !window.confirm(`إرسال الإشعار إلى: ${label}؟\n\n«${title}»`)) return;
+    const btns = [$('push-send'), $('push-test')]; btns.forEach((b) => { b.disabled = true; }); say('push-msg', 'جارٍ الإرسال…');
+    try {
+      const r = await callFn('send-push', { action, title, body: $('push-body').value.trim(), url: $('push-url').value.trim() || 'news.html', audience: aud === 'all' ? 'all' : 'target', target_id: aud === 'all' ? undefined : aud });
+      say('push-msg', r.note || `تم ✓ — اتبعت لـ ${r.sent} جهاز${r.failed ? ` · فشل ${r.failed}` : ''}${r.removed ? ` · اتشال ${r.removed} اشتراك منتهي` : ''}${action === 'test' && !r.total ? ' — مفيش اشتراك على حسابك. فعّل الإشعارات من «حسابي» الأول.' : ''}`);
+      if (action === 'send') loadPush(true);
+    } catch (e) { say('push-msg', e.message); } finally { btns.forEach((b) => { b.disabled = false; }); }
+  };
+  $('push-form').addEventListener('submit', (e) => { e.preventDefault(); pushRun('send'); });
+  $('push-test').addEventListener('click', () => pushRun('test'));
+
+  async function loadPushTargets() {
+    const { data, error } = await client.from('push_targets').select('*').order('kind').order('sort_order');
+    if (error) { $('pt-list').innerHTML = ''; say('pt-msg', /push_targets|relation/.test(error.message) ? 'شغّل ملف supabase-push-step1.sql في Supabase الأول.' : error.message); return; }
+    $('pt-list').innerHTML = (data || []).map((t) => `<article class="admin-list-item"><div><strong>${t.kind === 'team' ? '👕' : '⚽'} ${esc(t.name_ar)}</strong><small dir="ltr">${esc(t.name_en)} · <span class="pill ${t.active ? 'ok' : 'off'}">${t.active ? 'ظاهر' : 'مخفي'}</span></small></div><div class="row"><button type="button" class="btn outline" data-pt-toggle="${esc(t.id)}" data-on="${t.active ? 1 : 0}">${t.active ? 'إخفاء' : 'إظهار'}</button><button type="button" class="btn outline" data-pt-del="${esc(t.id)}">حذف</button></div></article>`).join('') || '<p class="note">لا يوجد. أضف أول فريق أو لاعب.</p>';
+  }
+  $('pt-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const row = { kind: $('pt-kind').value, name_en: $('pt-en').value.trim(), name_ar: $('pt-ar').value.trim(), sort_order: 100 };
+    if (!row.name_en || !row.name_ar) return;
+    const { error } = await client.from('push_targets').insert(row);
+    say('pt-msg', error ? (/duplicate|unique/.test(error.message) ? 'موجود بالفعل.' : error.message) : 'تمت الإضافة ✓');
+    if (!error) { $('pt-en').value = ''; $('pt-ar').value = ''; loadPushTargets(); }
+  });
+  $('pt-list').addEventListener('click', async (e) => {
+    const tg = e.target.closest('[data-pt-toggle]'); const dl = e.target.closest('[data-pt-del]');
+    if (tg) { const { error } = await client.from('push_targets').update({ active: tg.dataset.on !== '1' }).eq('id', tg.dataset.ptToggle); say('pt-msg', error ? error.message : 'تم.'); loadPushTargets(); }
+    if (dl && window.confirm('حذف الهدف ده؟ هيتشال من متابعات كل المستخدمين.')) { const { error } = await client.from('push_targets').delete().eq('id', dl.dataset.ptDel); say('pt-msg', error ? error.message : 'تم الحذف.'); loadPushTargets(); }
+  });
 })();

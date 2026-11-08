@@ -114,7 +114,7 @@
     // هل هو مسؤول؟ (القراءة محمية بسياسات قاعدة البيانات)
     $('profile-admin').hidden = true; $('admin-link').hidden = true;
     db.from('profiles').select('role').eq('id', user.id).maybeSingle().then(({ data }) => {
-      if (currentUser?.id === user.id && data?.role === 'admin') { $('profile-admin').hidden = false; $('admin-link').hidden = false; }
+      if (currentUser?.id === user.id && (data?.role === 'admin' || data?.role === 'editor')) { $('profile-admin').hidden = data.role !== 'admin'; $('admin-link').hidden = false; $('admin-link').querySelector('b').textContent = data.role === 'admin' ? 'لوحة التحكم' : 'لوحة الأخبار'; }
     }).catch(() => {});
   };
 
