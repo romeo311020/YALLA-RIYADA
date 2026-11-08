@@ -1078,3 +1078,11 @@ a.news-card{color:inherit;display:block}
 .emb blockquote{margin:0!important;border:0!important;background:none!important;padding:0!important;font-weight:400!important}
 .emb-link{display:flex;align-items:center;gap:12px;margin:18px 0;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--panel2);color:var(--text)!important;text-decoration:none!important}
 .emb-link b{font-size:15px}.emb-link span{flex:1;color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:start}.emb-link i{font-style:normal;color:var(--acc);font-weight:900}
+
+/* ===== v50: إشعارات حسابي ===== */
+.pn-box h4{margin:16px 0 8px;font-size:14px;color:var(--muted)}
+.pn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.pn-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);cursor:pointer;font-weight:700}
+.pn-item:has(input:checked){border-color:var(--acc);background:color-mix(in srgb,var(--acc) 10%,var(--panel2))}
+.pn-item input{width:18px;height:18px;accent-color:var(--acc)}
+.pn-box .ok-note{color:var(--acc);font-weight:800}.pn-msg{min-height:1.4em}
