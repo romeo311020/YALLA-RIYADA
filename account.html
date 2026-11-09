@@ -14,6 +14,89 @@
   
   <script>(function(){var d=document.documentElement,t="light";try{if(localStorage.getItem("yr-theme")==="dark")t="dark"}catch(e){}if(t==="light")d.setAttribute("data-theme","light")})()</script>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .account-page{padding-block:clamp(28px,6vw,72px);overflow:hidden}
+    .account-card{position:relative;width:min(100%,1040px);grid-template-columns:.92fr 1.08fr;border-radius:30px;box-shadow:0 28px 90px #0005;animation:account-enter .65s cubic-bezier(.2,.8,.2,1) both}
+    .account-intro{position:relative;isolation:isolate;overflow:hidden;min-height:620px;padding:clamp(32px,6vw,72px);background:radial-gradient(ellipse at 18% 20%,color-mix(in srgb,var(--acc) 20%,transparent),transparent 46%),linear-gradient(145deg,var(--bg2),var(--panel));border-inline-end:1px solid var(--line)}
+    .account-intro:before,.account-intro:after{position:absolute;z-index:-1;content:"";pointer-events:none}
+    .account-intro:before{width:310px;height:310px;inset:auto auto:-145px -125px;border:1px solid color-mix(in srgb,var(--acc) 26%,transparent);border-radius:50%;box-shadow:0 0 0 32px color-mix(in srgb,var(--acc) 5%,transparent),0 0 0 68px color-mix(in srgb,var(--acc) 4%,transparent)}
+    .account-intro:after{content:"YR";inset:auto 18px 4px auto;color:color-mix(in srgb,var(--text) 4%,transparent);font:900 clamp(120px,20vw,220px)/1 Arial,sans-serif;letter-spacing:-.1em;direction:ltr}
+    .account-intro .kicker{padding:7px 12px;border:1px solid color-mix(in srgb,var(--acc) 38%,transparent);border-radius:999px;background:color-mix(in srgb,var(--acc) 8%,transparent);letter-spacing:2px}
+    .account-intro h1{max-width:430px;margin:22px 0 14px;font-size:clamp(36px,4.2vw,52px);line-height:1.28}
+    .account-intro p{max-width:340px;font-size:16px;line-height:1.9}
+    .account-benefit{position:relative;align-self:flex-start;margin-top:24px;padding:10px 14px;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--panel) 76%,transparent);font-size:13px}
+    .account-benefit span{color:var(--acc);margin-inline-end:8px}
+    .account-panel{display:flex;align-items:center;justify-content:center;padding:clamp(30px,5.5vw,64px)}
+    #account-auth{width:min(100%,420px)}
+    .account-tabs{gap:4px;padding:4px;margin-bottom:30px;border-radius:14px;background:var(--bg2)}
+    .account-tab{min-height:46px;border-radius:11px;transition:background .2s,color .2s,transform .2s}
+    .account-tab:hover{color:var(--text)}
+    .account-tab.active{background:var(--acc);color:var(--on-acc);box-shadow:0 5px 16px color-mix(in srgb,var(--acc) 18%,transparent)}
+    .account-heading{position:relative;margin:0 0 22px;padding-inline-start:13px;font-size:21px}
+    .account-heading:before{position:absolute;inset-block:4px;inset-inline-start:0;width:3px;border-radius:4px;background:var(--acc);content:""}
+    .account-form{gap:16px}
+    .account-field{gap:7px!important}
+    .account-field input{min-height:52px;margin-top:2px;border-radius:13px;transition:border-color .2s,box-shadow .2s,background .2s}
+    .account-field input:hover{border-color:color-mix(in srgb,var(--text) 32%,var(--line))}
+    .account-field input:focus{border-color:var(--acc);outline:0;box-shadow:0 0 0 4px color-mix(in srgb,var(--acc) 16%,transparent)}
+    .account-submit,.google-button{min-height:54px;border-radius:14px;transition:transform .18s,box-shadow .18s,border-color .18s,background .18s}
+    .account-submit{margin-top:4px;box-shadow:0 8px 22px color-mix(in srgb,var(--acc) 16%,transparent)}
+    .account-submit:hover{transform:translateY(-2px);box-shadow:0 12px 26px color-mix(in srgb,var(--acc) 24%,transparent)}
+    .account-submit:active,.google-button:active{transform:translateY(0) scale(.99)}
+    .account-link-button{margin-top:14px;font-size:12px;text-underline-offset:4px}
+    .account-divider{margin:23px 0}
+    .google-button{border-radius:14px}
+    .google-button:hover{transform:translateY(-2px);border-color:var(--acc);background:color-mix(in srgb,var(--acc) 6%,transparent)}
+    .account-dashboard{width:100%;max-width:620px}
+    .acc-hero{display:flex;align-items:center;gap:18px;padding:20px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 8%,var(--panel)),var(--panel))}
+    .acc-hero .avatar{width:78px;height:78px;border-color:color-mix(in srgb,var(--acc) 38%,var(--line));box-shadow:0 0 0 5px color-mix(in srgb,var(--acc) 8%,transparent)}
+    .profile-id h2{margin:0 0 3px}
+    .profile-badges{margin-top:9px}
+    .acc-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0}
+    .acc-tile{position:relative;display:grid;grid-template-columns:38px 1fr;align-items:center;column-gap:11px;min-width:0;min-height:84px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--bg2);color:var(--text);text-align:start;transition:transform .18s,border-color .18s,background .18s}
+    .acc-tile:hover{transform:translateY(-2px);border-color:var(--acc);background:color-mix(in srgb,var(--acc) 5%,var(--bg2))}
+    .acc-tile i{grid-row:span 2;display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:color-mix(in srgb,var(--acc) 12%,var(--panel));font-size:18px;font-style:normal}
+    .acc-tile b{align-self:end;font-size:14px}
+    .acc-tile small{align-self:start;color:var(--muted);font-size:11px}
+    .acc-pane{margin-top:18px;padding:20px;border:1px solid var(--line);border-radius:18px;background:var(--bg2);animation:account-enter .28s ease both}
+    .acc-back{margin-bottom:14px;padding:7px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--muted);font-weight:700;transition:color .18s,border-color .18s}
+    .acc-back:hover{color:var(--text);border-color:var(--acc)}
+    .acc-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+    .acc-foot p{margin:0}
+    @keyframes account-enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    @media(max-width:900px){
+      .account-card{grid-template-columns:1fr}
+      .account-intro{min-height:0;padding:34px 38px;border-inline-end:0;border-bottom:1px solid var(--line)}
+      .account-intro h1{max-width:600px}
+      .account-benefit{margin-top:16px}
+      .account-panel{width:100%;max-width:none;padding:34px 38px}
+      #account-auth{max-width:520px}
+    }
+    @media(max-width:520px){
+      .account-page{width:calc(100% - 20px);padding-block:18px 34px}
+      .account-card{border-radius:22px}
+      .account-intro{padding:26px 22px}
+      .account-intro h1{font-size:34px}
+      .account-intro p{font-size:14px}
+      .account-panel{padding:26px 22px}
+      .account-tabs{margin-bottom:24px}
+      .acc-hero{align-items:flex-start;padding:15px;gap:13px}
+      .acc-hero .avatar{width:62px;height:62px;font-size:28px}
+      .profile-id h2{font-size:19px}
+      .profile-email{font-size:12px}
+      .acc-tiles{gap:8px}
+      .acc-tile{grid-template-columns:32px 1fr;column-gap:8px;min-height:78px;padding:10px}
+      .acc-tile i{width:32px;height:32px;font-size:16px}
+      .acc-tile b{font-size:12px}
+      .acc-tile small{font-size:10px}
+      .acc-pane{padding:16px}
+      .acc-foot{align-items:flex-start;flex-direction:column}
+    }
+    @media(prefers-reduced-motion:reduce){
+      .account-card,.acc-pane{animation:none}
+      .account-tab,.account-field input,.account-submit,.google-button,.acc-tile,.acc-back{transition:none}
+    }
+  </style>
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="يلا رياضة"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="robots" content="noindex,nofollow"></head>
 <body>
   <div id="shared-header"></div>
