@@ -96,6 +96,96 @@
       .account-card,.acc-pane{animation:none}
       .account-tab,.account-field input,.account-submit,.google-button,.acc-tile,.acc-back{transition:none}
     }
+    .account-page{width:min(1120px,calc(100% - 40px));padding-block:42px 64px}
+    .account-card.signed-in{width:100%;max-width:none;overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none}
+    .account-card.signed-in .account-panel{display:block;width:100%;max-width:none;padding:0}
+    .account-dashboard{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:22px;width:100%;max-width:none}
+    .account-dashboard>.acc-hero,.account-dashboard>.acc-tiles,.account-dashboard>.acc-pane,.account-dashboard>#follow-us,.account-dashboard>.acc-foot{grid-column:1/-1}
+    .account-dashboard>.acc-hero{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;gap:24px;min-height:210px;margin:0;padding:34px 40px;border:1px solid color-mix(in srgb,var(--acc) 24%,var(--line));border-radius:28px;background:radial-gradient(ellipse at 12% 0%,color-mix(in srgb,var(--acc) 17%,transparent),transparent 40%),linear-gradient(115deg,var(--panel),var(--bg2));box-shadow:0 22px 55px #0003}
+    .account-dashboard>.acc-hero:after{position:absolute;z-index:-1;inset:auto auto:-155px -42px;width:340px;height:340px;border:1px solid color-mix(in srgb,var(--acc) 24%,transparent);border-radius:50%;box-shadow:0 0 0 28px color-mix(in srgb,var(--acc) 4%,transparent),0 0 0 60px color-mix(in srgb,var(--acc) 3%,transparent);content:""}
+    .account-dashboard>.acc-hero:before{position:absolute;z-index:-1;inset:0 auto 0 0;width:5px;background:var(--acc);content:""}
+    .account-dashboard>.acc-hero.compact{min-height:130px;padding-block:22px}
+    .account-dashboard>.acc-hero .avatar{width:104px;height:104px;border:3px solid var(--acc);box-shadow:0 0 0 7px color-mix(in srgb,var(--acc) 12%,transparent),0 10px 24px #0004}
+    .account-dashboard .profile-id{position:relative}
+    .account-dashboard .profile-id:before{display:none}
+    .account-dashboard .profile-overline{display:block;margin-bottom:5px;color:var(--acc);font-size:11px;font-weight:800}
+    .account-dashboard .profile-id h2{margin:0 0 3px;font-size:clamp(25px,3vw,34px);line-height:1.3}
+    .account-dashboard .profile-email{margin:0 0 10px;font-size:14px}
+    .account-dashboard .profile-badges{gap:7px}
+    .account-dashboard .profile-badges .tag{padding:4px 11px;background:color-mix(in srgb,var(--panel) 70%,transparent)}
+    .account-dashboard .profile-badges .tag.live{background:var(--acc);border-color:var(--acc)}
+    .acc-tiles{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0}
+    .acc-nav-heading{grid-column:1/-1;display:flex;align-items:end;justify-content:space-between;gap:16px;margin:0 0 2px}
+    .acc-nav-heading .kicker{font-size:10px}
+    .acc-nav-heading h3{margin:4px 0 0;font-size:clamp(21px,2.4vw,27px)}
+    .acc-nav-heading p{margin:0 0 4px;font-size:12px}
+    .acc-tile{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:22px;min-height:172px;padding:20px 22px;border-radius:20px;background:linear-gradient(145deg,var(--panel),var(--bg2));text-align:start}
+    .acc-tile:before{position:absolute;z-index:-1;inset:auto -25px -65px auto;width:150px;height:150px;border-radius:50%;background:color-mix(in srgb,var(--acc) 7%,transparent);content:"";transition:transform .25s,background .25s}
+    .acc-tile:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--acc) 75%,var(--line));background:linear-gradient(145deg,var(--panel),var(--bg2));box-shadow:0 14px 28px #0003}
+    .acc-tile:hover:before{transform:scale(1.25);background:color-mix(in srgb,var(--acc) 11%,transparent)}
+    .acc-tile i{width:48px;height:48px;border:1px solid color-mix(in srgb,var(--acc) 20%,var(--line));border-radius:15px;background:color-mix(in srgb,var(--acc) 10%,var(--panel));font-size:22px}
+    .acc-tile b{align-self:auto;font-size:17px}
+    .acc-tile small{align-self:auto;margin-top:2px;font-size:12px}
+    .acc-tile:after{position:absolute;inset:auto 18px 19px auto;display:grid;place-items:center;width:30px;height:30px;border:1px solid var(--line);border-radius:50%;color:var(--muted);content:"↗";font:700 14px Arial,sans-serif;transition:background .18s,color .18s,border-color .18s,transform .18s}
+    .acc-tile:hover:after{transform:translate(-2px,-2px);border-color:var(--acc);background:var(--acc);color:var(--on-acc)}
+    .acc-tile:nth-child(2){grid-column:span 2;min-height:208px}
+    .acc-tile:nth-child(2) i{width:56px;height:56px;font-size:25px}
+    #follow-us{margin-top:0}
+    #follow-us .follow-box{padding:clamp(22px,4vw,34px);border:1px solid var(--line);border-radius:24px;background:linear-gradient(145deg,var(--panel),var(--bg2))}
+    #follow-us .follow-head{margin-bottom:20px}
+    #follow-us .follow-head h3{margin:7px 0 3px;font-size:clamp(21px,2.5vw,28px)}
+    #follow-us .follow-head p{margin:0}
+    #follow-us .follow-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    #follow-us .follow-card{position:relative;display:flex;align-items:center;gap:13px;min-width:0;min-height:96px;padding:16px;border:1px solid var(--line);border-radius:18px;background:var(--bg);transition:transform .2s,border-color .2s,background .2s}
+    #follow-us .follow-card:hover{transform:translateY(-3px);border-color:var(--c);background:color-mix(in srgb,var(--c) 6%,var(--bg))}
+    #follow-us .follow-ico{display:grid;place-items:center;flex:0 0 46px;width:46px;height:46px;border:1px solid color-mix(in srgb,var(--c) 52%,transparent);border-radius:15px;background:color-mix(in srgb,var(--c) 12%,transparent);color:var(--c)}
+    #follow-us .follow-ico svg{width:22px;height:22px}
+    #follow-us .follow-txt{display:grid;min-width:0;gap:3px}
+    #follow-us .follow-txt b{font-size:14px}
+    #follow-us .follow-txt small{overflow:hidden;color:var(--muted);font-size:11px;text-overflow:ellipsis;white-space:nowrap}
+    #follow-us .follow-go{margin-inline-start:auto;color:var(--muted);transition:color .2s,transform .2s}
+    #follow-us .follow-card:hover .follow-go{transform:translate(2px,-2px);color:var(--c)}
+    .account-dashboard>.acc-pane{margin:0;padding:clamp(20px,4vw,32px);border-radius:22px;background:var(--panel)}
+    .account-dashboard>.acc-foot{margin:0;padding:20px 4px 0}
+    @media(max-width:760px){
+      .account-page{width:min(100% - 28px,620px);padding-block:24px 44px}
+      .account-dashboard{gap:16px}
+      .account-dashboard>.acc-hero{min-height:180px;padding:26px}
+      .acc-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+      .acc-tile:nth-child(2){grid-column:1/-1;min-height:145px}
+      .acc-tile{min-height:145px;padding:17px}
+      #follow-us .follow-grid{grid-template-columns:1fr}
+      #follow-us .follow-card{min-height:76px}
+    }
+    @media(max-width:480px){
+      .account-page{width:calc(100% - 20px);padding-block:16px 36px}
+      .account-dashboard{gap:13px}
+      .account-dashboard>.acc-hero{align-items:flex-start;gap:16px;min-height:0;padding:22px 17px;border-radius:21px}
+      .account-dashboard>.acc-hero .avatar{width:68px;height:68px}
+      .account-dashboard>.acc-hero.compact{min-height:0;padding-block:17px}
+      .account-dashboard .profile-id:before{font-size:8px;letter-spacing:1px}
+      .account-dashboard .profile-overline{font-size:9px}
+      .account-dashboard .profile-id h2{font-size:21px}
+      .account-dashboard .profile-email{font-size:11px}
+      .account-dashboard .profile-badges{gap:5px}
+      .account-dashboard .profile-badges .tag{padding:3px 8px;font-size:9px}
+      .acc-nav-heading{align-items:flex-start;flex-direction:column;gap:3px}
+      .acc-nav-heading p{font-size:11px}
+      .acc-tiles{gap:8px}
+      .acc-tile,.acc-tile:nth-child(2){gap:15px;min-height:132px;padding:14px;border-radius:16px}
+      .acc-tile:nth-child(2) i{width:46px;height:46px;font-size:21px}
+      .acc-tile i{width:42px;height:42px;border-radius:13px;font-size:19px}
+      .acc-tile b{font-size:14px}
+      .acc-tile small{max-width:90%;font-size:10px}
+      .acc-tile:after{inset-inline-end:12px;inset-block-end:12px;width:25px;height:25px;font-size:12px}
+      #follow-us .follow-box{padding:19px 15px;border-radius:20px}
+      #follow-us .follow-head{margin-bottom:14px}
+      #follow-us .follow-card{padding:12px;border-radius:15px}
+      .account-dashboard>.acc-foot{align-items:flex-start}
+    }
+    @media(prefers-reduced-motion:reduce){
+      .acc-tile,.acc-tile:before,.acc-tile:after,#follow-us .follow-card,#follow-us .follow-go{transition:none}
+    }
   </style>
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="يلا رياضة"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="robots" content="noindex,nofollow"></head>
 <body>
@@ -145,6 +235,7 @@
               <span id="profile-initial" aria-hidden="true"></span>
             </div>
             <div class="profile-id">
+              <span class="profile-overline">مساحتك الرياضية في مكان واحد</span>
               <h2 id="profile-title"></h2>
               <p class="profile-email" id="profile-email-text"></p>
               <div class="profile-badges">
@@ -156,6 +247,10 @@
           </div>
 
           <nav class="acc-tiles" id="acc-tiles" aria-label="أقسام حسابي">
+            <div class="acc-nav-heading">
+              <div><span class="kicker">YOUR SPACE</span><h3>إدارة حسابك</h3></div>
+              <p>اختر القسم اللي محتاجه، وكل حاجة هتكون قدامك.</p>
+            </div>
             <a class="acc-tile" href="notifications.html"><i aria-hidden="true">🔔</i><b>الإشعارات</b><small>تابع فرقك ولاعبيك المفضلين</small></a>
             <button class="acc-tile" type="button" data-pane="profile"><i aria-hidden="true">👤</i><b>بياناتي</b><small>الاسم والبريد</small></button>
             <button class="acc-tile" type="button" data-pane="orders"><i aria-hidden="true">📦</i><b>طلباتي</b><small>تابع طلبات المتجر</small></button>
