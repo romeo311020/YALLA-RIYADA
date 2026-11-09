@@ -80,7 +80,7 @@
     const isSignedIn = Boolean(user);
     authPanel.hidden = isSignedIn;
     dashboard.hidden = !isSignedIn;
-    document.querySelector('.account-card')?.classList.toggle('signed-in', isSignedIn);
+    document.querySelector('.ac')?.classList.toggle('signed-in', isSignedIn);
     if (!user) { shownUserId = null; currentUser = null; setEditing(false); return; }
     currentUser = user;
     try { // العودة للصفحة اللي جاء منها المستخدم (مشغّل/منتج) بعد تسجيل الدخول
@@ -261,16 +261,25 @@
   const loadMyOrders = async () => {
     const host = $('my-orders'); if (!host) return;
     const { data, error } = await db.from('orders').select('order_no,product_name,quantity,total,status,created_at').order('created_at', { ascending: false }).limit(20);
-    if (error || !data?.length) { host.innerHTML = ''; return; }
+    const st = document.getElementById('st-orders'); if (st) st.textContent = error ? '–' : String((data || []).length);
+    if (error || !data?.length) { host.innerHTML = error ? '' : '<div class="ac-empty"><i aria-hidden="true">🛍️</i><b>مفيش طلبات لسه</b><p class="note">أول ما تطلب من المتجر هتلاقيها هنا.</p><a class="btn primary" href="store.html">روح للمتجر</a></div>'; return; }
     host.innerHTML = `<div class="follow-box my-orders"><div class="follow-head"><span class="kicker">MY ORDERS</span><h3>طلباتي</h3></div>${data.map((o) => `<div class="my-order st-${o.status}"><div><b>#${o.order_no} · ${escapeHtml(o.product_name)} × ${o.quantity}</b><small>${new Date(o.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' })}${o.total != null ? ` · ${Number(o.total).toLocaleString('ar-EG')} ج.م` : ''}</small></div><span class="tag">${ST[o.status] || o.status}</span></div>`).join('')}</div>`;
   };
   const escapeHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-  db.auth.onAuthStateChange((_e, session) => { if (session?.user) setTimeout(loadMyOrders, 0); });
+  const loadStats = async (user) => {
+    try {
+      const [t, f] = await Promise.all([db.from('push_targets').select('id,kind'), db.from('push_follows').select('target_id').eq('user_id', user.id)]);
+      if (t.error || f.error) return;
+      const kinds = new Map((t.data || []).map((x) => [x.id, x.kind])); const mine = (f.data || []).map((x) => kinds.get(x.target_id));
+      $('st-teams').textContent = String(mine.filter((k) => k === 'team').length); $('st-players').textContent = String(mine.filter((k) => k === 'player').length);
+    } catch { /* اختياري */ }
+  };
+  db.auth.onAuthStateChange((_e, session) => { if (session?.user) setTimeout(() => { loadMyOrders(); loadStats(session.user); }, 0); });
 
   db.auth.getSession().then(({ data, error }) => {
     if (error) setMessage(message, `تعذّر التحقق من حالة الحساب: ${error.message}`, true);
     showUser(data?.session?.user || null);
-    if (data?.session?.user) loadMyOrders();
+    if (data?.session?.user) { loadMyOrders(); loadStats(data.session.user); }
   }).catch((error) => {
     setMessage(message, `تعذّر التحقق من حالة الحساب: ${error.message}`, true);
   });

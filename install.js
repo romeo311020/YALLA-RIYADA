@@ -10,6 +10,9 @@
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch((e) => console.warn('sw:', e)));
   }
 
+  // طلب تفعيل الإشعارات (يظهر مرة عند أول دخول) — يتحمّل من هنا علشان يشتغل في كل الصفحات
+  if (!window.yrPush && !document.querySelector('script[src*="notify-prompt"]')) { const np = document.createElement('script'); np.src = 'notify-prompt.js'; np.defer = true; document.head.appendChild(np); }
+
   const standalone = () => window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;
   if (standalone()) return; // مثبّت بالفعل
   const dismissedAt = Number(read(DISMISS_KEY) || 0);
