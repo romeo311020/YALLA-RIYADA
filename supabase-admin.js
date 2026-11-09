@@ -1108,7 +1108,25 @@
   $('push-form').addEventListener('submit', (e) => { e.preventDefault(); pushRun('send'); });
   $('push-test').addEventListener('click', () => pushRun('test'));
 
+  /* طلبات المستخدمين لإضافة فريق/لاعب: الأدمن يعدّل الاسم ويضغط موافق (بيتضاف للقائمة والمستخدم بيتابعه تلقائيًا) أو رفض */
+  async function loadRequests() {
+    const box = $('ptr-box'); if (!box) return;
+    const { data, error } = await client.from('push_target_requests').select('id,kind,name,created_at').eq('status', 'pending').order('created_at');
+    if (error) { box.innerHTML = /push_target_requests|relation/.test(error.message) ? '<p class="note">لتفعيل طلبات المستخدمين شغّل ملف supabase-push-requests.sql في Supabase.</p>' : ''; return; }
+    if (!data?.length) { box.innerHTML = ''; return; }
+    box.innerHTML = `<div class="ptr-wrap"><h3>🕓 طلبات إضافة (${data.length})</h3>${data.map((r) => `<article class="admin-list-item ptr-item" data-rid="${esc(r.id)}"><div><strong>${r.kind === 'team' ? '👕 فريق' : '⚽ لاعب'} · ${esc(r.name)}</strong><small>${new Date(r.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' })}</small></div><div class="ptr-fields"><input data-f="ar" maxlength="80" value="${esc(r.name)}" placeholder="الاسم بالعربي" aria-label="الاسم بالعربي"><input data-f="en" dir="ltr" maxlength="80" placeholder="English name (as in the API)" aria-label="الاسم بالإنجليزي"></div><div class="row"><button type="button" class="btn primary" data-ptr-ok="${esc(r.id)}">✓ موافق</button><button type="button" class="btn outline" data-ptr-no="${esc(r.id)}">رفض</button></div></article>`).join('')}</div>`;
+  }
+  $('ptr-box')?.addEventListener('click', async (e) => {
+    const ok = e.target.closest('[data-ptr-ok]'); const no = e.target.closest('[data-ptr-no]'); if (!ok && !no) return;
+    const item = e.target.closest('.ptr-item'); const id = (ok || no).dataset.ptrOk || (ok || no).dataset.ptrNo; e.target.closest('button').disabled = true;
+    const res = ok
+      ? await client.rpc('approve_push_request', { p_id: id, p_name_ar: item.querySelector('[data-f="ar"]').value, p_name_en: item.querySelector('[data-f="en"]').value })
+      : await client.from('push_target_requests').update({ status: 'rejected' }).eq('id', id);
+    say('pt-msg', res.error ? res.error.message : (ok ? 'تمت الموافقة ✓ — اتضاف للقائمة وصاحب الطلب بيتابعه.' : 'تم رفض الطلب.'));
+    loadRequests(); loadPushTargets();
+  });
   async function loadPushTargets() {
+    loadRequests();
     const { data, error } = await client.from('push_targets').select('*').order('kind').order('sort_order');
     if (error) { $('pt-list').innerHTML = ''; say('pt-msg', /push_targets|relation/.test(error.message) ? 'شغّل ملف supabase-push-step1.sql في Supabase الأول.' : error.message); return; }
     $('pt-list').innerHTML = (data || []).map((t) => `<article class="admin-list-item"><div><strong>${t.kind === 'team' ? '👕' : '⚽'} ${esc(t.name_ar)}</strong><small dir="ltr">${esc(t.name_en)} · <span class="pill ${t.active ? 'ok' : 'off'}">${t.active ? 'ظاهر' : 'مخفي'}</span></small></div><div class="row"><button type="button" class="btn outline" data-pt-toggle="${esc(t.id)}" data-on="${t.active ? 1 : 0}">${t.active ? 'إخفاء' : 'إظهار'}</button><button type="button" class="btn outline" data-pt-del="${esc(t.id)}">حذف</button></div></article>`).join('') || '<p class="note">لا يوجد. أضف أول فريق أو لاعب.</p>';

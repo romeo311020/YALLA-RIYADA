@@ -165,3 +165,10 @@ body.adm .slot .sp{width:100%!important;min-width:0!important;order:1;flex:none!
 .lu-pick{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px}.lu-pick .lu-grow{flex:1;min-width:240px}
 body.adm .imp-row input[type=checkbox]{width:20px}
 body.adm .imp-row i.pill{width:auto;height:auto;min-height:0;display:inline-block;font-style:normal;padding:2px 9px;border-radius:999px;margin-inline-start:4px}
+
+/* طلبات المستخدمين لإضافة فريق/لاعب */
+body.adm .ptr-wrap{margin:0 0 22px;padding:14px;border:1px dashed var(--acc);border-radius:14px;background:color-mix(in srgb,var(--acc) 6%,var(--panel2))}
+body.adm .ptr-wrap h3{margin:0 0 10px;font-size:15px}
+body.adm .ptr-item{flex-wrap:wrap}
+body.adm .ptr-fields{display:flex;gap:8px;flex:1 1 280px;min-width:0}
+body.adm .ptr-fields input{flex:1;min-width:0;min-height:40px}

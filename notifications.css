@@ -1,0 +1,50 @@
+/* صفحة الإشعارات: خطوات (الفرق ← اللاعبين) + ملخص + طلب إضافة */
+.np-page{max-width:760px}
+.np-back{display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;font-weight:800;color:var(--muted)}.np-back:hover{color:var(--acc)}
+.np-head h1{font-size:clamp(34px,7vw,52px);margin:4px 0}
+.nw-device{display:flex;align-items:center;gap:14px;padding:14px 16px;margin:6px 0 18px;border:1px solid var(--line);border-radius:20px;background:var(--panel)}
+.nw-device .ico{flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:22px;background:color-mix(in srgb,var(--acc) 14%,var(--panel2))}
+.nw-device .txt{flex:1;min-width:0}.nw-device b{display:block;font-size:15px}.nw-device small{display:block;color:var(--muted);font-size:12.5px;line-height:1.5}
+.nw-device .acts{display:flex;gap:8px;flex-wrap:wrap}
+.nw-device.warn{border-color:var(--acc)}
+.nw-btn{min-height:42px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-weight:800;cursor:pointer}
+.nw-btn.pri{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
+.nw-btn:disabled{opacity:.55}
+
+.nw-steps{display:flex;align-items:center;gap:8px;margin:0 0 16px}
+.nw-step{display:flex;align-items:center;gap:8px;font-weight:800;color:var(--muted);font-size:14px}
+.nw-step i{font-style:normal;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line);font-size:13px}
+.nw-step.on{color:var(--text)}.nw-step.on i{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
+.nw-step.done i{background:color-mix(in srgb,var(--acc) 20%,var(--panel));border-color:var(--acc);color:var(--acc)}
+.nw-line{flex:1;height:3px;border-radius:3px;background:var(--line)}.nw-line.on{background:var(--acc)}
+
+.nw-card{padding:clamp(18px,3vw,26px);border:1px solid var(--line);border-radius:26px;background:var(--panel)}
+.nw-card h2{margin:0;font-size:clamp(22px,4vw,28px);font-weight:900}
+.nw-card .sub{margin:4px 0 16px;font-size:14px}
+.nw-count{float:inline-end;font-size:12px;font-weight:800;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+.nw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.nw-chip{position:relative;display:flex;align-items:center;gap:10px;min-height:56px;padding:10px 14px;border:1.5px solid var(--line);border-radius:16px;background:var(--panel2);font-weight:800;cursor:pointer;transition:border-color .15s,background .15s,transform .15s}
+.nw-chip:active{transform:scale(.98)}
+.nw-chip input{position:absolute;opacity:0;pointer-events:none}
+.nw-chip .box{flex:none;width:24px;height:24px;border-radius:8px;border:2px solid var(--line);display:grid;place-items:center;font-size:14px;color:transparent;transition:.15s}
+.nw-chip:has(input:checked){border-color:var(--acc);background:color-mix(in srgb,var(--acc) 12%,var(--panel2))}
+.nw-chip:has(input:checked) .box{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
+.nw-chip:has(input:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
+.nw-chip.pending{opacity:.7;border-style:dashed;cursor:default}
+.nw-chip.pending small{display:block;font-size:11px;color:var(--muted);font-weight:700}
+.nw-add{display:flex;align-items:center;justify-content:center;gap:8px;min-height:56px;border:1.5px dashed var(--acc);border-radius:16px;background:transparent;color:var(--acc);font-weight:900;cursor:pointer}
+.nw-add:hover{background:color-mix(in srgb,var(--acc) 8%,transparent)}
+.nw-form{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding:14px;border:1px dashed var(--acc);border-radius:18px;background:color-mix(in srgb,var(--acc) 5%,var(--panel2))}
+.nw-form input{flex:1 1 200px;min-height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel)}
+.nw-form .hint{flex-basis:100%;margin:0;font-size:12.5px}
+.nw-msg{min-height:1.6em;margin:12px 0 0;font-size:13px}
+.nw-nav{display:flex;gap:10px;margin-top:18px}
+.nw-nav .nw-btn{min-height:52px;font-size:16px}.nw-nav .grow{flex:1}
+
+.nw-sum h3{margin:0 0 10px;font-size:18px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.nw-sum h3 button{min-height:36px;padding:0 14px;font-size:13px}
+.nw-sum+.nw-sum{margin-top:14px}
+.nw-tags{display:flex;gap:8px;flex-wrap:wrap}
+.nw-tag{padding:8px 14px;border-radius:999px;font-weight:800;font-size:14px;background:color-mix(in srgb,var(--acc) 14%,var(--panel2));border:1px solid var(--acc)}
+.nw-tag.pend{background:transparent;border-style:dashed;opacity:.75}
+.nw-empty{color:var(--muted);font-size:14px;margin:0}
