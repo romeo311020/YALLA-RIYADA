@@ -83,6 +83,7 @@
   const loaded = new Set();
   const loaders = {
     overview: () => loadOverview(),
+    stats: () => loadStats(),
     matches: () => loadMatches(),
     apimatches: () => ovRefreshList(),
     important: () => loadImportant(),
@@ -116,7 +117,7 @@
   let searchTimer; new MutationObserver((muts) => { if (!$('admin-search').value || muts.every((m) => m.target.closest?.('.admin-search') || m.target.classList?.contains('search-none') || m.target === $('admin-search-count'))) return; clearTimeout(searchTimer); searchTimer = setTimeout(applySearch, 60); }).observe(document.getElementById('admin-workspace'), { childList: true, subtree: true });
 
   /* ---------- بحث شامل: مباريات، فرق، أخبار، منتجات، طلبات، أقسام ---------- */
-  const TABS = [['overview', 'نظرة عامة'], ['apimatches', 'تعديل مباراة API'], ['matches', 'مباريات يدوية'], ['important', 'المباريات المهمة'], ['lineups', 'التشكيلات والأحداث'], ['streams', 'المشغّلات'], ['leagues', 'ترتيب البطولات'], ['teams', 'الفرق المهمة'], ['names', 'أسماء الفرق'], ['push', 'إرسال إشعار'], ['pushtargets', 'فرق ولاعبو الإشعارات'], ['news', 'الأخبار'], ['store', 'المتجر'], ['orders', 'الطلبات'], ['users', 'المستخدمون'], ['audit', 'السجل']];
+  const TABS = [['overview', 'نظرة عامة'], ['stats', 'الإحصائيات والتقارير'], ['apimatches', 'تعديل مباراة API'], ['matches', 'مباريات يدوية'], ['important', 'المباريات المهمة'], ['lineups', 'التشكيلات والأحداث'], ['streams', 'المشغّلات'], ['leagues', 'ترتيب البطولات'], ['teams', 'الفرق المهمة'], ['names', 'أسماء الفرق'], ['push', 'إرسال إشعار'], ['pushtargets', 'فرق ولاعبو الإشعارات'], ['news', 'الأخبار'], ['store', 'المتجر'], ['orders', 'الطلبات'], ['users', 'المستخدمون'], ['audit', 'السجل']];
   let gTimer; let gSeq = 0;
   const likeQ = (q) => q.replace(/[%,()*]/g, ' ').trim();
   const gRow = (icon, title, sub, attrs) => `<button type="button" class="g-row" ${attrs}><i>${icon}</i><span><b>${esc(title)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span></button>`;
@@ -171,6 +172,7 @@
     teams: ['الفرق المهمة', 'الفرق اللي مبارياتها بتظهر الأول.'],
     streams: ['المشغّلات', 'اربط روابط المشاهدة بالمباريات لتظهر للأعضاء.'],
     store: ['المتجر', 'المنتجات وإعدادات فتح المتجر.'],
+    stats: ['الإحصائيات والتقارير', 'زيارات، مستخدمين، مبيعات، ومتابعين الفرق — كلها في مكان واحد.'],
     orders: ['الطلبات', 'متابعة طلبات العملاء وتغيير حالتها.'],
     push: ['إرسال إشعار', 'ابعت إشعار لكل المشتركين أو لمتابعي فريق/لاعب، أو حوّل خبر لإشعار.'],
     pushtargets: ['فرق ولاعبو الإشعارات', 'تحكم في الفرق واللاعبين اللي المستخدم يقدر يتابعهم.'],
@@ -226,6 +228,67 @@
     ];
     $('overview-status').innerHTML = checks.map(([ok, text]) => `<li class="${ok === true ? 'ok' : ok === false ? 'bad' : 'warn'}"><span aria-hidden="true">${ok === true ? '✓' : ok === false ? '✕' : '!'}</span>${esc(text)}</li>`).join('');
   }
+
+  /* ======================== الإحصائيات والتقارير ======================== */
+  const nAr = (n) => Number(n || 0).toLocaleString('ar-EG');
+  const dayKey = (d) => { const x = new Date(d); return new Date(x.getTime() + 2 * 3600e3).toISOString().slice(0, 10); }; // بتوقيت القاهرة تقريبًا
+  const lastDays = (n) => Array.from({ length: n }, (_, i) => dayKey(Date.now() - (n - 1 - i) * 864e5));
+  function bars(days, map, unit = '') {
+    const vals = days.map((d) => Number(map[d] || 0)); const max = Math.max(1, ...vals); const total = vals.reduce((a, b) => a + b, 0);
+    const every = Math.ceil(days.length / 6);
+    return `<div class="st-total"><b>${nAr(total)}</b><span>${unit} في الفترة</span></div><div class="st-bars" role="img" aria-label="رسم بياني">${vals.map((v, i) => `<i style="height:${Math.max(v ? 6 : 2, Math.round((v / max) * 100))}%" class="${v ? '' : 'z'}" title="${days[i]} · ${nAr(v)}"></i>`).join('')}</div><div class="st-axis">${days.map((d, i) => (i % every === 0 || i === days.length - 1 ? `<span>${d.slice(5)}</span>` : '')).join('')}</div>`;
+  }
+  function hbars(rows, unit = '') {
+    if (!rows.length) return '<p class="note">لا توجد بيانات بعد.</p>';
+    const max = Math.max(1, ...rows.map((r) => r[1]));
+    return `<div class="st-h">${rows.map(([name, v]) => `<div class="st-hrow"><span>${esc(name)}</span><div><i style="width:${Math.max(3, Math.round((v / max) * 100))}%"></i></div><b>${nAr(v)}${unit}</b></div>`).join('')}</div>`;
+  }
+  async function loadStats() {
+    const range = Number($('st-range').value) || 30; const days = lastDays(range); const since = days[0];
+    $('st-msg').textContent = '';
+    ['st-visits', 'st-users', 'st-orders', 'st-pages', 'st-follows', 'st-products'].forEach((id) => { $(id).innerHTML = '<p class="note">جارٍ التحميل…</p>'; });
+    const [stats, usersRes, orders, subs, follows, targets, news, products] = await Promise.all([
+      client.from('site_stats').select('day,page,hits').gte('day', since).limit(5000),
+      callFn('admin-users', { action: 'list', perPage: 200 }).catch((e) => ({ error: e.message })),
+      client.from('orders').select('created_at,total,status,product_name,quantity').gte('created_at', new Date(Date.now() - range * 864e5).toISOString()).limit(2000),
+      client.from('push_subscriptions').select('id', { count: 'exact', head: true }),
+      client.from('push_follows').select('target_id'),
+      client.from('push_targets').select('id,name_ar,kind'),
+      count('news'), count('products'),
+    ]);
+    // زيارات
+    let visitors = 0; let views = 0;
+    if (stats.error) { $('st-visits').innerHTML = `<p class="note">${/site_stats|relation|function/.test(stats.error.message) ? 'شغّل ملف supabase-stats.sql في Supabase لتفعيل عدّاد الزيارات.' : esc(stats.error.message)}</p>`; $('st-pages').innerHTML = ''; }
+    else {
+      const vMap = {}; const pMap = {}; const vis = {};
+      (stats.data || []).forEach((r) => { if (r.page === '_visitor') { vis[r.day] = (vis[r.day] || 0) + r.hits; visitors += r.hits; } else { vMap[r.day] = (vMap[r.day] || 0) + r.hits; views += r.hits; pMap[r.page] = (pMap[r.page] || 0) + r.hits; } });
+      $('st-visits').innerHTML = `<div class="st-two"><div>${bars(days, vis, 'زائر')}</div><div>${bars(days, vMap, 'مشاهدة صفحة')}</div></div>`;
+      const NAMES = { index: 'الرئيسية', matches: 'المباريات', match: 'تفاصيل مباراة', news: 'الأخبار', article: 'خبر', store: 'المتجر', product: 'منتج', account: 'حسابي', notifications: 'الإشعارات', team: 'فريق', about: 'عن المنصة' };
+      $('st-pages').innerHTML = hbars(Object.entries(pMap).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, v]) => [NAMES[k] || k, v]));
+    }
+    // مستخدمون
+    const us = usersRes.users || [];
+    if (usersRes.error) $('st-users').innerHTML = `<p class="note">${esc(usersRes.error)}</p>`;
+    else { const m = {}; us.forEach((u) => { const k = dayKey(u.created_at); m[k] = (m[k] || 0) + 1; }); $('st-users').innerHTML = bars(days, m, 'مستخدم جديد'); }
+    // طلبات
+    const od = orders.data || []; let revenue = 0; const byDay = {}; const byStatus = {}; const prod = {};
+    od.forEach((o) => { const k = dayKey(o.created_at); byDay[k] = (byDay[k] || 0) + 1; byStatus[o.status] = (byStatus[o.status] || 0) + 1; if (o.status !== 'cancelled') { revenue += Number(o.total || 0); prod[o.product_name] = (prod[o.product_name] || 0) + Number(o.quantity || 1); } });
+    $('st-orders').innerHTML = orders.error ? '<p class="note">شغّل supabase-orders.sql</p>' : `${bars(days, byDay, 'طلب')}<div class="st-chips">${Object.entries(byStatus).map(([k, v]) => `<span class="pill">${esc(ORDER_STATUS[k] || k)}: ${nAr(v)}</span>`).join('')}</div>`;
+    $('st-products').innerHTML = orders.error ? '' : hbars(Object.entries(prod).sort((a, b) => b[1] - a[1]).slice(0, 6), ' قطعة');
+    // متابعين
+    if (follows.error || targets.error) $('st-follows').innerHTML = '<p class="note">شغّل supabase-push-step1.sql</p>';
+    else { const c = {}; (follows.data || []).forEach((f) => { c[f.target_id] = (c[f.target_id] || 0) + 1; }); $('st-follows').innerHTML = hbars((targets.data || []).map((t) => [(t.kind === 'team' ? '👕 ' : '⚽ ') + t.name_ar, c[t.id] || 0]).sort((a, b) => b[1] - a[1]).slice(0, 10)); }
+    const devices = subs.error ? '—' : nAr(subs.count);
+    const cards = [
+      ['زائرون', stats.error ? '—' : nAr(visitors), `آخر ${range} يوم`], ['مشاهدات صفحات', stats.error ? '—' : nAr(views), ''],
+      ['المستخدمون', usersRes.error ? '—' : nAr(usersRes.total ?? us.length), usersRes.error ? '' : `${nAr(us.filter((u) => dayKey(u.created_at) >= since).length)} جديد في الفترة`],
+      ['أجهزة بالإشعارات', devices, 'مشتركة حاليًا'], ['طلبات', orders.error ? '—' : nAr(od.length), 'في الفترة'],
+      ['المبيعات', orders.error ? '—' : nAr(revenue) + ' ج.م', 'من غير الملغي'], ['أخبار', nAr(news), ''], ['منتجات', nAr(products), ''],
+    ];
+    $('st-cards').innerHTML = cards.map(([t, n, sub]) => `<div class="stat-card"><span>${esc(t)}</span><b>${esc(n)}</b><small>${esc(sub)}</small></div>`).join('');
+  }
+  $('st-range')?.addEventListener('change', loadStats);
+  $('st-refresh')?.addEventListener('click', loadStats);
 
   /* ======================== مباريات يدوية ======================== */
   $('match-form').addEventListener('submit', async (event) => {
@@ -873,7 +936,19 @@
 
   /* ======================== الطلبات ======================== */
   const ORDER_STATUS = { new: 'جديد', confirmed: 'مؤكد', shipped: 'في الشحن', delivered: 'تم التسليم', cancelled: 'ملغي' };
-  let orderFilter = 'all';
+  let orderFilter = 'all'; let ordersCache = [];
+  const normO = (t) => String(t ?? '').toLowerCase().replace(/[\u064B-\u0652\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه');
+  const filterOrders = (list) => { const q = normO(($('order-q')?.value || '').trim()); if (!q) return list; return list.filter((o) => normO([o.order_no, o.customer_name, o.phone, o.product_name, o.city, o.user_email].join(' ')).includes(q)); };
+  let oqT; $('order-q')?.addEventListener('input', () => { clearTimeout(oqT); oqT = setTimeout(() => loadOrders(), 250); });
+  $('order-csv')?.addEventListener('click', () => {
+    const rows = filterOrders(ordersCache); if (!rows.length) { say('orders-message', 'مفيش طلبات للتصدير.'); return; }
+    const cell = (v) => { let t = String(v ?? '').replace(/\r?\n/g, ' '); if (/^[=+\-@]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; };
+    const head = ['رقم الطلب', 'التاريخ', 'المنتج', 'الكمية', 'الإجمالي', 'الحالة', 'العميل', 'التليفون', 'المدينة', 'العنوان', 'ملاحظات العميل', 'ملاحظة داخلية', 'إيميل الحساب'];
+    const lines = [head.map(cell).join(',')].concat(rows.map((o) => [o.order_no, fmt(o.created_at), o.product_name, o.quantity, o.total, ORDER_STATUS[o.status] || o.status, o.customer_name, o.phone, o.city, o.address, o.notes, o.admin_note, o.user_email].map(cell).join(',')));
+    const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    say('orders-message', `تم تصدير ${rows.length} طلب ✓`);
+  });
   async function refreshOrdersBadge() {
     const { count: n, error } = await client.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'new');
     const b = $('orders-badge'); if (!b) return;
@@ -892,7 +967,10 @@
     const { data, error } = await q;
     if (error) { host.innerHTML = `<p class="note">تعذّر تحميل الطلبات: ${esc(error.message)}. شغّل ملف supabase-orders.sql في Supabase.</p>`; return; }
     refreshOrdersBadge();
-    host.innerHTML = (data || []).map((o) => `<article class="order-item st-${esc(o.status)}">
+    ordersCache = data || []; const rows = filterOrders(ordersCache);
+    const money = rows.filter((o) => o.status !== 'cancelled').reduce((t, o) => t + Number(o.total || 0), 0);
+    $('orders-sum').textContent = rows.length ? `${nAr(rows.length)} طلب · إجمالي المبيعات (من غير الملغي): ${money.toLocaleString('ar-EG')} ج.م` : '';
+    host.innerHTML = rows.map((o) => `<article class="order-item st-${esc(o.status)}">
       <div class="order-head"><strong>#${esc(o.order_no)} · ${esc(o.product_name)} × ${esc(o.quantity)}</strong><span class="tag">${esc(ORDER_STATUS[o.status] || o.status)}</span></div>
       <p class="order-meta">حساب العميل: <a dir="ltr" href="mailto:${esc(o.user_email)}">${esc(o.user_email || 'غير متاح')}</a></p>
       <p class="order-meta">${esc(o.customer_name)} · <a dir="ltr" href="tel:${esc(o.phone)}">${esc(o.phone)}</a> · <a href="https://wa.me/${esc(String(o.phone).replace(/^0/, '20').replace(/\D/g, ''))}" target="_blank" rel="noopener noreferrer">واتساب</a></p>

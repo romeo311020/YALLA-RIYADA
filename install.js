@@ -13,6 +13,8 @@
   // طلب تفعيل الإشعارات (يظهر مرة عند أول دخول) — يتحمّل من هنا علشان يشتغل في كل الصفحات
   if (!window.yrPush && !document.querySelector('script[src*="notify-prompt"]')) { const np = document.createElement('script'); np.src = 'notify-prompt.js'; np.defer = true; document.head.appendChild(np); }
 
+  if (!document.querySelector('script[src*="track.js"]')) { const tr = document.createElement('script'); tr.src = 'track.js'; tr.defer = true; document.head.appendChild(tr); }
+
   const standalone = () => window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;
   if (standalone()) return; // مثبّت بالفعل
   const dismissedAt = Number(read(DISMISS_KEY) || 0);

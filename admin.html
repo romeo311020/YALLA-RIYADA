@@ -34,6 +34,7 @@
         <div class="admin-tabs" role="tablist" aria-label="أقسام اللوحة">
         <span class="nav-label">الرئيسية</span>
         <button type="button" class="atab active" role="tab" data-atab="overview" aria-selected="true"><i class="ti" aria-hidden="true">📊</i>نظرة عامة</button>
+        <button type="button" class="atab" role="tab" data-atab="stats" aria-selected="false"><i class="ti" aria-hidden="true">📈</i>الإحصائيات والتقارير</button>
         <span class="nav-label">المباريات</span>
         <button type="button" class="atab" role="tab" data-atab="apimatches" aria-selected="false"><i class="ti" aria-hidden="true">🛠️</i>تعديل مباراة API</button>
         <button type="button" class="atab" role="tab" data-atab="matches" aria-selected="false"><i class="ti" aria-hidden="true">⚽</i>مباريات يدوية</button>
@@ -88,6 +89,24 @@
           <h2>حالة الموقع</h2>
           <ul class="checklist" id="overview-status"></ul>
         </div>
+      </section>
+
+      <!-- الإحصائيات والتقارير -->
+      <section class="admin-pane" id="pane-stats" role="tabpanel" hidden>
+        <div class="panel admin-section">
+          <div class="admin-section-heading"><div><h2>الإحصائيات والتقارير</h2></div>
+            <div class="row"><select id="st-range" aria-label="الفترة"><option value="7">آخر 7 أيام</option><option value="30" selected>آخر 30 يوم</option><option value="90">آخر 90 يوم</option></select><button type="button" class="btn outline" id="st-refresh">↻ تحديث</button></div></div>
+          <div class="stat-cards" id="st-cards"><p class="note">جارٍ التحميل…</p></div>
+        </div>
+        <div class="st-grid">
+          <div class="panel"><h2>الزيارات</h2><div id="st-visits"></div></div>
+          <div class="panel"><h2>مستخدمون جدد</h2><div id="st-users"></div></div>
+          <div class="panel"><h2>الطلبات والمبيعات</h2><div id="st-orders"></div></div>
+          <div class="panel"><h2>أكتر الصفحات زيارة</h2><div id="st-pages"></div></div>
+          <div class="panel"><h2>متابعين الفرق واللاعبين</h2><div id="st-follows"></div></div>
+          <div class="panel"><h2>أكتر المنتجات طلبًا</h2><div id="st-products"></div></div>
+        </div>
+        <p class="note" id="st-msg" role="status"></p>
       </section>
 
       <!-- المباريات اليدوية -->
@@ -411,6 +430,8 @@
           <div class="league-chips" id="order-filter" role="group" aria-label="تصفية الطلبات">
             <button type="button" class="chip active" data-of="all">الكل</button><button type="button" class="chip" data-of="new">جديد</button><button type="button" class="chip" data-of="confirmed">مؤكد</button><button type="button" class="chip" data-of="shipped">في الشحن</button><button type="button" class="chip" data-of="delivered">تم التسليم</button><button type="button" class="chip" data-of="cancelled">ملغي</button>
           </div>
+          <div class="ord-tools"><input id="order-q" type="search" placeholder="ابحث باسم العميل أو التليفون أو رقم الطلب…" aria-label="بحث في الطلبات"><button type="button" class="btn outline" id="order-csv">⬇ تصدير Excel (CSV)</button></div>
+          <p class="note" id="orders-sum"></p>
           <div id="admin-orders" class="admin-list"><p class="note">جارٍ التحميل…</p></div>
           <p class="note" id="orders-message" role="status"></p>
         </div>
