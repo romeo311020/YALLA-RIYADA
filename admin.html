@@ -460,6 +460,18 @@
             <label>ملاحظة (اختياري)<textarea id="tr-note" rows="2" maxlength="400" placeholder="تفاصيل الصفقة أو مدة العقد…"></textarea></label>
             <label>رابط المصدر (https، اختياري)<input id="tr-src" type="url" inputmode="url" dir="ltr" placeholder="https://..."></label>
             <label>رابط صورة اللاعب (https، اختياري)<input id="tr-photo" type="url" inputmode="url" dir="ltr" placeholder="https://..."></label>
+            <details class="tr-more-fields"><summary>بيانات اللاعب والأندية (صفحة اللاعب) — اختياري</summary>
+              <div class="row"><label>المركز<input id="tr-pos" maxlength="40" placeholder="قلب الهجوم"></label><label>الجنسية<input id="tr-nat" maxlength="40" placeholder="مصر"></label></div>
+              <div class="row"><label>العمر<input id="tr-age" type="number" min="14" max="50" inputmode="numeric"></label><label>رقم القميص<input id="tr-num" type="number" min="1" max="99" inputmode="numeric"></label></div>
+              <div class="row"><label>الطول (سم)<input id="tr-h" type="number" min="140" max="230" inputmode="numeric"></label><label>الوزن (كجم)<input id="tr-w" type="number" min="40" max="140" inputmode="numeric"></label></div>
+              <div class="row"><label>القدم المفضلة<select id="tr-foot"><option value="">—</option><option>اليمنى</option><option>اليسرى</option><option>الاتنين</option></select></label><label>القيمة السوقية<input id="tr-mv" maxlength="30" placeholder="€25M"></label></div>
+              <label>نهاية العقد<input id="tr-cu" type="date"></label>
+              <label>لوجو النادي القديم (https)<input id="tr-flogo" type="url" dir="ltr" placeholder="https://..."></label>
+              <label>لوجو النادي الجديد (https)<input id="tr-tlogo" type="url" dir="ltr" placeholder="https://..."></label>
+              <label>صورة كبيرة للاعب (https)<input id="tr-big" type="url" dir="ltr" placeholder="https://..."></label>
+              <label>علم الدولة (https)<input id="tr-flag" type="url" dir="ltr" placeholder="https://..."></label>
+              <label>نبذة عن اللاعب<textarea id="tr-bio" rows="3" maxlength="900" placeholder="لو فاضية بنكتب نبذة تلقائية من البيانات"></textarea></label>
+            </details>
             <label class="check-row"><input id="tr-pub" type="checkbox" checked> منشور للزوار</label>
             <div class="row"><button class="btn primary" id="tr-save" type="submit">حفظ الانتقال</button><button class="btn outline" id="tr-reset" type="button">جديد</button></div>
             <p class="note" id="tr-msg" role="status"></p>

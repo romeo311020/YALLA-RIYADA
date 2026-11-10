@@ -8,12 +8,15 @@
   const PAGE = 12; let all = []; let filter = 'all'; let q = ''; let shown = PAGE;
   const norm = (t) => String(t ?? '').toLowerCase().replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه');
   const date = (d) => { try { return new Date(d + 'T12:00:00').toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' }); } catch { return ''; } };
+  const logo = (u, name) => { const i = https(u); return i ? `<img class="tr-logo" src="${esc(i)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="tr-logo tr-logo-ph" aria-hidden="true">${esc(String(name || '?').trim().charAt(0) || '?')}</span>`; };
   const card = (t) => {
-    const [label] = ST[t.status] || ST.rumor; const src = https(t.source_url); const img = https(t.player_photo);
-    const move = t.status === 'extended' ? `<span>${esc(t.to_team || t.from_team || '')}</span>` : `<span>${esc(t.from_team || '—')}</span><i aria-hidden="true">←</i><span>${esc(t.to_team || '—')}</span>`;
-    return `<article class="tr-card" data-s="${esc(t.status)}"><div class="tr-top"><div class="tr-ph">${img ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '⚽'}</div><div class="tr-who"><h2>${esc(t.player_name)}</h2><span class="tr-badge">${label}</span></div></div>
-      <div class="tr-move">${move}</div>${t.note ? `<p class="tr-note">${esc(t.note)}</p>` : ''}
-      <div class="tr-meta"><span>${t.fee ? `القيمة: <b>${esc(t.fee)}</b>` : ''}</span><span>${esc(date(t.happened_at))}</span></div>${src ? `<a class="tr-src" href="${esc(src)}" target="_blank" rel="noopener noreferrer">المصدر ↗</a>` : ''}</article>`;
+    const [label] = ST[t.status] || ST.rumor; const img = https(t.player_photo);
+    const dest = t.status === 'extended' ? (t.from_team || t.to_team) : t.to_team;
+    return `<a class="tr-row" data-s="${esc(t.status)}" href="player.html?id=${encodeURIComponent(t.id)}">
+      <div class="tr-who"><span class="tr-ph">${img ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '⚽'}</span>${t.status === 'extended' ? '' : logo(t.from_logo, t.from_team)}<span class="tr-nm"><b>${esc(t.player_name)}</b><small>${esc(t.position || t.from_team || '')}</small></span></div>
+      <div class="tr-mid"><span class="tr-badge">${label}</span><i class="tr-line" aria-hidden="true"></i></div>
+      <div class="tr-to">${logo(t.status === 'extended' ? (t.from_logo || t.to_logo) : t.to_logo, dest)}<span class="tr-meta"><b>${esc(dest || '—')}</b><small>${t.fee ? esc(t.fee) + ' · ' : ''}${esc(date(t.happened_at))}</small></span></div>
+    </a>`;
   };
   function render() {
     host.setAttribute('aria-busy', 'false');

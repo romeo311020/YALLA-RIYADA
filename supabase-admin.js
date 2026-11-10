@@ -670,6 +670,8 @@
   /* ======================== الانتقالات ======================== */
   const TR_ST = { official: '✅ رسمي', advanced: '🔥 مفاوضات متقدمة', rumor: '💬 إشاعة', loan: '🔁 إعارة', free: '🆓 حر', extended: '🖊️ تجديد' };
   let trCache = [];
+  const TR_X = [['position', 'tr-pos'], ['nationality', 'tr-nat'], ['age', 'tr-age', 1], ['shirt_number', 'tr-num', 1], ['height_cm', 'tr-h', 1], ['weight_kg', 'tr-w', 1], ['foot', 'tr-foot'], ['market_value', 'tr-mv'], ['contract_until', 'tr-cu'], ['bio', 'tr-bio']];
+  const TR_U = [['from_logo', 'tr-flogo'], ['to_logo', 'tr-tlogo'], ['player_img_big', 'tr-big'], ['flag_url', 'tr-flag']];
   const trReset = () => { $('tr-form').reset(); $('tr-id').value = ''; $('tr-date').value = new Date().toISOString().slice(0, 10); $('tr-pub').checked = true; $('tr-save').textContent = 'حفظ الانتقال'; };
   async function loadTransfers() {
     if (!$('tr-date').value) $('tr-date').value = new Date().toISOString().slice(0, 10);
@@ -683,8 +685,9 @@
     e.preventDefault();
     const url = (v) => { const x = v.trim(); if (!x) return null; return /^https:\/\//i.test(x) ? x : false; };
     const src = url($('tr-src').value); const ph = url($('tr-photo').value);
-    if (src === false || ph === false) { say('tr-msg', 'الروابط لازم تبدأ بـ https://'); return; }
-    const row = { player_name: $('tr-player').value.trim(), status: $('tr-status').value, from_team: $('tr-from').value.trim() || null, to_team: $('tr-to').value.trim() || null, fee: $('tr-fee').value.trim() || null, note: $('tr-note').value.trim() || null, source_url: src, player_photo: ph, published: $('tr-pub').checked, happened_at: $('tr-date').value || new Date().toISOString().slice(0, 10) };
+    const ex = { from_logo: url($('tr-flogo').value), to_logo: url($('tr-tlogo').value), player_img_big: url($('tr-big').value), flag_url: url($('tr-flag').value) };
+    if (src === false || ph === false || Object.values(ex).includes(false)) { say('tr-msg', 'الروابط لازم تبدأ بـ https://'); return; }
+    const row = { player_name: $('tr-player').value.trim(), status: $('tr-status').value, from_team: $('tr-from').value.trim() || null, to_team: $('tr-to').value.trim() || null, fee: $('tr-fee').value.trim() || null, note: $('tr-note').value.trim() || null, source_url: src, player_photo: ph, ...ex, ...TR_X.reduce((o, [k, id, num]) => { const v = $(id).value.trim(); o[k] = v ? (num ? Number(v) : v) : null; return o; }, {}), published: $('tr-pub').checked, happened_at: $('tr-date').value || new Date().toISOString().slice(0, 10) };
     const id = $('tr-id').value; say('tr-msg', 'جارٍ الحفظ…');
     const { error } = id ? await client.from('transfers').update(row).eq('id', id) : await client.from('transfers').insert(row);
     say('tr-msg', error ? `تعذّر الحفظ: ${error.message}` : 'تم الحفظ ✓ وظهر في صفحة الانتقالات.'); if (!error) { trReset(); loadTransfers(); }
@@ -693,7 +696,7 @@
     const ed = e.target.closest('[data-tr-edit]'); const del = e.target.closest('[data-tr-del]'); const pu = e.target.closest('[data-tr-push]');
     if (ed) {
       const t = trCache.find((x) => x.id === ed.dataset.trEdit); if (!t) return;
-      $('tr-id').value = t.id; $('tr-player').value = t.player_name; $('tr-status').value = t.status; $('tr-from').value = t.from_team || ''; $('tr-to').value = t.to_team || ''; $('tr-fee').value = t.fee || ''; $('tr-date').value = t.happened_at; $('tr-note').value = t.note || ''; $('tr-src').value = t.source_url || ''; $('tr-photo').value = t.player_photo || ''; $('tr-pub').checked = !!t.published; $('tr-save').textContent = 'حفظ التعديل';
+      $('tr-id').value = t.id; $('tr-player').value = t.player_name; $('tr-status').value = t.status; $('tr-from').value = t.from_team || ''; $('tr-to').value = t.to_team || ''; $('tr-fee').value = t.fee || ''; $('tr-date').value = t.happened_at; $('tr-note').value = t.note || ''; $('tr-src').value = t.source_url || ''; $('tr-photo').value = t.player_photo || ''; $('tr-pub').checked = !!t.published; TR_X.concat(TR_U).forEach(([k, id]) => { $(id).value = t[k] ?? ''; }); $('tr-save').textContent = 'حفظ التعديل';
       $('tr-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else if (del) {
       if (!window.confirm('حذف الانتقال ده نهائيًا؟')) return;

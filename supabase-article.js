@@ -24,6 +24,7 @@
   const shareBar = (n) => {
     const url = location.href.split('#')[0]; const t = encodeURIComponent(n.title); const u = encodeURIComponent(url);
     return `<div class="art-share"><span>شارك الخبر</span>
+      <button type="button" class="sh card" data-sharecard>🖼️ مشاركة كصورة</button>
       <a class="sh wa" href="https://wa.me/?text=${t}%20${u}" target="_blank" rel="noopener noreferrer">واتساب</a>
       <a class="sh tg" href="https://t.me/share/url?url=${u}&text=${t}" target="_blank" rel="noopener noreferrer">تيليجرام</a>
       <a class="sh fb" href="https://www.facebook.com/sharer/sharer.php?u=${u}" target="_blank" rel="noopener noreferrer">فيسبوك</a>
@@ -51,6 +52,7 @@
       <div class="art-body">${render(n.body)}</div>
       ${src ? `<p class="art-source">المصدر: <a href="${esc(src)}" target="_blank" rel="noopener noreferrer">${esc(new URL(src).hostname.replace(/^www\./, ''))} ↗</a></p>` : ''}
       ${shareBar(n)}`;
+    host.querySelectorAll('[data-sharecard]').forEach((b) => b.addEventListener('click', () => window.yrShareImage({ title: n.title, image: img, url: location.href.split('#')[0] })));
     window.yrRich.hydrate(host.querySelector('.art-body'));
     host.querySelectorAll('#art-copy').forEach((b) => b.addEventListener('click', async () => { try { await navigator.clipboard.writeText(location.href); b.textContent = 'تم النسخ ✓'; } catch { b.textContent = location.href; } }));
     // عدّاد المشاهدات: مرة واحدة لكل جلسة

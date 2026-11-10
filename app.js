@@ -248,3 +248,10 @@ window.yrShare = async function (data) {
   document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); } });
   document.body.append(w); requestAnimationFrame(() => w.classList.add('in'));
 };
+
+/* مشاركة كصورة: بيحمّل share-card.js وقت الحاجة بس */
+window.yrShareImage = function (d) {
+  const go = () => window.yrShareCard(d);
+  if (window.yrShareCard) return go();
+  const sc = document.createElement('script'); sc.src = 'share-card.js'; sc.onload = go; sc.onerror = () => window.yrShare({ title: d.title, text: d.title + ' — يلا رياضة', url: d.url }); document.head.appendChild(sc);
+};

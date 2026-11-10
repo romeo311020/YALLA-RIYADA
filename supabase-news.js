@@ -27,7 +27,7 @@
       : 'تاريخ النشر غير متاح';
   };
 
-  const shareBtn = (id, title, url) => `<button type="button" class="news-share" data-share-title="${escapeHtml(title)}" data-share-url="${escapeHtml(url)}" aria-label="مشاركة الخبر"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/></svg><span>مشاركة</span></button>`;
+  const shareBtn = (id, title, url, img) => `<button type="button" class="news-share" data-share-img="${escapeHtml(img || '')}" data-share-title="${escapeHtml(title)}" data-share-url="${escapeHtml(url)}" aria-label="مشاركة الخبر"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/></svg><span>مشاركة</span></button>`;
   const artUrl = (id) => `article.html?id=${encodeURIComponent(id)}`;
   const siteNews = (id) => `${location.origin}${location.pathname.replace(/[^/]*$/, '')}article.html?id=${encodeURIComponent(id)}`;
   const snippet = (n) => n.excerpt || String(n.body || '').replace(/[#>*\[\]!()]/g, '').replace(/\s+/g, ' ').slice(0, 130);
@@ -55,7 +55,7 @@
           <div class="news-meta"><span class="tag">الصحافة</span><time>${escapeHtml(formatDate(article.publishedAt))}</time></div>
           <h2><a href="${escapeHtml(article.safeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(article.title)}</a></h2>
           ${article.description ? `<p>${escapeHtml(article.description)}</p>` : ''}
-          <div class="news-actions"><a class="news-read-more" href="${escapeHtml(article.safeUrl)}" target="_blank" rel="noopener noreferrer">اقرأ المزيد ↗</a>${shareBtn('', article.title, article.safeUrl)}</div>
+          <div class="news-actions"><a class="news-read-more" href="${escapeHtml(article.safeUrl)}" target="_blank" rel="noopener noreferrer">اقرأ المزيد ↗</a>${shareBtn('', article.title, article.safeUrl, article.safeImage)}</div>
         </div>
       </article>`;
 
@@ -91,7 +91,7 @@
   host.addEventListener('click', (e) => { const c = e.target.closest('[data-cat]'); if (c) { cat = c.dataset.cat; paint(); } });
   host.addEventListener('click', (e) => {
     const b = e.target.closest('.news-share'); if (!b) return;
-    window.yrShare({ title: b.dataset.shareTitle, text: `${b.dataset.shareTitle} — يلا رياضة`, url: b.dataset.shareUrl });
+    window.yrShareImage({ title: b.dataset.shareTitle, image: b.dataset.shareImg, url: b.dataset.shareUrl });
   });
 
   loadNews();

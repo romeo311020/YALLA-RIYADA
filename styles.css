@@ -1118,3 +1118,4 @@ a.news-card{color:inherit;display:block}
 .bell.off .bell-dot{display:block;animation:bellPulse 1.6s infinite}
 .bell.off{color:var(--acc)}
 @keyframes bellPulse{0%{box-shadow:0 0 0 2px var(--bg,#000),0 0 0 2px rgba(255,77,77,.6)}100%{box-shadow:0 0 0 2px var(--bg,#000),0 0 0 9px rgba(255,77,77,0)}}
+.art-share .sh.card{background:var(--acc);color:var(--on-acc);border-color:var(--acc)}
