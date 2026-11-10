@@ -4,13 +4,14 @@
   const db = window.yrSupabase; const host = document.getElementById('tr-list'); if (!db || !host) return;
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const https = (u) => { try { const x = new URL(u); return x.protocol === 'https:' ? x.href : ''; } catch { return ''; } };
-  const ST = { official: ['✅ رسمي', 'تم'], advanced: ['🔥 مفاوضات متقدمة', ''], rumor: ['💬 إشاعة', ''], loan: ['🔁 إعارة', ''], free: ['🆓 انتقال حر', ''], extended: ['🖊️ تجديد عقد', ''] };
+  const I = (n) => (window.yrIco ? window.yrIco(n) : '');
+  const ST = { official: ['check', 'رسمي'], advanced: ['fire', 'مفاوضات متقدمة'], rumor: ['chat', 'إشاعة'], loan: ['loan', 'إعارة'], free: ['free', 'انتقال حر'], extended: ['pen', 'تجديد عقد'] };
   const PAGE = 12; let all = []; let filter = 'all'; let q = ''; let shown = PAGE;
   const norm = (t) => String(t ?? '').toLowerCase().replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه');
   const date = (d) => { try { return new Date(d + 'T12:00:00').toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' }); } catch { return ''; } };
   const logo = (u, name) => { const i = https(u); return i ? `<img class="tr-logo" src="${esc(i)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="tr-logo tr-logo-ph" aria-hidden="true">${esc(String(name || '?').trim().charAt(0) || '?')}</span>`; };
   const card = (t) => {
-    const [label] = ST[t.status] || ST.rumor; const img = https(t.player_photo);
+    const [ic, lb] = ST[t.status] || ST.rumor; const label = `${I(ic)} ${lb}`; const img = https(t.player_photo);
     const dest = t.status === 'extended' ? (t.from_team || t.to_team) : t.to_team;
     return `<a class="tr-row" data-s="${esc(t.status)}" href="player.html?id=${encodeURIComponent(t.id)}">
       <div class="tr-who"><span class="tr-ph">${img ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '⚽'}</span>${t.status === 'extended' ? '' : logo(t.from_logo, t.from_team)}<span class="tr-nm"><b>${esc(t.player_name)}</b><small>${esc(t.position || t.from_team || '')}</small></span></div>

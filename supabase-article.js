@@ -21,15 +21,7 @@
     if (img) set('meta[property="og:image"]', 'property', 'og:image', img);
   };
 
-  const shareBar = (n) => {
-    const url = location.href.split('#')[0]; const t = encodeURIComponent(n.title); const u = encodeURIComponent(url);
-    return `<div class="art-share ss-bar"><button type="button" class="sh-main" data-sharecard><span aria-hidden="true">✨</span> شارك الخبر كصورة</button>
-      <a class="ico" aria-label="واتساب" href="https://wa.me/?text=${t}%0A${u}" target="_blank" rel="noopener noreferrer">💬</a>
-      <a class="ico" aria-label="تيليجرام" href="https://t.me/share/url?url=${u}&text=${t}" target="_blank" rel="noopener noreferrer">✈️</a>
-      <a class="ico" aria-label="فيسبوك" href="https://www.facebook.com/sharer/sharer.php?u=${u}" target="_blank" rel="noopener noreferrer">📘</a>
-      <a class="ico" aria-label="إكس" href="https://twitter.com/intent/tweet?text=${t}&url=${u}" target="_blank" rel="noopener noreferrer">𝕏</a>
-      <button type="button" class="ico" id="art-copy" aria-label="نسخ الرابط">🔗</button></div>`;
-  };
+  const shareBar = () => `<div class="art-share ss-bar"><button type="button" class="sh-main" data-sharecard>${window.yrIco ? window.yrIco('share') : ''}<span>شارك الخبر</span><small>واتساب · تيليجرام · فيسبوك · كارت صورة</small></button></div>`;
 
   async function load() {
     if (!db || !id) { host.innerHTML = '<p class="note">الخبر غير متاح.</p>'; host.removeAttribute('aria-busy'); return; }
@@ -47,11 +39,11 @@
         <div class="art-meta"><span>🕒 ${esc(fdate(n.created_at))}</span><span>📖 ${minutes(n.body).toLocaleString('ar-EG')} دقائق قراءة</span>${n.views != null ? `<span>👁 ${Number(n.views).toLocaleString('ar-EG')} مشاهدة</span>` : ''}</div>
       </header>
       ${img ? `<figure class="art-hero"><img src="${esc(img)}" alt="${esc(n.title)}"></figure>` : ''}
-      ${shareBar(n)}
+      ${shareBar()}
       <div class="art-body">${render(n.body)}</div>
       ${src ? `<p class="art-source">المصدر: <a href="${esc(src)}" target="_blank" rel="noopener noreferrer">${esc(new URL(src).hostname.replace(/^www\./, ''))} ↗</a></p>` : ''}
-      ${shareBar(n)}`;
-    host.querySelectorAll('[data-sharecard]').forEach((b) => b.addEventListener('click', () => window.yrShareImage({ type: 'news', title: n.title, image: img, tag: n.category || '★ حصري على يلا رياضة', url: location.href.split('#')[0] })));
+      ${shareBar()}`;
+    host.querySelectorAll('[data-sharecard]').forEach((b) => b.addEventListener('click', () => window.yrShareBloom({ type: 'news', title: n.title, image: img, tag: n.category || '★ حصري على يلا رياضة', url: location.href.split('#')[0] })));
     window.yrRich.hydrate(host.querySelector('.art-body'));
     host.querySelectorAll('#art-copy').forEach((b) => b.addEventListener('click', async () => { try { await navigator.clipboard.writeText(location.href); b.textContent = '✓'; } catch { b.textContent = location.href; } }));
     // عدّاد المشاهدات: مرة واحدة لكل جلسة

@@ -37,6 +37,7 @@
   const nAr = (v) => String(v).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
 
   function pill(c, text, xRight, y, th, fill, color, size = 30) {
+    text = String(text).replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFE0F]/gu, '').trim();
     c.font = font(900, size); const w = c.measureText(text).width + 52, h = size * 1.9;
     c.fillStyle = fill; rr(c, xRight - w, y, w, h, h / 2); c.fill(); c.fillStyle = color; c.textAlign = 'right'; c.textBaseline = 'middle'; c.fillText(text, xRight - 26, y + h / 2 + 2); c.textBaseline = 'alphabetic'; return { w, h };
   }
@@ -163,12 +164,12 @@
     if (d.type === 'match') o.layout = 'full';
     const w = document.createElement('div'); w.id = 'ss'; w.className = 'ss-back'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'مشاركة كصورة');
     const seg = (k, items) => `<div class="ss-seg" data-k="${k}">${items.map(([v, l]) => `<button type="button" data-v="${v}">${l}</button>`).join('')}</div>`;
-    w.innerHTML = `<div class="ss-sheet"><div class="ss-head"><b>✨ شارك كصورة</b><button type="button" class="ss-x" aria-label="إغلاق">✕</button></div>
+    w.innerHTML = `<div class="ss-sheet"><div class="ss-head"><b>${window.yrIco('image')} كارت المشاركة</b><button type="button" class="ss-x" aria-label="إغلاق">✕</button></div>
       <div class="ss-stage busy" id="ss-stage"><canvas class="ss-prev" id="ss-cv"></canvas></div>
       <div class="ss-ctl"><div class="ss-row"><span>المقاس</span>${seg('fmt', [['post', 'بوست'], ['story', 'ستوري']])}</div>
       ${d.type === 'match' ? '' : `<div class="ss-row"><span>الشكل</span>${seg('layout', [['full', 'صورة كاملة'], ['card', 'كارت']])}</div>`}
       <div class="ss-row"><span>اللون</span><div class="ss-sw" data-k="theme">${Object.entries(THEMES).map(([k, t]) => `<button type="button" data-v="${k}" aria-label="${t.n}" style="background:linear-gradient(135deg,${t.sw[0]} 50%,${t.sw[1]} 50%)"></button>`).join('')}</div></div></div>
-      <div class="ss-act"><button type="button" class="main" id="ss-share">📤 شارك الصورة مع البوست</button><button type="button" id="ss-save">⬇️ حفظ الصورة</button><button type="button" id="ss-copy">📋 نسخ البوست</button></div>
+      <div class="ss-act"><button type="button" class="main" id="ss-share">${window.yrIco('send')} شارك الصورة مع البوست</button><button type="button" id="ss-save">${window.yrIco('download')} حفظ الصورة</button><button type="button" id="ss-copy">${window.yrIco('copy')} نسخ البوست</button></div>
       <p class="ss-note">الصورة فيها QR يفتح الصفحة، والبوست فيه الرابط.</p></div>`;
     document.body.append(w); requestAnimationFrame(() => w.classList.add('in'));
     const cv = w.querySelector('#ss-cv'), stage = w.querySelector('#ss-stage'); let tok = 0, timer = 0;
@@ -185,7 +186,7 @@
     const blob = () => new Promise((res) => cv.toBlob((b) => res(b), 'image/jpeg', 0.92));
     const text = postText(d); const fname = 'yalla-riyada.jpg';
     w.querySelector('#ss-save').addEventListener('click', async () => { const b = await blob(); if (!b) return; const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = fname; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); });
-    w.querySelector('#ss-copy').addEventListener('click', async (e) => { try { await navigator.clipboard.writeText(text); e.target.textContent = '✓ تم النسخ'; } catch { e.target.textContent = 'انسخه يدويًا'; } setTimeout(() => { e.target.textContent = '📋 نسخ البوست'; }, 1600); });
+    w.querySelector('#ss-copy').addEventListener('click', async (e) => { e = { target: e.currentTarget }; try { await navigator.clipboard.writeText(text); e.target.textContent = 'تم النسخ'; } catch { e.target.textContent = 'انسخه يدويًا'; } setTimeout(() => { e.target.innerHTML = window.yrIco('copy') + ' نسخ البوست'; }, 1600); });
     w.querySelector('#ss-share').addEventListener('click', async () => {
       const b = await blob(); const file = b ? new File([b], fname, { type: 'image/jpeg' }) : null;
       try { if (file && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text, title: d.title }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }

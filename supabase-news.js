@@ -37,7 +37,7 @@
           <div class="news-meta"><span class="tag excl">★ حصري</span><time>${escapeHtml(formatDate(n.created_at))}</time></div>
           <h2>${escapeHtml(n.title)}</h2>
           <p>${escapeHtml(snippet(n))}${snippet(n).length >= 130 ? '…' : ''}</p>
-          <span class="news-read-more">اقرأ الخبر ←</span><span role="button" tabindex="0" class="news-share chip-share" data-share-title="${escapeHtml(n.title)}" data-share-img="${escapeHtml(n.safeImage || '')}" data-share-url="${escapeHtml(siteNews(n.id))}" aria-label="مشاركة كصورة">✨ مشاركة</span>
+          <span class="news-read-more">اقرأ الخبر ←</span><span role="button" tabindex="0" class="news-share chip-share" data-share-title="${escapeHtml(n.title)}" data-share-img="${escapeHtml(n.safeImage || '')}" data-share-url="${escapeHtml(siteNews(n.id))}" aria-label="مشاركة">${window.yrIco ? window.yrIco('share') : ''} مشاركة</span>
         </div>
       </a>`;
   const featureCard = (n) => `<a class="news-feature" href="${artUrl(n.id)}">
@@ -46,7 +46,7 @@
           <div class="news-meta"><span class="tag excl">★ حصري على يلا رياضة</span>${n.category ? `<span class="tag">${escapeHtml(n.category)}</span>` : ''}</div>
           <h2>${escapeHtml(n.title)}</h2>
           <p>${escapeHtml(snippet(n))}${snippet(n).length >= 130 ? '…' : ''}</p>
-          <div class="news-meta"><time>${escapeHtml(formatDate(n.created_at))}</time><span class="news-read-more">اقرأ الخبر ←</span><span role="button" tabindex="0" class="news-share chip-share" data-share-title="${escapeHtml(n.title)}" data-share-img="${escapeHtml(n.safeImage || '')}" data-share-url="${escapeHtml(siteNews(n.id))}" aria-label="مشاركة كصورة">✨ مشاركة</span></div>
+          <div class="news-meta"><time>${escapeHtml(formatDate(n.created_at))}</time><span class="news-read-more">اقرأ الخبر ←</span><span role="button" tabindex="0" class="news-share chip-share" data-share-title="${escapeHtml(n.title)}" data-share-img="${escapeHtml(n.safeImage || '')}" data-share-url="${escapeHtml(siteNews(n.id))}" aria-label="مشاركة">${window.yrIco ? window.yrIco('share') : ''} مشاركة</span></div>
         </div>
       </a>`;
   const apiCard = (article) => `<article class="news-card">
@@ -91,7 +91,7 @@
   host.addEventListener('click', (e) => { const c = e.target.closest('[data-cat]'); if (c) { cat = c.dataset.cat; paint(); } });
   host.addEventListener('click', (e) => {
     const b = e.target.closest('.news-share'); if (!b) return;
-    e.preventDefault(); e.stopPropagation(); window.yrShareImage({ type: 'news', title: b.dataset.shareTitle, image: b.dataset.shareImg, url: b.dataset.shareUrl });
+    e.preventDefault(); e.stopPropagation(); window.yrShareBloom({ type: 'news', title: b.dataset.shareTitle, image: b.dataset.shareImg, url: b.dataset.shareUrl });
   });
 
   loadNews();
