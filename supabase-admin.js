@@ -88,7 +88,7 @@
     apimatches: () => ovRefreshList(),
     important: () => loadImportant(),
     lineups: () => luSrcChange(),
-    names: () => loadSavedNames(),
+    names: () => { loadUnknownNames(); return loadSavedNames(); },
     streams: () => Promise.all([loadStreams(), loadApiFixtures('stream')]),
     store: () => Promise.all([loadStoreSetting(), loadProducts(), loadCategories()]),
     orders: () => loadOrders(),
@@ -645,13 +645,33 @@
   });
   // تعديل الأسماء (جدول name_translations)
   let nmSaved = new Map();
+  /* فرق ظهرت للزوار بالإنجليزي لأنها مش في القاموس: اكتب الاسم العربي واحفظ (أو تجاهل) */
+  async function loadUnknownNames() {
+    const box = $('nm-unknown'); if (!box) return;
+    const { data, error } = await client.from('name_unknown').select('en,hits').eq('kind', 'team').order('hits', { ascending: false }).limit(60);
+    if (error) { box.innerHTML = /name_unknown|relation|function/.test(error.message) ? '<p class="note">لتفعيل «فرق محتاجة ترجمة» شغّل ملف supabase-names-unknown.sql في Supabase.</p>' : ''; return; }
+    const rows = (data || []).filter((r) => !(window.YR_NAMES && window.YR_NAMES.known(r.en)));
+    box.innerHTML = rows.length ? `<div class="ptr-wrap"><h3>🔤 فرق محتاجة ترجمة (${nAr(rows.length)})</h3><p class="note">دي فرق ظهرت للزوار بالإنجليزي. اكتب اسمها بالعربي واضغط حفظ.</p>${rows.map((r) => `<article class="admin-list-item" data-unk="${esc(r.en)}"><div><strong dir="ltr">${esc(r.en)}</strong><small>ظهر ${nAr(r.hits)} مرة</small></div><div class="row"><input class="unk-in" maxlength="60" placeholder="الاسم بالعربي" aria-label="الاسم بالعربي"><button type="button" class="btn primary" data-unk-save="${esc(r.en)}">حفظ</button><button type="button" class="btn outline" data-unk-skip="${esc(r.en)}">تجاهل</button></div></article>`).join('')}</div>` : '';
+  }
+  $('nm-unknown')?.addEventListener('click', async (e) => {
+    const sv = e.target.closest('[data-unk-save]'); const sk = e.target.closest('[data-unk-skip]'); if (!sv && !sk) return;
+    const row = e.target.closest('[data-unk]'); const en = row.dataset.unk;
+    if (sv) {
+      const val = row.querySelector('.unk-in').value.trim(); if (!val) { say('nm-msg', 'اكتب الاسم بالعربي.'); return; }
+      const { error } = await client.from('name_translations').upsert({ kind: 'team', en, ar: val }, { onConflict: 'kind,en' });
+      if (error) { say('nm-msg', `تعذّر الحفظ: ${error.message}`); return; }
+      say('nm-msg', `تم حفظ «${val}» ✓ (هيظهر للزوار بعد تحديث الصفحة)`);
+    }
+    await client.from('name_unknown').delete().eq('kind', 'team').eq('en', en);
+    loadUnknownNames(); loadSavedNames();
+  });
   async function loadSavedNames() {
     const { data, error } = await client.from('name_translations').select('id,en,ar').eq('kind', 'team').order('en').limit(1000);
     if (error) { $('nm-saved').innerHTML = ''; say('nm-msg', 'جدول الأسماء غير موجود — شغّل supabase-admin-upgrade.sql.'); return; }
     nmSaved = new Map((data || []).map((r) => [r.en.toLowerCase(), r]));
     $('nm-saved').innerHTML = (data || []).length ? data.map((r) => `<article class="admin-list-item"><div><strong>${esc(r.ar)}</strong><small dir="ltr">${esc(r.en)}</small></div><div class="row"><button type="button" class="btn outline" data-nm-del="${esc(r.id)}">حذف</button></div></article>`).join('') : '<p class="note">لسه ما عدّلتش أي اسم.</p>';
   }
-  const nmRows = (teams) => teams.map((en) => `<article class="admin-list-item" data-nm-row="${esc(en)}"><div><strong dir="ltr">${esc(en)}</strong></div><div class="row"><input class="nm-in" value="${esc(ar(en))}" maxlength="60" aria-label="الاسم بالعربي"><button type="button" class="btn primary" data-nm-save="${esc(en)}">حفظ</button></div></article>`).join('');
+  const nmRows = (teams) => teams.map((en) => `<article class="admin-list-item" data-nm-row="${esc(en)}"><div><strong dir="ltr">${esc(en)}</strong></div><div class="row"><input class="nm-in" value="${esc(window.YR_NAMES && window.YR_NAMES.known(en) ? ar(en) : '')}" maxlength="60" aria-label="الاسم بالعربي"><button type="button" class="btn primary" data-nm-save="${esc(en)}">حفظ</button></div></article>`).join('');
   $('nm-load').addEventListener('click', async () => {
     $('nm-list').innerHTML = '<p class="note">جارٍ التحميل…</p>';
     try {
