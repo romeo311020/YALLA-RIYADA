@@ -1111,3 +1111,10 @@ a.news-card{color:inherit;display:block}
 .np-card h3{margin:0 0 10px}.np-sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.np-sec-head h3{margin:0}
 .np-status{display:flex;gap:16px;align-items:flex-start}.np-ico{font-size:30px;width:60px;height:60px;display:grid;place-items:center;border-radius:18px;background:color-mix(in srgb,var(--acc) 14%,var(--panel2));flex:none}
 .np-txt{flex:1;min-width:0}.np-txt .profile-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.np-ios{margin-top:10px}
+
+/* زر الإشعارات في الهيدر */
+.bell{position:relative}
+.bell .bell-dot{display:none;position:absolute;top:7px;inset-inline-end:7px;width:10px;height:10px;border-radius:50%;background:#ff4d4d;box-shadow:0 0 0 2px var(--bg,#000)}
+.bell.off .bell-dot{display:block;animation:bellPulse 1.6s infinite}
+.bell.off{color:var(--acc)}
+@keyframes bellPulse{0%{box-shadow:0 0 0 2px var(--bg,#000),0 0 0 2px rgba(255,77,77,.6)}100%{box-shadow:0 0 0 2px var(--bg,#000),0 0 0 9px rgba(255,77,77,0)}}

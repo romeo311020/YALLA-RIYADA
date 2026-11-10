@@ -93,6 +93,7 @@
     store: () => Promise.all([loadStoreSetting(), loadProducts(), loadCategories()]),
     orders: () => loadOrders(),
     news: () => loadNews(),
+    transfers: () => loadTransfers(),
     push: () => loadPush(),
     pushtargets: () => loadPushTargets(),
     users: () => loadUsers(true),
@@ -117,7 +118,7 @@
   let searchTimer; new MutationObserver((muts) => { if (!$('admin-search').value || muts.every((m) => m.target.closest?.('.admin-search') || m.target.classList?.contains('search-none') || m.target === $('admin-search-count'))) return; clearTimeout(searchTimer); searchTimer = setTimeout(applySearch, 60); }).observe(document.getElementById('admin-workspace'), { childList: true, subtree: true });
 
   /* ---------- بحث شامل: مباريات، فرق، أخبار، منتجات، طلبات، أقسام ---------- */
-  const TABS = [['overview', 'نظرة عامة'], ['stats', 'الإحصائيات والتقارير'], ['apimatches', 'تعديل مباراة API'], ['matches', 'مباريات يدوية'], ['important', 'المباريات المهمة'], ['lineups', 'التشكيلات والأحداث'], ['streams', 'المشغّلات'], ['leagues', 'ترتيب البطولات'], ['teams', 'الفرق المهمة'], ['names', 'أسماء الفرق'], ['push', 'إرسال إشعار'], ['pushtargets', 'فرق ولاعبو الإشعارات'], ['news', 'الأخبار'], ['store', 'المتجر'], ['orders', 'الطلبات'], ['users', 'المستخدمون'], ['audit', 'السجل']];
+  const TABS = [['overview', 'نظرة عامة'], ['transfers', 'الانتقالات'], ['stats', 'الإحصائيات والتقارير'], ['apimatches', 'تعديل مباراة API'], ['matches', 'مباريات يدوية'], ['important', 'المباريات المهمة'], ['lineups', 'التشكيلات والأحداث'], ['streams', 'المشغّلات'], ['leagues', 'ترتيب البطولات'], ['teams', 'الفرق المهمة'], ['names', 'أسماء الفرق'], ['push', 'إرسال إشعار'], ['pushtargets', 'فرق ولاعبو الإشعارات'], ['news', 'الأخبار'], ['store', 'المتجر'], ['orders', 'الطلبات'], ['users', 'المستخدمون'], ['audit', 'السجل']];
   let gTimer; let gSeq = 0;
   const likeQ = (q) => q.replace(/[%,()*]/g, ' ').trim();
   const gRow = (icon, title, sub, attrs) => `<button type="button" class="g-row" ${attrs}><i>${icon}</i><span><b>${esc(title)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span></button>`;
@@ -176,6 +177,7 @@
     orders: ['الطلبات', 'متابعة طلبات العملاء وتغيير حالتها.'],
     push: ['إرسال إشعار', 'ابعت إشعار لكل المشتركين أو لمتابعي فريق/لاعب، أو حوّل خبر لإشعار.'],
     pushtargets: ['فرق ولاعبو الإشعارات', 'تحكم في الفرق واللاعبين اللي المستخدم يقدر يتابعهم.'],
+    transfers: ['الانتقالات', 'أضف وعدّل صفقات سوق الانتقالات اللي بتظهر في الصفحة العامة.'],
     news: ['الأخبار', 'اكتب أخبارًا حصرية وضمّن منشورات X وإنستجرام وتيك توك ويوتيوب.'],
     users: ['المستخدمون', 'إدارة الحسابات والصلاحيات والحظر.'],
     audit: ['السجل', 'آخر عمليات المسؤولين.'],
@@ -665,6 +667,46 @@
     await client.from('name_unknown').delete().eq('kind', 'team').eq('en', en);
     loadUnknownNames(); loadSavedNames();
   });
+  /* ======================== الانتقالات ======================== */
+  const TR_ST = { official: '✅ رسمي', advanced: '🔥 مفاوضات متقدمة', rumor: '💬 إشاعة', loan: '🔁 إعارة', free: '🆓 حر', extended: '🖊️ تجديد' };
+  let trCache = [];
+  const trReset = () => { $('tr-form').reset(); $('tr-id').value = ''; $('tr-date').value = new Date().toISOString().slice(0, 10); $('tr-pub').checked = true; $('tr-save').textContent = 'حفظ الانتقال'; };
+  async function loadTransfers() {
+    if (!$('tr-date').value) $('tr-date').value = new Date().toISOString().slice(0, 10);
+    const { data, error } = await client.from('transfers').select('*').order('happened_at', { ascending: false }).order('created_at', { ascending: false }).limit(100);
+    if (error) { $('tr-list').innerHTML = ''; say('tr-msg', /transfers|relation/.test(error.message) ? 'شغّل ملف supabase-transfers.sql في Supabase الأول.' : error.message); return; }
+    trCache = data || [];
+    $('tr-list').innerHTML = trCache.length ? trCache.map((t) => `<article class="admin-list-item"><div><strong>${esc(t.player_name)} · ${esc(TR_ST[t.status] || t.status)}</strong><small>${esc(t.from_team || '—')} ← ${esc(t.to_team || '—')}${t.fee ? ' · ' + esc(t.fee) : ''} · ${esc(t.happened_at)}${t.published ? '' : ' · (مخفي)'}</small></div><div class="row"><button type="button" class="btn outline" data-tr-edit="${esc(t.id)}">تعديل</button><button type="button" class="btn outline" data-tr-push="${esc(t.id)}">🔔 إشعار</button><button type="button" class="btn outline danger" data-tr-del="${esc(t.id)}">حذف</button></div></article>`).join('') : '<p class="note">لسه مفيش انتقالات.</p>';
+  }
+  $('tr-reset')?.addEventListener('click', trReset);
+  $('tr-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = (v) => { const x = v.trim(); if (!x) return null; return /^https:\/\//i.test(x) ? x : false; };
+    const src = url($('tr-src').value); const ph = url($('tr-photo').value);
+    if (src === false || ph === false) { say('tr-msg', 'الروابط لازم تبدأ بـ https://'); return; }
+    const row = { player_name: $('tr-player').value.trim(), status: $('tr-status').value, from_team: $('tr-from').value.trim() || null, to_team: $('tr-to').value.trim() || null, fee: $('tr-fee').value.trim() || null, note: $('tr-note').value.trim() || null, source_url: src, player_photo: ph, published: $('tr-pub').checked, happened_at: $('tr-date').value || new Date().toISOString().slice(0, 10) };
+    const id = $('tr-id').value; say('tr-msg', 'جارٍ الحفظ…');
+    const { error } = id ? await client.from('transfers').update(row).eq('id', id) : await client.from('transfers').insert(row);
+    say('tr-msg', error ? `تعذّر الحفظ: ${error.message}` : 'تم الحفظ ✓ وظهر في صفحة الانتقالات.'); if (!error) { trReset(); loadTransfers(); }
+  });
+  $('tr-list')?.addEventListener('click', async (e) => {
+    const ed = e.target.closest('[data-tr-edit]'); const del = e.target.closest('[data-tr-del]'); const pu = e.target.closest('[data-tr-push]');
+    if (ed) {
+      const t = trCache.find((x) => x.id === ed.dataset.trEdit); if (!t) return;
+      $('tr-id').value = t.id; $('tr-player').value = t.player_name; $('tr-status').value = t.status; $('tr-from').value = t.from_team || ''; $('tr-to').value = t.to_team || ''; $('tr-fee').value = t.fee || ''; $('tr-date').value = t.happened_at; $('tr-note').value = t.note || ''; $('tr-src').value = t.source_url || ''; $('tr-photo').value = t.player_photo || ''; $('tr-pub').checked = !!t.published; $('tr-save').textContent = 'حفظ التعديل';
+      $('tr-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (del) {
+      if (!window.confirm('حذف الانتقال ده نهائيًا؟')) return;
+      const { error } = await client.from('transfers').delete().eq('id', del.dataset.trDel); say('tr-msg', error ? error.message : 'تم الحذف.'); loadTransfers();
+    } else if (pu) {
+      const t = trCache.find((x) => x.id === pu.dataset.trPush); if (!t) return;
+      openTab('push'); await loadPush();
+      $('push-title').value = `${(TR_ST[t.status] || '').replace(/^\S+\s/, '')}: ${t.player_name}`.slice(0, 60);
+      $('push-body').value = (t.status === 'extended' ? `${t.player_name} يجدّد عقده مع ${t.to_team || t.from_team || ''}` : `${t.player_name}: ${t.from_team || '—'} ← ${t.to_team || '—'}${t.fee ? ' (' + t.fee + ')' : ''}`).slice(0, 180);
+      $('push-url').value = 'transfers.html';
+    }
+  });
+
   async function loadSavedNames() {
     const { data, error } = await client.from('name_translations').select('id,en,ar').eq('kind', 'team').order('en').limit(1000);
     if (error) { $('nm-saved').innerHTML = ''; say('nm-msg', 'جدول الأسماء غير موجود — شغّل supabase-admin-upgrade.sql.'); return; }
@@ -1026,9 +1068,17 @@
     const { data: ins, error } = id ? await client.from('news').update(row).eq('id', id) : await client.from('news').insert(row).select('id').single();
     if (!id && ins) newId = ins.id;
     if (error) { say('news-message', `تعذّر الحفظ: ${error.message}. شغّل ملف supabase-news-upgrade.sql في Supabase لو لسه ما شغلتوش.`); return; }
+    const wantPush = !id && newId && row.is_published && $('news-autopush')?.checked;
     resetNewsForm(); say('news-message', id ? 'تم تحديث الخبر.' : 'تم نشر الخبر.'); await loadNews();
+    if (wantPush) {
+      const plain = String(row.excerpt || row.body || '').replace(/[#>*\[\]()!-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140);
+      try {
+        const r = await callFn('send-push', { action: 'send', title: row.title.slice(0, 80), body: plain, url: `article.html?id=${newId}`, audience: 'all' });
+        say('news-message', `تم نشر الخبر ✓ والإشعار اتبعت لـ ${nAr(r?.sent ?? 0)} جهاز.`);
+      } catch (e) { say('news-message', `تم نشر الخبر ✓ بس الإشعار ما اتبعتش: ${e.message}`); }
+    }
   });
-  function resetNewsForm() { $('news-form').reset(); $('news-edit-id').value = ''; $('news-published').checked = true; $('news-save').textContent = 'نشر الخبر'; $('news-cancel-edit').hidden = true; }
+  function resetNewsForm() { $('news-form').reset(); $('news-edit-id').value = ''; $('news-published').checked = true; if ($('news-autopush')) $('news-autopush').checked = true; $('news-save').textContent = 'نشر الخبر'; $('news-cancel-edit').hidden = true; }
   $('news-cancel-edit').addEventListener('click', resetNewsForm);
   async function loadNews() {
     const host = $('admin-news');
@@ -1046,7 +1096,7 @@
     host.querySelectorAll('[data-edit-news]').forEach((b) => b.addEventListener('click', () => {
       const n = data.find((x) => x.id === b.dataset.editNews); if (!n) return;
       $('news-edit-id').value = n.id; $('news-title').value = n.title; $('news-body').value = n.body || ''; $('news-image').value = n.image_url || ''; $('news-source').value = n.source_url || ''; $('news-category').value = n.category || 'أخبار'; $('news-excerpt').value = n.excerpt || ''; $('news-published').checked = n.is_published;
-      $('news-save').textContent = 'حفظ التعديلات'; $('news-cancel-edit').hidden = false; $('news-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      $('news-save').textContent = 'حفظ التعديلات'; if ($('news-autopush')) $('news-autopush').checked = false; $('news-cancel-edit').hidden = false; $('news-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }));
     host.querySelectorAll('[data-delete-news]').forEach((b) => b.addEventListener('click', async () => {
       if (!window.confirm('حذف هذا الخبر؟')) return;

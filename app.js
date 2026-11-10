@@ -27,12 +27,13 @@
 
   /* ---------- الهيدر ---------- */
   const nav = [
-    ['matches.html', 'المباريات'], ['news.html', 'الأخبار'], ['store.html', 'المتجر'], ['account.html', 'حسابي'],
+    ['matches.html', 'المباريات'], ['news.html', 'الأخبار'], ['transfers.html', 'الانتقالات'], ['store.html', 'المتجر'], ['account.html', 'حسابي'],
   ];
   const header = $('shared-header');
   if (header) {
     header.innerHTML = `<header class="header"><div class="wrap nav">${brand}
       <nav id="nav" aria-label="القائمة الرئيسية">${nav.map(([u, t]) => `<a class="${current === u ? 'active' : ''}" ${current === u ? 'aria-current="page"' : ''} href="${u}">${t}</a>`).join('')}<a href="${contact}" target="_blank" rel="noopener noreferrer">تواصل معنا ↗</a></nav>
+      <button class="icon-btn bell" id="bell" type="button" aria-label="الإشعارات"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><i class="bell-dot" aria-hidden="true"></i></button>
       <button class="icon-btn" id="theme" type="button" aria-label="تبديل الوضع الفاتح/الداكن"></button>
       <button class="icon-btn menu" id="menu" type="button" aria-label="القائمة" aria-expanded="false">☰</button></div></header>`;
     const themeBtn = $('theme');
@@ -76,7 +77,7 @@
   const footer = $('shared-footer');
   if (footer) {
     footer.innerHTML = `<footer class="footer"><div class="wrap foot">${brand}
-      <div class="foot-links"><a href="matches.html">المباريات</a><a href="news.html">الأخبار</a><a href="store.html">المتجر</a><a href="about.html">عن المنصة</a><a href="${contact}" target="_blank" rel="noopener noreferrer">تواصل معنا</a></div>
+      <div class="foot-links"><a href="matches.html">المباريات</a><a href="news.html">الأخبار</a><a href="transfers.html">الانتقالات</a><a href="store.html">المتجر</a><a href="about.html">عن المنصة</a><a href="${contact}" target="_blank" rel="noopener noreferrer">تواصل معنا</a></div>
       <div class="follow-foot"><span>تابعنا</span>${socialDots()}</div>
       <div class="credit">تصميم وتطوير <a href="${contact}" target="_blank" rel="noopener noreferrer">Romany Garges</a></div>
       <small class="copyright">© ${new Date().getFullYear()} YALLA RIYADA</small></div></footer>`;
@@ -87,6 +88,7 @@
   const tabs = [
     ['matches.html', 'المباريات', ico('<circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 5h-5L8 10z"/>')],
     ['news.html', 'الأخبار', ico('<path d="M4 5h13a1 1 0 0 1 1 1v13H6a2 2 0 0 1-2-2z"/><path d="M18 9h2v8a2 2 0 0 1-2 2"/><path d="M8 9h6M8 13h6"/>')],
+    ['transfers.html', 'الانتقالات', ico('<path d="M7 7h13l-3-3"/><path d="M17 17H4l3 3"/>')],
     ['store.html', 'المتجر', ico('<path d="M6 8h12l-1 12H7z"/><path d="M9 8a3 3 0 0 1 6 0"/>')],
     ['account.html', 'حسابي', ico('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>')],
   ];

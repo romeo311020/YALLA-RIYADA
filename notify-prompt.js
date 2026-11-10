@@ -143,7 +143,13 @@
        ${r.needLogin ? '<a class="yrnp-btn" id="yrnp-login" href="account.html">تسجيل الدخول</a><button class="yrnp-btn ghost" id="yrnp-x" type="button">بعدين</button>' : '<a class="yrnp-btn" href="notifications.html">اختار فرقي ولاعبيني</a><button class="yrnp-btn ghost" id="yrnp-x" type="button">تم</button>'}`
     : `<div class="yrnp-ico" aria-hidden="true">🔕</div><h3>مقدرناش نفعّل الإشعارات</h3><p>${r.msg || 'حاول تاني.'}</p><button class="yrnp-btn ghost" id="yrnp-x" type="button">تمام</button>`;
 
-  function ask() {
+  const infoHtml = (ico, title, text, btn) => `<div class="yrnp-ico" aria-hidden="true">${ico}</div><h3>${title}</h3><p>${text}</p>${btn || ''}<button class="yrnp-btn ghost" id="yrnp-x" type="button">تمام</button>`;
+  async function ask() {
+    const st = await state();
+    if (st === 'on') { location.href = 'notifications.html'; return; }
+    if (st === 'denied') { const el = open(infoHtml('🔕', 'الإشعارات محظورة في المتصفح', 'اضغط على القفل 🔒 جنب عنوان الموقع ← الإشعارات ← سماح، وبعدين حدّث الصفحة.')); el.querySelector('#yrnp-x').addEventListener('click', () => close(false)); return; }
+    if (st === 'ios-install') { const el = open(infoHtml('📲', 'ثبّت التطبيق الأول', 'على الآيفون: اضغط زر المشاركة ← «إضافة إلى الشاشة الرئيسية»، وافتح التطبيق من الشاشة الرئيسية وفعّل الإشعارات من هناك.')); el.querySelector('#yrnp-x').addEventListener('click', () => close(false)); return; }
+    if (st === 'unsupported') { const el = open(infoHtml('🔕', 'المتصفح مش بيدعم الإشعارات', 'جرّب Chrome أو ثبّت التطبيق على جهازك.')); el.querySelector('#yrnp-x').addEventListener('click', () => close(false)); return; }
     const el = open(askHtml);
     el.querySelector('#yrnp-no').addEventListener('click', () => close(true));
     el.querySelector('#yrnp-go').addEventListener('click', async (e) => {
@@ -166,7 +172,32 @@
     ask();
   }
 
+  /* ---------- زر الجرس في الهيدر + شريط تفعيل ثابت لحد ما المستخدم يفعّل ---------- */
+  const NO_BAR = /^(admin|password-reset|notifications|account)\.html$/.test(page);
+  const BAR_CSS = `
+  .yrnp-bar{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:9px 14px;background:var(--acc,#c6ff3d);color:var(--on-acc,#000);font:800 14px Cairo,Arial,sans-serif;text-align:center}
+  .yrnp-bar button{border:0;border-radius:10px;min-height:34px;padding:0 14px;font:900 13px Cairo,Arial,sans-serif;cursor:pointer}
+  .yrnp-bar .go{background:var(--on-acc,#000);color:var(--acc,#c6ff3d)}
+  .yrnp-bar .x{background:transparent;color:inherit;opacity:.7;padding:0 8px;font-size:18px}`;
+  let bar = null;
+  async function paintUI() {
+    const st = await state(); const bell = document.getElementById('bell');
+    if (bell) bell.classList.toggle('off', st !== 'on');
+    const want = !NO_BAR && st !== 'on' && st !== 'unsupported' && !(st === 'ios-install' && false) && !(() => { try { return sessionStorage.getItem('yr-bar-x'); } catch { return null; } })();
+    if (want && !bar) {
+      if (!document.getElementById('yrnp-css2')) { const c = document.createElement('style'); c.id = 'yrnp-css2'; c.textContent = BAR_CSS; document.head.appendChild(c); }
+      const host = document.getElementById('shared-header'); if (!host) return;
+      bar = document.createElement('div'); bar.className = 'yrnp-bar'; bar.setAttribute('role', 'region'); bar.setAttribute('aria-label', 'تفعيل الإشعارات');
+      bar.innerHTML = '<span>🔔 فعّل الإشعارات واوصلك كل جديد في المباريات والأخبار</span><button class="go" type="button">فعّل الآن</button><button class="x" type="button" aria-label="إخفاء">×</button>';
+      bar.querySelector('.go').addEventListener('click', () => ask());
+      bar.querySelector('.x').addEventListener('click', () => { try { sessionStorage.setItem('yr-bar-x', '1'); } catch { /* اختياري */ } bar.remove(); bar = null; });
+      host.after(bar);
+    } else if (!want && bar) { bar.remove(); bar = null; }
+  }
+  function wireBell() { const b = document.getElementById('bell'); if (b && !b.dataset.w) { b.dataset.w = '1'; b.addEventListener('click', () => ask()); } }
+
   window.yrPush = { state, enable, sync, ask, supported: () => supported };
+  wireBell(); paintUI(); document.addEventListener('yr-push-change', paintUI);
 
   const start = () => { setTimeout(() => { sync().catch(() => {}); }, 900); setTimeout(() => { auto().catch(() => {}); }, 4000); };
   if (document.readyState === 'complete') start(); else window.addEventListener('load', start);

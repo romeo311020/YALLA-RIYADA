@@ -268,3 +268,6 @@ body.adm .st-grid .panel{margin:0}
 .st-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
 /* الطلبات: بحث وتصدير */
 .ord-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 6px}.ord-tools input{flex:1 1 240px}
+
+body.adm .check-row{display:flex;align-items:center;gap:10px;font-weight:700}
+body.adm .check-row input{width:auto;min-height:0}
