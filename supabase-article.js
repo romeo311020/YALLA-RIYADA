@@ -21,7 +21,8 @@
     if (img) set('meta[property="og:image"]', 'property', 'og:image', img);
   };
 
-  const shareBar = () => `<div class="art-share ss-bar"><button type="button" class="sh-main" data-sharecard>${window.yrIco ? window.yrIco('share') : ''}<span>شارك الخبر</span><small>واتساب · تيليجرام · فيسبوك · كارت صورة</small></button></div>`;
+  const dot = (n, c) => `<i style="--c:${c}">${window.yrIco ? window.yrIco(n) : ''}</i>`;
+  const shareBar = () => `<div class="art-share ss-bar"><button type="button" class="sh-main" data-sharecard>${window.yrIco ? window.yrIco('share') : ''}<span>شارك الخبر</span><em class="stk">${dot('whatsapp', '#25D366')}${dot('telegram', '#27A7E7')}${dot('facebook', '#1877F2')}</em></button></div>`;
 
   async function load() {
     if (!db || !id) { host.innerHTML = '<p class="note">الخبر غير متاح.</p>'; host.removeAttribute('aria-busy'); return; }

@@ -1141,3 +1141,11 @@ svg.i{width:1.2em;height:1.2em;fill:none;stroke:currentColor;stroke-width:2;stro
 .mh-share svg.i{width:1.25em;height:1.25em}
 .tr-badge svg.i,.pl-st svg.i,.chip svg.i{width:1.05em;height:1.05em;vertical-align:-.15em}
 .pl-pills svg.i{color:var(--acc)}
+
+/* v62: أزرار المشاركة مضغوطة */
+.art-share.ss-bar{display:flex;padding:0;border:0;background:none;margin:12px 0}
+.art-share.ss-bar .sh-main{flex:none;flex-direction:row;gap:10px;min-height:44px;padding:0 8px 0 16px;border-radius:999px;font-size:15px;line-height:1;box-shadow:0 6px 16px color-mix(in srgb,var(--acc) 30%,transparent)}
+.art-share.ss-bar .sh-main span{font-size:15px;display:inline}.art-share.ss-bar .sh-main svg{width:1.2em;height:1.2em;margin:0}
+.sh-main .stk{display:inline-flex;margin-inline-start:2px;font-style:normal}.sh-main .stk i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--c);color:#fff;font-size:15px;border:2px solid var(--acc);margin-inline-start:-8px;font-style:normal}.sh-main .stk i:first-child{margin-inline-start:0}.sh-main .stk svg{width:1em!important;height:1em!important;margin:0!important}
+.mh-share{min-height:40px;padding:0 18px;font-size:14px;gap:8px;box-shadow:0 6px 16px color-mix(in srgb,var(--acc) 30%,transparent)}
+.pl-share{width:auto;justify-self:center;margin:6px auto 0}
