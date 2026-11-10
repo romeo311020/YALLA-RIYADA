@@ -23,13 +23,12 @@
 
   const shareBar = (n) => {
     const url = location.href.split('#')[0]; const t = encodeURIComponent(n.title); const u = encodeURIComponent(url);
-    return `<div class="art-share"><span>شارك الخبر</span>
-      <button type="button" class="sh card" data-sharecard>🖼️ مشاركة كصورة</button>
-      <a class="sh wa" href="https://wa.me/?text=${t}%20${u}" target="_blank" rel="noopener noreferrer">واتساب</a>
-      <a class="sh tg" href="https://t.me/share/url?url=${u}&text=${t}" target="_blank" rel="noopener noreferrer">تيليجرام</a>
-      <a class="sh fb" href="https://www.facebook.com/sharer/sharer.php?u=${u}" target="_blank" rel="noopener noreferrer">فيسبوك</a>
-      <a class="sh x" href="https://twitter.com/intent/tweet?text=${t}&url=${u}" target="_blank" rel="noopener noreferrer">إكس</a>
-      <button type="button" class="sh cp" id="art-copy">نسخ الرابط</button></div>`;
+    return `<div class="art-share ss-bar"><button type="button" class="sh-main" data-sharecard><span aria-hidden="true">✨</span> شارك الخبر كصورة</button>
+      <a class="ico" aria-label="واتساب" href="https://wa.me/?text=${t}%0A${u}" target="_blank" rel="noopener noreferrer">💬</a>
+      <a class="ico" aria-label="تيليجرام" href="https://t.me/share/url?url=${u}&text=${t}" target="_blank" rel="noopener noreferrer">✈️</a>
+      <a class="ico" aria-label="فيسبوك" href="https://www.facebook.com/sharer/sharer.php?u=${u}" target="_blank" rel="noopener noreferrer">📘</a>
+      <a class="ico" aria-label="إكس" href="https://twitter.com/intent/tweet?text=${t}&url=${u}" target="_blank" rel="noopener noreferrer">𝕏</a>
+      <button type="button" class="ico" id="art-copy" aria-label="نسخ الرابط">🔗</button></div>`;
   };
 
   async function load() {
@@ -52,9 +51,9 @@
       <div class="art-body">${render(n.body)}</div>
       ${src ? `<p class="art-source">المصدر: <a href="${esc(src)}" target="_blank" rel="noopener noreferrer">${esc(new URL(src).hostname.replace(/^www\./, ''))} ↗</a></p>` : ''}
       ${shareBar(n)}`;
-    host.querySelectorAll('[data-sharecard]').forEach((b) => b.addEventListener('click', () => window.yrShareImage({ title: n.title, image: img, url: location.href.split('#')[0] })));
+    host.querySelectorAll('[data-sharecard]').forEach((b) => b.addEventListener('click', () => window.yrShareImage({ type: 'news', title: n.title, image: img, tag: n.category || '★ حصري على يلا رياضة', url: location.href.split('#')[0] })));
     window.yrRich.hydrate(host.querySelector('.art-body'));
-    host.querySelectorAll('#art-copy').forEach((b) => b.addEventListener('click', async () => { try { await navigator.clipboard.writeText(location.href); b.textContent = 'تم النسخ ✓'; } catch { b.textContent = location.href; } }));
+    host.querySelectorAll('#art-copy').forEach((b) => b.addEventListener('click', async () => { try { await navigator.clipboard.writeText(location.href); b.textContent = '✓'; } catch { b.textContent = location.href; } }));
     // عدّاد المشاهدات: مرة واحدة لكل جلسة
     try { if (!sessionStorage.getItem(`yr-v:${id}`)) { sessionStorage.setItem(`yr-v:${id}`, '1'); db.rpc('news_view', { p_id: id }).then(() => {}, () => {}); } } catch { /* اختياري */ }
     related(id);

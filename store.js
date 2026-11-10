@@ -73,11 +73,12 @@
     root.removeAttribute('aria-busy');
     if (error || !p) { root.innerHTML = '<p class="note">المنتج غير متاح. <a href="store.html">العودة للمتجر</a></p>'; return; }
     document.title = `${p.name} | يلا رياضة`;
+    window.yrProductShare = () => window.yrShareImage({ type: 'product', title: p.name, sub: p.category || '', price: price(p.price), image: https(p.image_url), emoji: '🛍️', tag: 'متجر يلا رياضة', url: location.href.split('#')[0] });
     const { data: sess } = await db.auth.getSession();
     const signedIn = Boolean(sess?.session?.user);
     const img = https(p.image_url);
     root.innerHTML = `<article class="product-detail panel">${img ? `<img src="${esc(img)}" alt="${esc(p.name)}">` : '<div class="product-ph big" aria-hidden="true">◈</div>'}
-      <div><span class="kicker">${esc(p.category || 'STORE')}</span><h1>${esc(p.name)}</h1><p class="product-price">${esc(price(p.price))}</p>
+      <div><span class="kicker">${esc(p.category || 'STORE')}</span><h1>${esc(p.name)}</h1><p class="product-price">${esc(price(p.price))}</p><button type="button" class="mh-share inline" onclick="window.yrProductShare()"><span aria-hidden="true">✨</span> شارك المنتج</button>
       ${p.description ? `<p class="product-desc">${esc(p.description)}</p>` : ''}
       ${signedIn ? `<form id="order-form" class="form-stack order-form" novalidate>
         <h2>اطلب الآن</h2>

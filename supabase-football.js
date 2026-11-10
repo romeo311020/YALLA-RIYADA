@@ -582,6 +582,11 @@
         document.title = `${H} × ${A} | يلا رياضة`;
         score.innerHTML = `${teamMarkup(m.home_team, m.home_logo, sport, m.home_id)}${centerMarkup(m)}${teamMarkup(m.away_team, m.away_logo, sport, m.away_id)}`;
         if (note) note.textContent = formatDate(m.kickoff);
+        window.yrMatchShare = () => {
+          const live = m.status === 'live', fin = m.status === 'finished', has = m.home_score != null && m.away_score != null;
+          window.yrShareImage({ type: 'match', url: location.href.split('#')[0], league: m.league_label || m.league, home: { name: H, logo: safeUrl(m.home_logo) }, away: { name: A, logo: safeUrl(m.away_logo) }, score: has ? `${m.away_score} - ${m.home_score}` : '', live, finished: fin, minute: m.minute, time: formatTime(m.kickoff), when: formatDate(m.kickoff), title: `${H} × ${A}` });
+        };
+        { const hero = $('match-hero'); if (hero && !hero.querySelector('.mh-share')) { const b = document.createElement('button'); b.type = 'button'; b.className = 'mh-share'; b.innerHTML = '<span aria-hidden="true">✨</span> شارك المباراة كصورة'; b.addEventListener('click', () => window.yrMatchShare()); hero.append(b); } }
         window.yrHero && window.yrHero({ league: m.league_label || m.league, kickoff: m.kickoff, status: m.status, note: ['live', 'postponed', 'cancelled'].includes(m.status) ? m.status_note : '' });
         if (sport === 'football' && body) {
           // تشكيلة يدوية من لوحة الأدمن (إن وُجدت) تتفوق على تشكيلة المزوّد
@@ -648,8 +653,9 @@
         const vimg = safeUrl(v.image);
         root.removeAttribute('aria-busy');
         window.__teamId = id;
+        window.yrTeamShare = () => window.yrShareImage({ type: 'team', title: tn(t.name), sub: [countryAr(t.country), t.founded ? 'تأسس ' + t.founded : ''].filter(Boolean).join(' · '), image: logo, tag: 'ملف الفريق', emoji: '🛡️', url: location.href.split('#')[0] });
         root.innerHTML = `<a class="back-link" href="javascript:history.back()">← رجوع</a>
-          <section class="panel team-hero"><span class="crest big">${logo ? `<img src="${escapeHtml(logo)}" alt="">` : '⚽'}</span><div><span class="kicker">${t.national ? 'منتخب' : 'نادي'}</span><h1>${escapeHtml(tn(t.name))}</h1></div></section>
+          <section class="panel team-hero"><span class="crest big">${logo ? `<img src="${escapeHtml(logo)}" alt="">` : '⚽'}</span><div><span class="kicker">${t.national ? 'منتخب' : 'نادي'}</span><h1>${escapeHtml(tn(t.name))}</h1><button type="button" class="mh-share inline" onclick="window.yrTeamShare()"><span aria-hidden="true">✨</span> شارك الفريق</button></div></section>
           <section class="panel" id="team-form"><h2>آخر 10 مباريات</h2><p class="note">جارٍ تحميل النتائج…</p></section>
           <section class="panel"><h2>معلومات الفريق</h2><dl class="info-list">${facts.map(([k, x]) => `<div><dt>${k}</dt><dd>${escapeHtml(x)}</dd></div>`).join('')}${c?.name ? `<div><dt>المدرب</dt><dd>${escapeHtml(pn(c.name))}</dd></div>` : ''}</dl>${vimg ? `<img class="venue-img" src="${escapeHtml(vimg)}" alt="" loading="lazy">` : ''}</section>
           ${(r.squad || []).length ? `<section class="panel"><h2>التشكيلة الحالية</h2>${groups.map(([k, label]) => { const list = r.squad.filter((p) => p.position === k); return list.length ? `<h3 class="sq-title">${label}</h3><div class="squad-grid">${list.map((p) => `<button type="button" class="sq" data-pid="${p.id}" data-pname="${escapeHtml(p.name)}" data-pno="${escapeHtml(p.number ?? '')}" data-ppos="${escapeHtml(p.position)}"><span class="sq-img">${photoImg(p.id)}</span><b>${escapeHtml(pn(p.name))}</b><small>${p.number ? `#${escapeHtml(p.number)} · ` : ''}${p.age ? `${escapeHtml(p.age)} سنة` : ''}</small></button>`).join('')}</div>` : ''; }).join('')}</section>` : ''}`;

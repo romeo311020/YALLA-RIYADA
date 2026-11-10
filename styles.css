@@ -1119,3 +1119,17 @@ a.news-card{color:inherit;display:block}
 .bell.off{color:var(--acc)}
 @keyframes bellPulse{0%{box-shadow:0 0 0 2px var(--bg,#000),0 0 0 2px rgba(255,77,77,.6)}100%{box-shadow:0 0 0 2px var(--bg,#000),0 0 0 9px rgba(255,77,77,0)}}
 .art-share .sh.card{background:var(--acc);color:var(--on-acc);border-color:var(--acc)}
+
+/* أزرار المشاركة الجديدة */
+.mh-share{display:inline-flex;align-items:center;justify-content:center;gap:8px;margin:14px auto 0;min-height:48px;padding:0 24px;border:0;border-radius:999px;font:inherit;font-weight:900;font-size:15px;cursor:pointer;color:var(--on-acc);background:linear-gradient(135deg,var(--acc),color-mix(in srgb,var(--acc) 55%,#0af));box-shadow:0 10px 26px color-mix(in srgb,var(--acc) 38%,transparent);position:relative;overflow:hidden;transition:transform .2s}
+.mh-share:hover{transform:translateY(-2px)}.mh-share.inline{margin:12px 0 0}
+.mh-share::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.45) 50%,transparent 65%);transform:translateX(-120%);animation:shShine 3.2s ease-in-out infinite}
+.chip-share{display:inline-flex;align-items:center;margin-inline-start:10px;padding:4px 12px;border-radius:999px;background:color-mix(in srgb,var(--acc) 16%,transparent);border:1px solid var(--acc);font-size:12px;font-weight:900;cursor:pointer;color:var(--text)}
+.chip-share:hover{background:var(--acc);color:var(--on-acc)}
+
+/* شريط مشاركة الخبر */
+.art-share.ss-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px;border-radius:22px;border:1px solid var(--line);background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 14%,var(--panel)),var(--panel))}
+.art-share.ss-bar .sh-main{flex:1 1 100%;display:flex;align-items:center;justify-content:center;gap:10px;min-height:54px;border:0;border-radius:16px;font:inherit;font-size:17px;font-weight:900;cursor:pointer;color:var(--on-acc);background:linear-gradient(135deg,var(--acc),color-mix(in srgb,var(--acc) 55%,#0af));box-shadow:0 10px 26px color-mix(in srgb,var(--acc) 38%,transparent);position:relative;overflow:hidden}
+.sh-main::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.45) 50%,transparent 65%);transform:translateX(-120%);animation:shShine 3.2s ease-in-out infinite}@keyframes shShine{60%,100%{transform:translateX(120%)}}
+.art-share.ss-bar .ico{flex:1 1 0;min-width:56px;display:grid;place-items:center;min-height:46px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:18px;text-decoration:none;cursor:pointer;font-family:inherit}
+.art-share.ss-bar .ico:hover{background:var(--acc);color:var(--on-acc)}

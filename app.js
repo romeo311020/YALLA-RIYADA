@@ -170,7 +170,7 @@ window.yrMountPlayer = function (url, title) {
     });
     mk('↻', 'تحديث', () => build());
     const sh = mk('🔗', 'مشاركة', async () => {
-      window.yrShare({ title: document.title, text: document.title + ' — شاهد المباراة على يلا رياضة', url: location.href });
+      if (window.yrMatchShare) window.yrMatchShare(); else window.yrShare({ title: document.title, text: document.title + ' — شاهد المباراة على يلا رياضة', url: location.href });
     });
     const close = document.getElementById('theater-close'); if (close) close.addEventListener('click', () => setTheater(false));
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && player.classList.contains('theater')) setTheater(false); });
@@ -251,7 +251,7 @@ window.yrShare = async function (data) {
 
 /* مشاركة كصورة: بيحمّل share-card.js وقت الحاجة بس */
 window.yrShareImage = function (d) {
-  const go = () => window.yrShareCard(d);
-  if (window.yrShareCard) return go();
+  const go = () => window.yrShareStudio(d);
+  if (window.yrShareStudio) return go();
   const sc = document.createElement('script'); sc.src = 'share-card.js'; sc.onload = go; sc.onerror = () => window.yrShare({ title: d.title, text: d.title + ' — يلا رياضة', url: d.url }); document.head.appendChild(sc);
 };
