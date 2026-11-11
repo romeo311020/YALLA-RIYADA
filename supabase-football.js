@@ -587,6 +587,7 @@
           window.yrShareBloom({ type: 'match', url: location.href.split('#')[0], league: m.league_label || m.league, home: { name: H, logo: safeUrl(m.home_logo) }, away: { name: A, logo: safeUrl(m.away_logo) }, score: has ? `${m.away_score} - ${m.home_score}` : '', live, finished: fin, minute: m.minute, time: formatTime(m.kickoff), when: formatDate(m.kickoff), title: `${H} × ${A}` });
         };
         { const hero = $('match-hero'); if (hero && !hero.querySelector('.mh-share')) { const b = document.createElement('button'); b.type = 'button'; b.className = 'mh-share'; b.innerHTML = window.yrIco('share') + ' شارك المباراة'; b.addEventListener('click', () => window.yrMatchShare()); hero.append(b); } }
+        if (sport === 'football' && window.yrPredictMount) window.yrPredictMount(m);
         window.yrHero && window.yrHero({ league: m.league_label || m.league, kickoff: m.kickoff, status: m.status, note: ['live', 'postponed', 'cancelled'].includes(m.status) ? m.status_note : '' });
         if (sport === 'football' && body) {
           // تشكيلة يدوية من لوحة الأدمن (إن وُجدت) تتفوق على تشكيلة المزوّد

@@ -27,7 +27,7 @@
 
   /* ---------- الهيدر ---------- */
   const nav = [
-    ['matches.html', 'المباريات'], ['news.html', 'الأخبار'], ['leagues.html', 'الدوريات'], ['transfers.html', 'الانتقالات'], ['store.html', 'المتجر'], ['account.html', 'حسابي'],
+    ['matches.html', 'المباريات'], ['news.html', 'الأخبار'], ['leagues.html', 'الدوريات'], ['transfers.html', 'الانتقالات'], ['predictions.html', 'التوقعات'], ['store.html', 'المتجر'], ['account.html', 'حسابي'],
   ];
   const header = $('shared-header');
   if (header) {
@@ -77,7 +77,7 @@
   const footer = $('shared-footer');
   if (footer) {
     footer.innerHTML = `<footer class="footer"><div class="wrap foot">${brand}
-      <div class="foot-links"><a href="matches.html">المباريات</a><a href="news.html">الأخبار</a><a href="leagues.html">الدوريات</a><a href="transfers.html">الانتقالات</a><a href="store.html">المتجر</a><a href="about.html">عن المنصة</a><a href="${contact}" target="_blank" rel="noopener noreferrer">تواصل معنا</a></div>
+      <div class="foot-links"><a href="matches.html">المباريات</a><a href="news.html">الأخبار</a><a href="leagues.html">الدوريات</a><a href="transfers.html">الانتقالات</a><a href="predictions.html">التوقعات</a><a href="store.html">المتجر</a><a href="about.html">عن المنصة</a><a href="${contact}" target="_blank" rel="noopener noreferrer">تواصل معنا</a></div>
       <div class="follow-foot"><span>تابعنا</span>${socialDots()}</div>
       <div class="credit">تصميم وتطوير <a href="${contact}" target="_blank" rel="noopener noreferrer">Romany Garges</a></div>
       <small class="copyright">© ${new Date().getFullYear()} YALLA RIYADA</small></div></footer>`;

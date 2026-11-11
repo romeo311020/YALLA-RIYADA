@@ -334,19 +334,70 @@ Deno.serve(async (request) => {
       const r = await providerFetch('football', path, new URLSearchParams(q), apiKey, relayUrl, relaySecret);
       if (!r.ok) throw new Error(`http ${r.status}`);
       const j = await r.json();
+      const errs = j.errors && typeof j.errors === 'object' ? Object.values(j.errors as Record<string, unknown>).join(' | ') : '';
+      if (errs && !(Array.isArray(j.response) && j.response.length)) throw new Error('api:' + errs);
       return Array.isArray(j.response) ? j.response : [];
+    };
+    // football-data.org (خطة مجانية بتدعم الموسم الحالي للدوريات الكبرى)
+    const FD: Record<number, string> = { 39: 'PL', 140: 'PD', 135: 'SA', 78: 'BL1', 61: 'FL1', 2: 'CL', 1: 'WC', 4: 'EC' };
+    const fdKey = Deno.env.get('FOOTBALL_DATA_KEY') ?? '';
+    // deno-lint-ignore no-explicit-any
+    const fd = async (path: string): Promise<any> => {
+      const r = await fetch('https://api.football-data.org/v4/' + path, { headers: { 'X-Auth-Token': fdKey } });
+      if (!r.ok) throw new Error(`fd ${r.status}`);
+      return await r.json();
     };
     try {
       const c = cairoDate(); const y = Number(c.slice(0, 4)); const m = Number(c.slice(5, 7));
       const first = m >= 8 ? y : y - 1;
       let season = first;
+      if (fdKey && FD[lid]) {
+        const code = FD[lid];
+        // deno-lint-ignore no-explicit-any
+        let fo: Record<string, any> | null = null;
+        try {
+          if (body.action === 'standings') {
+            const j = await fd(`competitions/${code}/standings`);
+            // deno-lint-ignore no-explicit-any
+            const sts = (j.standings ?? []).filter((g: any) => g.type === 'TOTAL');
+            if (sts.length) fo = {
+              league: { id: lid, name: j.competition?.name ?? '', logo: j.competition?.emblem ?? null, country: j.area?.name ?? '', season: Number(String(j.season?.startDate ?? '').slice(0, 4)) || season },
+              // deno-lint-ignore no-explicit-any
+              groups: sts.map((g: any) => (g.table ?? []).map((t: any) => ({
+                rank: t.position, team: { id: null, name: t.team?.shortName || t.team?.name || '', logo: t.team?.crest ?? null },
+                played: t.playedGames ?? 0, win: t.won ?? 0, draw: t.draw ?? 0, lose: t.lost ?? 0,
+                gf: t.goalsFor ?? 0, ga: t.goalsAgainst ?? 0, gd: t.goalDifference ?? 0, points: t.points ?? 0,
+                form: String(t.form ?? '').replace(/,/g, ''), note: '', group: g.group ? String(g.group).replace(/_/g, ' ') : '',
+              }))),
+            };
+          } else {
+            const j = await fd(`competitions/${code}/scorers?limit=20`);
+            if ((j.scorers ?? []).length) fo = {
+              season: Number(String(j.season?.startDate ?? '').slice(0, 4)) || season,
+              // deno-lint-ignore no-explicit-any
+              players: j.scorers.map((r: any) => ({
+                id: null, name: r.player?.name ?? '', photo: null, nationality: r.player?.nationality ?? '',
+                team: { id: null, name: r.team?.shortName || r.team?.name || '', logo: r.team?.crest ?? null },
+                goals: r.goals ?? 0, assists: r.assists ?? 0, apps: r.playedMatches ?? 0, penalty: r.penalties ?? 0,
+              })),
+            };
+          }
+        } catch (e) { console.error('football-data failed:', e); }
+        if (fo) {
+          const exp = Date.now() + (body.action === 'standings' ? 3 : 6) * 60 * MIN;
+          cache.set(key, { payload: fo, expires: exp });
+          await dbSet(key, fo, exp);
+          return jsonResponse(fo);
+        }
+      }
       // deno-lint-ignore no-explicit-any
       let out: Record<string, any>;
       if (body.action === 'standings') {
-        let rows = await call('standings', { league: String(lid), season: String(season) });
-        if (!rows.length) { season = first - 1; rows = await call('standings', { league: String(lid), season: String(season) }); }
+        let rows: any[] = []; let lastErr: unknown = null;
+        for (const sx of [first, first - 1]) { if (rows.length) break; season = sx; try { rows = await call('standings', { league: String(lid), season: String(season) }); } catch (e) { lastErr = e; if ((e as Error).message === 'budget') throw e; } }
+        if (!rows.length && lastErr) throw lastErr;
         const lg = rows[0]?.league;
-        if (!lg) return jsonResponse({ error: 'الترتيب غير متاح حاليًا.' }, 404);
+        if (!lg) { console.error('standings empty', lid, first); return jsonResponse({ error: `لا توجد بيانات ترتيب لهذا الدوري (مواسم ${first} و${first - 1}) من المزوّد.` }, 404); }
         out = {
           league: { id: lid, name: lg.name ?? '', logo: lg.logo ?? null, country: lg.country ?? '', season: lg.season ?? season },
           // deno-lint-ignore no-explicit-any
@@ -358,8 +409,9 @@ Deno.serve(async (request) => {
           }))),
         };
       } else {
-        let rows = await call('players/topscorers', { league: String(lid), season: String(season) });
-        if (!rows.length) { season = first - 1; rows = await call('players/topscorers', { league: String(lid), season: String(season) }); }
+        let rows: any[] = []; let lastErr: unknown = null;
+        for (const sx of [first, first - 1]) { if (rows.length) break; season = sx; try { rows = await call('players/topscorers', { league: String(lid), season: String(season) }); } catch (e) { lastErr = e; if ((e as Error).message === 'budget') throw e; } }
+        if (!rows.length && lastErr) throw lastErr;
         if (!rows.length) return jsonResponse({ error: 'الهدافون غير متاحين حاليًا.' }, 404);
         out = {
           season,
@@ -381,7 +433,9 @@ Deno.serve(async (request) => {
     } catch (error) {
       console.error('league failed:', error);
       if (stale) return jsonResponse(stale.payload);
-      return jsonResponse({ error: (error as Error).message === 'budget' ? 'الخدمة مشغولة حاليًا. حاول بعد قليل.' : 'تعذّر تحميل البيانات.' }, 502);
+      const em = (error as Error).message;
+      if (em.startsWith('api:')) return jsonResponse({ error: 'مزوّد البيانات رفض الطلب: ' + em.slice(4) }, 502);
+      return jsonResponse({ error: em === 'budget' ? 'الخدمة مشغولة حاليًا. حاول بعد قليل.' : 'تعذّر تحميل البيانات.' }, 502);
     }
   }
 
@@ -487,6 +541,30 @@ Deno.serve(async (request) => {
       if (stale) return jsonResponse(stale.payload);
       return jsonResponse({ error: (error as Error).message === 'budget' ? 'الخدمة مشغولة حاليًا. حاول بعد قليل.' : 'تعذّر تحميل البيانات.' }, 502);
     }
+  }
+
+  // ---------- حساب نقاط التوقعات: النتائج من المزوّد (عبر نفس الدالة/الكاش) والحساب في قاعدة البيانات ----------
+  if (body.action === 'settle') {
+    const lastRun = cache.get('settle:last');
+    if (lastRun && lastRun.expires > Date.now()) return jsonResponse({ settled: 0, skipped: true });
+    cache.set('settle:last', { payload: {}, expires: Date.now() + 2 * MIN });
+    const cutoff = new Date(Date.now() - 110 * MIN).toISOString();
+    const res = await sb(`predictions?settled=eq.false&kickoff=lt.${encodeURIComponent(cutoff)}&select=fixture_id&order=kickoff.asc&limit=200`);
+    const list = res ? await res.json().catch(() => []) : [];
+    const ids = [...new Set((Array.isArray(list) ? list : []).map((r: { fixture_id: number }) => Number(r.fixture_id)))].slice(0, 6);
+    let done = 0;
+    for (const id of ids) {
+      try {
+        const h = new Headers(request.headers); h.delete('content-length');
+        const r = await fetch(request.url, { method: 'POST', headers: h, body: JSON.stringify({ action: 'fixture', sport: 'football', fixtureId: id }) });
+        if (!r.ok) continue;
+        const f = (await r.json())?.fixture;
+        if (!f || f.status !== 'finished' || f.home_score == null || f.away_score == null || !f.kickoff) continue;
+        const rr = await sb('rpc/settle_fixture', { method: 'POST', body: JSON.stringify({ p_fixture: id, p_home: f.home_score, p_away: f.away_score, p_kickoff: f.kickoff }) });
+        if (rr) done += Number(await rr.json().catch(() => 0)) || 0;
+      } catch (e) { console.error('settle failed', id, e); }
+    }
+    return jsonResponse({ settled: done, checked: ids.length });
   }
 
   const sport: Sport = body.sport === 'basketball' ? 'basketball' : 'football';
