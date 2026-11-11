@@ -297,3 +297,5 @@ window.yrShareBloom = function (d) {
   if (window.yrBloom) return go();
   const sc = document.createElement('script'); sc.src = 'share-bloom.js'; sc.onload = go; sc.onerror = () => window.yrShare({ title: d.title, text: d.title + ' — يلا رياضة', url: d.url }); document.head.appendChild(sc);
 };
+
+;(function(){var l=function(){var s=document.createElement('script');s.src='ads.js';s.defer=true;document.body.appendChild(s)};if(document.readyState==='complete')l();else window.addEventListener('load',l)})();

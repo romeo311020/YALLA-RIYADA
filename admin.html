@@ -51,6 +51,7 @@
         <span class="nav-label">المحتوى والمتجر</span>
         <button type="button" class="atab" role="tab" data-atab="news" aria-selected="false"><i class="ti" aria-hidden="true">📰</i>الأخبار</button>
         <button type="button" class="atab" role="tab" data-atab="transfers" aria-selected="false"><i class="ti" aria-hidden="true">🔄</i>الانتقالات</button>
+        <button type="button" class="atab" role="tab" data-atab="ads" aria-selected="false"><i class="ti" aria-hidden="true">📣</i>الإعلانات</button>
         <button type="button" class="atab" role="tab" data-atab="store" aria-selected="false"><i class="ti" aria-hidden="true">🛍️</i>المتجر</button>
         <button type="button" class="atab" role="tab" data-atab="orders" aria-selected="false"><i class="ti" aria-hidden="true">📦</i>الطلبات <b id="orders-badge" class="badge" hidden></b></button>
         <span class="nav-label">النظام</span>
@@ -478,6 +479,35 @@
           </form>
           <h3 class="admin-list-title">آخر الانتقالات</h3>
           <div id="tr-list"></div>
+        </div>
+      </section>
+      <!-- الإعلانات -->
+      <section class="admin-pane" id="pane-ads" role="tabpanel" hidden>
+        <div class="panel admin-section">
+          <div class="admin-section-heading"><div><span class="tag">الإعلانات</span><h2>إعلان منبثق (صورة أو فيديو)</h2></div>
+            <p class="note">بيظهر للزائر في نافذة زجاجية بعد ثواني من فتح الصفحة، ومرة واحدة كل فترة بتحددها. الروابط لازم https.</p></div>
+          <form id="ad-form" class="form-stack admin-form">
+            <input id="ad-id" type="hidden">
+            <label>عنوان الإعلان (بيظهر تحت الصورة/الفيديو)<input id="ad-title" required maxlength="80" placeholder="مثال: خصم 30% على قمصان الأندية"></label>
+            <div class="row">
+              <label>نوع الميديا<select id="ad-type"><option value="image">صورة</option><option value="video">فيديو (رابط ملف mp4)</option><option value="youtube">فيديو يوتيوب</option></select></label>
+              <label>يظهر في<select id="ad-pages"><option value="all">كل الصفحات</option><option value="home">الرئيسية</option><option value="matches">المباريات</option><option value="news">الأخبار</option><option value="store">المتجر</option></select></label>
+            </div>
+            <label>رابط الصورة / الفيديو (https)<input id="ad-media" type="url" inputmode="url" dir="ltr" required placeholder="https://..."></label>
+            <label>صورة غلاف الفيديو (اختياري)<input id="ad-poster" type="url" inputmode="url" dir="ltr" placeholder="https://..."></label>
+            <label>رابط الإعلان عند الضغط (اختياري)<input id="ad-link" type="url" inputmode="url" dir="ltr" placeholder="https://..."></label>
+            <div class="row">
+              <label>نص الزر<input id="ad-cta" maxlength="30" value="اعرف أكتر"></label>
+              <label>يظهر بعد (ثانية)<input id="ad-delay" type="number" min="0" max="120" value="6" inputmode="numeric"></label>
+              <label>مرة كل (ساعة)<input id="ad-freq" type="number" min="0" max="720" value="12" inputmode="numeric"></label>
+            </div>
+            <div class="row"><label>يبدأ (اختياري)<input id="ad-from" type="datetime-local"></label><label>ينتهي (اختياري)<input id="ad-to" type="datetime-local"></label></div>
+            <label class="check-row"><input id="ad-active" type="checkbox" checked> شغّال</label>
+            <div class="row"><button class="btn primary" id="ad-save" type="submit">حفظ الإعلان</button><button class="btn outline" id="ad-reset" type="button">جديد</button></div>
+            <p class="note" id="ad-msg" role="status"></p>
+          </form>
+          <h3 class="admin-list-title">الإعلانات</h3>
+          <div id="ad-list"></div>
         </div>
       </section>
       <section class="admin-pane" id="pane-news" role="tabpanel" hidden>

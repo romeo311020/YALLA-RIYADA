@@ -94,6 +94,7 @@
     orders: () => loadOrders(),
     news: () => loadNews(),
     transfers: () => loadTransfers(),
+    ads: () => loadAds(),
     push: () => loadPush(),
     pushtargets: () => loadPushTargets(),
     users: () => loadUsers(true),
@@ -118,7 +119,7 @@
   let searchTimer; new MutationObserver((muts) => { if (!$('admin-search').value || muts.every((m) => m.target.closest?.('.admin-search') || m.target.classList?.contains('search-none') || m.target === $('admin-search-count'))) return; clearTimeout(searchTimer); searchTimer = setTimeout(applySearch, 60); }).observe(document.getElementById('admin-workspace'), { childList: true, subtree: true });
 
   /* ---------- بحث شامل: مباريات، فرق، أخبار، منتجات، طلبات، أقسام ---------- */
-  const TABS = [['overview', 'نظرة عامة'], ['transfers', 'الانتقالات'], ['stats', 'الإحصائيات والتقارير'], ['apimatches', 'تعديل مباراة API'], ['matches', 'مباريات يدوية'], ['important', 'المباريات المهمة'], ['lineups', 'التشكيلات والأحداث'], ['streams', 'المشغّلات'], ['leagues', 'ترتيب البطولات'], ['teams', 'الفرق المهمة'], ['names', 'أسماء الفرق'], ['push', 'إرسال إشعار'], ['pushtargets', 'فرق ولاعبو الإشعارات'], ['news', 'الأخبار'], ['store', 'المتجر'], ['orders', 'الطلبات'], ['users', 'المستخدمون'], ['audit', 'السجل']];
+  const TABS = [['overview', 'نظرة عامة'], ['transfers', 'الانتقالات'], ['ads', 'الإعلانات'], ['stats', 'الإحصائيات والتقارير'], ['apimatches', 'تعديل مباراة API'], ['matches', 'مباريات يدوية'], ['important', 'المباريات المهمة'], ['lineups', 'التشكيلات والأحداث'], ['streams', 'المشغّلات'], ['leagues', 'ترتيب البطولات'], ['teams', 'الفرق المهمة'], ['names', 'أسماء الفرق'], ['push', 'إرسال إشعار'], ['pushtargets', 'فرق ولاعبو الإشعارات'], ['news', 'الأخبار'], ['store', 'المتجر'], ['orders', 'الطلبات'], ['users', 'المستخدمون'], ['audit', 'السجل']];
   let gTimer; let gSeq = 0;
   const likeQ = (q) => q.replace(/[%,()*]/g, ' ').trim();
   const gRow = (icon, title, sub, attrs) => `<button type="button" class="g-row" ${attrs}><i>${icon}</i><span><b>${esc(title)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span></button>`;
@@ -178,6 +179,7 @@
     push: ['إرسال إشعار', 'ابعت إشعار لكل المشتركين أو لمتابعي فريق/لاعب، أو حوّل خبر لإشعار.'],
     pushtargets: ['فرق ولاعبو الإشعارات', 'تحكم في الفرق واللاعبين اللي المستخدم يقدر يتابعهم.'],
     transfers: ['الانتقالات', 'أضف وعدّل صفقات سوق الانتقالات اللي بتظهر في الصفحة العامة.'],
+    ads: ['الإعلانات', 'إعلانات منبثقة بصورة أو فيديو، مع عدّاد مشاهدات ونقرات.'],
     news: ['الأخبار', 'اكتب أخبارًا حصرية وضمّن منشورات X وإنستجرام وتيك توك ويوتيوب.'],
     users: ['المستخدمون', 'إدارة الحسابات والصلاحيات والحظر.'],
     audit: ['السجل', 'آخر عمليات المسؤولين.'],
@@ -666,6 +668,44 @@
     }
     await client.from('name_unknown').delete().eq('kind', 'team').eq('en', en);
     loadUnknownNames(); loadSavedNames();
+  });
+  /* ======================== الإعلانات ======================== */
+  let adCache = [];
+  const adReset = () => { $('ad-form').reset(); $('ad-id').value = ''; $('ad-cta').value = 'اعرف أكتر'; $('ad-delay').value = 6; $('ad-freq').value = 12; $('ad-active').checked = true; $('ad-save').textContent = 'حفظ الإعلان'; };
+  const adDt = (v) => (v ? new Date(v).toISOString() : null);
+  const adLocal = (iso) => { if (!iso) return ''; const d = new Date(iso); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
+  async function loadAds() {
+    const { data, error } = await client.from('site_ads').select('*').order('created_at', { ascending: false }).limit(100);
+    if (error) { $('ad-list').innerHTML = ''; say('ad-msg', /site_ads|relation/.test(error.message) ? 'شغّل ملف supabase-ads.sql في Supabase الأول.' : error.message); return; }
+    adCache = data || [];
+    const T = { image: '🖼️ صورة', video: '🎬 فيديو', youtube: '▶️ يوتيوب' };
+    $('ad-list').innerHTML = adCache.length ? adCache.map((a) => `<article class="admin-list-item"><div><strong>${esc(a.title)} · ${esc(T[a.media_type] || a.media_type)} ${a.active ? '' : '(متوقف)'}</strong><small>👁️ ${Number(a.impressions).toLocaleString('ar-EG')} مشاهدة · 👆 ${Number(a.clicks).toLocaleString('ar-EG')} نقرة${a.impressions ? ' (' + (a.clicks / a.impressions * 100).toFixed(1) + '%)' : ''} · ${esc(a.pages)}</small></div><div class="row"><button class="btn outline" type="button" data-ad-edit="${esc(a.id)}">تعديل</button><button class="btn outline" type="button" data-ad-tg="${esc(a.id)}">${a.active ? 'إيقاف' : 'تشغيل'}</button><button class="btn outline" type="button" data-ad-del="${esc(a.id)}">حذف</button></div></article>`).join('') : '<p class="note">مفيش إعلانات لسه.</p>';
+  }
+  $('ad-reset')?.addEventListener('click', adReset);
+  $('ad-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = (v) => { const x = v.trim(); if (!x) return null; return /^https:\/\//i.test(x) ? x : false; };
+    const media = url($('ad-media').value); const poster = url($('ad-poster').value); const link = url($('ad-link').value);
+    if (!media || poster === false || link === false) { say('ad-msg', 'الروابط لازم تبدأ بـ https://'); return; }
+    if ($('ad-type').value === 'youtube' && !/(youtu\.be\/|youtube\.com\/)/.test(media)) { say('ad-msg', 'رابط يوتيوب غير صحيح.'); return; }
+    const row = { title: $('ad-title').value.trim(), media_type: $('ad-type').value, pages: $('ad-pages').value, media_url: media, poster_url: poster, link_url: link, cta_text: $('ad-cta').value.trim() || 'اعرف أكتر', delay_seconds: Number($('ad-delay').value) || 0, frequency_hours: Number($('ad-freq').value) || 0, starts_at: adDt($('ad-from').value), ends_at: adDt($('ad-to').value), active: $('ad-active').checked };
+    const id = $('ad-id').value; say('ad-msg', 'جارٍ الحفظ…');
+    const { error } = id ? await client.from('site_ads').update(row).eq('id', id) : await client.from('site_ads').insert(row);
+    say('ad-msg', error ? `تعذّر الحفظ: ${error.message}` : 'تم الحفظ ✓ والإعلان شغّال للزوار.'); if (!error) { adReset(); loadAds(); }
+  });
+  $('ad-list')?.addEventListener('click', async (e) => {
+    const ed = e.target.closest('[data-ad-edit]'); const del = e.target.closest('[data-ad-del]'); const tg = e.target.closest('[data-ad-tg]');
+    if (ed) {
+      const a = adCache.find((x) => x.id === ed.dataset.adEdit); if (!a) return;
+      $('ad-id').value = a.id; $('ad-title').value = a.title; $('ad-type').value = a.media_type; $('ad-pages').value = a.pages; $('ad-media').value = a.media_url; $('ad-poster').value = a.poster_url || ''; $('ad-link').value = a.link_url || ''; $('ad-cta').value = a.cta_text || ''; $('ad-delay').value = a.delay_seconds; $('ad-freq').value = a.frequency_hours; $('ad-from').value = adLocal(a.starts_at); $('ad-to').value = adLocal(a.ends_at); $('ad-active').checked = a.active; $('ad-save').textContent = 'تحديث الإعلان';
+      $('ad-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (tg) {
+      const a = adCache.find((x) => x.id === tg.dataset.adTg); if (!a) return;
+      const { error } = await client.from('site_ads').update({ active: !a.active }).eq('id', a.id); say('ad-msg', error ? error.message : (a.active ? 'تم إيقاف الإعلان.' : 'تم تشغيل الإعلان.')); loadAds();
+    } else if (del) {
+      if (!window.confirm('حذف الإعلان ده نهائيًا؟')) return;
+      const { error } = await client.from('site_ads').delete().eq('id', del.dataset.adDel); say('ad-msg', error ? error.message : 'تم الحذف.'); loadAds();
+    }
   });
   /* ======================== الانتقالات ======================== */
   const TR_ST = { official: '✅ رسمي', advanced: '🔥 مفاوضات متقدمة', rumor: '💬 إشاعة', loan: '🔁 إعارة', free: '🆓 حر', extended: '🖊️ تجديد' };
