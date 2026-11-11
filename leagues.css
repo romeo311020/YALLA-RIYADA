@@ -31,3 +31,5 @@
 @media(max-width:480px){.lg-p{grid-template-columns:24px 44px minmax(0,1fr) auto}.lg-p .st{display:none}.lg-p .ph{width:44px;height:44px}}
 
 .lg-p .ph .ini{width:100%;height:100%;display:grid;place-items:center;font-style:normal;font-weight:900;font-size:16px;color:#c6ff3d;background:linear-gradient(135deg,#1d2a0a,#0d1405)}
+.lg-p.np{grid-template-columns:28px minmax(0,1fr) auto auto auto}
+@media(max-width:480px){.lg-p.np{grid-template-columns:24px minmax(0,1fr) auto}}
