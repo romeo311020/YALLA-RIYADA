@@ -1149,3 +1149,6 @@ svg.i{width:1.2em;height:1.2em;fill:none;stroke:currentColor;stroke-width:2;stro
 .sh-main .stk{display:inline-flex;margin-inline-start:2px;font-style:normal}.sh-main .stk i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--c);color:#fff;font-size:15px;border:2px solid var(--acc);margin-inline-start:-8px;font-style:normal}.sh-main .stk i:first-child{margin-inline-start:0}.sh-main .stk svg{width:1em!important;height:1em!important;margin:0!important}
 .mh-share{min-height:40px;padding:0 18px;font-size:14px;gap:8px;box-shadow:0 6px 16px color-mix(in srgb,var(--acc) 30%,transparent)}
 .pl-share{width:auto;justify-self:center;margin:6px auto 0}
+
+.tab-track a{font-size:10.5px}
+@media(max-width:360px){.tab-track a{font-size:10px}}

@@ -19,9 +19,12 @@
     const key = 'yr-lg:' + JSON.stringify(body);
     try { const c = JSON.parse(localStorage.getItem(key) || 'null'); if (c && Date.now() - c.t < ttlMin * 60000) return c.v; } catch { /* اختياري */ }
     const { data, error } = await db.functions.invoke('football-matches', { body });
-    if (error || data?.error) {
+    if (error || data?.error || !(data?.groups || data?.players)) {
       try { const c = JSON.parse(localStorage.getItem(key) || 'null'); if (c) return c.v; } catch { /* اختياري */ }
-      throw new Error(data?.error || 'الخدمة غير متاحة حاليًا. حاول بعد قليل.');
+      let msg = data?.error || '';
+      if (!msg && error?.context?.json) { try { msg = (await error.context.json())?.error || ''; } catch { /* اختياري */ } }
+      if (!msg && !error && data) msg = 'الدالة لسه على نسخة قديمة — لازم تنشر football-matches الجديدة.';
+      throw new Error(msg || 'الخدمة غير متاحة حاليًا. حاول بعد قليل.');
     }
     try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), v: data })); } catch { /* اختياري */ }
     return data;

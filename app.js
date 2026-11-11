@@ -88,6 +88,7 @@
   const tabs = [
     ['matches.html', 'المباريات', ico('<circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 5h-5L8 10z"/>')],
     ['news.html', 'الأخبار', ico('<path d="M4 5h13a1 1 0 0 1 1 1v13H6a2 2 0 0 1-2-2z"/><path d="M18 9h2v8a2 2 0 0 1-2 2"/><path d="M8 9h6M8 13h6"/>')],
+    ['leagues.html', 'الدوريات', ico('<path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>')],
     ['transfers.html', 'الانتقالات', ico('<path d="M7 7h13l-3-3"/><path d="M17 17H4l3 3"/>')],
     ['store.html', 'المتجر', ico('<path d="M6 8h12l-1 12H7z"/><path d="M9 8a3 3 0 0 1 6 0"/>')],
     ['account.html', 'حسابي', ico('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>')],
@@ -95,7 +96,7 @@
   const tabbar = document.createElement('nav');
   tabbar.className = 'tabbar';
   tabbar.setAttribute('aria-label', 'التنقل السريع');
-  const activeIndex = Math.max(0, tabs.findIndex(([u]) => u === current || (current === 'match.html' && u === 'matches.html') || (current === 'product.html' && u === 'store.html')));
+  const activeIndex = Math.max(0, tabs.findIndex(([u]) => u === current || (current === 'match.html' && u === 'matches.html') || (current === 'product.html' && u === 'store.html') || (current === 'league.html' && u === 'leagues.html') || (current === 'player.html' && u === 'transfers.html')));
   tabbar.innerHTML = `<div class="tab-track" style="--n:${tabs.length}"><i class="tab-pill" aria-hidden="true"></i>${tabs.map(([u, t, i], k) => `<a href="${u}" class="${k === activeIndex ? 'active' : ''}" ${k === activeIndex ? 'aria-current="page"' : ''}>${i}<span>${t}</span></a>`).join('')}</div>`;
   document.body.appendChild(tabbar);
   // المؤشر ينزلق من التبويب السابق إلى الحالي (نتذكّر مكانه بين الصفحات)
