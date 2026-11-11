@@ -308,13 +308,82 @@ Deno.serve(async (request) => {
   const apiKey = Deno.env.get('API_FOOTBALL_KEY') ?? '';
   if (!apiKey && !(relayUrl && relaySecret)) return jsonResponse({ error: 'الخدمة غير مهيأة بعد.' }, 503);
 
-  let body: { action?: string; date?: string; fixtureId?: number; teamId?: number; playerId?: number; sport?: string };
+  let body: { action?: string; date?: string; fixtureId?: number; teamId?: number; playerId?: number; leagueId?: number; sport?: string };
   try {
     body = await request.json();
   } catch {
     return jsonResponse({ error: 'صيغة الطلب غير صالحة.' }, 400);
   }
 
+
+
+  // ---------- ترتيب الدوري والهدافين (كاش مشترك: الترتيب 3 ساعات، الهدافين 6 ساعات) ----------
+  if (body.action === 'standings' || body.action === 'scorers') {
+    const LEAGUES = new Set([39, 140, 135, 78, 61, 2, 3, 848, 233, 307, 305, 301, 200, 202, 186, 12, 1, 4, 5, 9, 15, 29, 32, 34]);
+    const lid = Number(body.leagueId);
+    if (!LEAGUES.has(lid)) return jsonResponse({ error: 'البطولة غير مدعومة.' }, 400);
+    const key = `football:${body.action}:${lid}`;
+    const mem = cache.get(key);
+    if (mem && mem.expires > Date.now()) return jsonResponse(mem.payload);
+    const shared = await dbGet(key);
+    if (shared && shared.expires > Date.now()) { cache.set(key, shared); return jsonResponse(shared.payload); }
+    const stale = mem ?? shared;
+    // deno-lint-ignore no-explicit-any
+    const call = async (path: string, q: Record<string, string>): Promise<any[]> => {
+      if ((await takeSharedBudget('football')) !== 'ok') throw new Error('budget');
+      const r = await providerFetch('football', path, new URLSearchParams(q), apiKey, relayUrl, relaySecret);
+      if (!r.ok) throw new Error(`http ${r.status}`);
+      const j = await r.json();
+      return Array.isArray(j.response) ? j.response : [];
+    };
+    try {
+      const c = cairoDate(); const y = Number(c.slice(0, 4)); const m = Number(c.slice(5, 7));
+      const first = m >= 8 ? y : y - 1;
+      let season = first;
+      // deno-lint-ignore no-explicit-any
+      let out: Record<string, any>;
+      if (body.action === 'standings') {
+        let rows = await call('standings', { league: String(lid), season: String(season) });
+        if (!rows.length) { season = first - 1; rows = await call('standings', { league: String(lid), season: String(season) }); }
+        const lg = rows[0]?.league;
+        if (!lg) return jsonResponse({ error: 'الترتيب غير متاح حاليًا.' }, 404);
+        out = {
+          league: { id: lid, name: lg.name ?? '', logo: lg.logo ?? null, country: lg.country ?? '', season: lg.season ?? season },
+          // deno-lint-ignore no-explicit-any
+          groups: (lg.standings ?? []).map((g: any[]) => g.map((t: any) => ({
+            rank: t.rank, team: { id: t.team?.id, name: t.team?.name ?? '', logo: t.team?.logo ?? null },
+            played: t.all?.played ?? 0, win: t.all?.win ?? 0, draw: t.all?.draw ?? 0, lose: t.all?.lose ?? 0,
+            gf: t.all?.goals?.for ?? 0, ga: t.all?.goals?.against ?? 0, gd: t.goalsDiff ?? 0, points: t.points ?? 0,
+            form: t.form ?? '', note: t.description ?? '', group: t.group ?? '',
+          }))),
+        };
+      } else {
+        let rows = await call('players/topscorers', { league: String(lid), season: String(season) });
+        if (!rows.length) { season = first - 1; rows = await call('players/topscorers', { league: String(lid), season: String(season) }); }
+        if (!rows.length) return jsonResponse({ error: 'الهدافون غير متاحين حاليًا.' }, 404);
+        out = {
+          season,
+          // deno-lint-ignore no-explicit-any
+          players: rows.slice(0, 20).map((r: any) => {
+            const s = r.statistics?.[0] ?? {};
+            return {
+              id: r.player?.id, name: r.player?.name ?? '', photo: r.player?.photo ?? null, nationality: r.player?.nationality ?? '',
+              team: { id: s.team?.id ?? null, name: s.team?.name ?? '', logo: s.team?.logo ?? null },
+              goals: s.goals?.total ?? 0, assists: s.goals?.assists ?? 0, apps: s.games?.appearences ?? 0, penalty: s.penalty?.scored ?? 0,
+            };
+          }),
+        };
+      }
+      const exp = Date.now() + (body.action === 'standings' ? 3 : 6) * 60 * MIN;
+      cache.set(key, { payload: out, expires: exp });
+      await dbSet(key, out, exp);
+      return jsonResponse(out);
+    } catch (error) {
+      console.error('league failed:', error);
+      if (stale) return jsonResponse(stale.payload);
+      return jsonResponse({ error: (error as Error).message === 'budget' ? 'الخدمة مشغولة حاليًا. حاول بعد قليل.' : 'تعذّر تحميل البيانات.' }, 502);
+    }
+  }
 
   // ---------- الفريق واللاعب (كرة القدم): كاش طويل لتوفير الحصة ----------
   if (body.action === 'team' || body.action === 'player' || body.action === 'form') {

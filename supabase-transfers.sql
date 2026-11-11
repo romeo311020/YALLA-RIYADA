@@ -24,3 +24,20 @@ grant select on public.transfers to anon, authenticated;
 grant insert, update, delete on public.transfers to authenticated;
 grant all on public.transfers to service_role;
 notify pgrst, 'reload schema';
+
+-- ============ v58: بيانات اللاعب (صفحة لكل لاعب) — آمن لو اتشغّل أكتر من مرة ============
+alter table public.transfers add column if not exists from_logo text;
+alter table public.transfers add column if not exists to_logo text;
+alter table public.transfers add column if not exists player_img_big text;
+alter table public.transfers add column if not exists position text;
+alter table public.transfers add column if not exists age int;
+alter table public.transfers add column if not exists height_cm int;
+alter table public.transfers add column if not exists weight_kg int;
+alter table public.transfers add column if not exists foot text;
+alter table public.transfers add column if not exists nationality text;
+alter table public.transfers add column if not exists flag_url text;
+alter table public.transfers add column if not exists market_value text;
+alter table public.transfers add column if not exists shirt_number int;
+alter table public.transfers add column if not exists contract_until date;
+alter table public.transfers add column if not exists bio text;
+notify pgrst, 'reload schema';

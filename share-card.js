@@ -21,7 +21,7 @@
   let qrLib = null;
   const getQR = () => qrLib || (qrLib = new Promise((res) => {
     if (window.qrcode) return res(window.qrcode);
-    const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'; s.onload = () => res(window.qrcode || null); s.onerror = () => res(null); document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js'; s.onload = () => res(window.qrcode || null); s.onerror = () => res(null); document.head.appendChild(s);
   }));
   const rr = (c, x, y, w, h, r) => { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); };
   function wrap(c, text, max, maxLines) {
@@ -65,7 +65,7 @@
     const q = await getQR();
     if (q) {
       try {
-        const qr = q(0, 'M'); qr.addData(url); qr.make(); const n = qr.getModuleCount(); const S = 150; const x0 = 60, y0 = y + 30; const pad = 10;
+        const qr = q(0, 'M'); qr.addData(url); qr.make(); const n = qr.getModuleCount(); const S = 132; const x0 = 70, y0 = y + 39; const pad = 10;
         c.fillStyle = '#fff'; rr(c, x0 - pad, y0 - pad, S + pad * 2, S + pad * 2, 18); c.fill(); c.fillStyle = '#04140b'; const m = S / n;
         for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (qr.isDark(r, k)) c.fillRect(x0 + k * m, y0 + r * m, Math.ceil(m), Math.ceil(m));
       } catch { /* بدون QR */ }
@@ -110,7 +110,7 @@
         if (d.tag) pill(c, d.tag, W - 60, tagY, th, th.a, th.on, 30);
         c.fillStyle = '#fff'; c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 16;
         let by = PH - 54; if (d.sub) { c.font = font(700, 36); c.fillStyle = th.a; c.fillText(d.sub, W - 60, by); by -= 74; c.fillStyle = '#fff'; }
-        title(c, W, by, th, d.title, o.fmt === 'story' ? 84 : 74); c.shadowBlur = 0;
+        const tb = title(c, W, by, th, d.title, o.fmt === 'story' ? 84 : 74); c.shadowBlur = 0; moveY = tb.top - 100;
         if (d.price) { c.font = font(900, 54); const w = c.measureText(d.price).width + 64; c.fillStyle = th.a; rr(c, 60, 60, w, 92, 46); c.fill(); c.fillStyle = th.on; c.textAlign = 'center'; c.fillText(d.price, 60 + w / 2, 124); c.textAlign = 'right'; }
       } else {
         const tb = o.fmt === 'story' ? 470 : 380; const ix = 60, iy = 60, iw = W - 120, ih = PH - tb - 60 - 20;
@@ -122,10 +122,12 @@
         c.fillStyle = th.t; let by = PH - 46; if (d.sub) { c.font = font(700, 34); c.fillStyle = th.a === '#0f8a3f' ? '#0f8a3f' : th.a; c.fillText(d.sub, W - 60, by); by -= 70; c.fillStyle = th.t; }
         title(c, W, by, th, d.title, 66);
       }
-      if (d.move) { // انتقال لاعب: لوجو القديم ← الجديد
+      if (d.move) { // انتقال لاعب: لوجو القديم ← الجديد (يمين الكارت، فوق العنوان)
         const [f, t] = await Promise.all([getImg(d.move.from && d.move.from.logo), getImg(d.move.to && d.move.to.logo)]);
-        const cy2 = moveY; const R = 62;
-        { c.fillStyle = 'rgba(0,0,0,.45)'; rr(c, 60, cy2 - 90, 560, 180, 90); c.fill(); crest(c, f, d.move.from && d.move.from.name, 520, cy2, R, th); crest(c, t, d.move.to && d.move.to.name, 160, cy2, R, th); c.fillStyle = th.a; c.font = font(900, 70); c.textAlign = 'center'; c.fillText('⟵', 340, cy2 + 24); c.textAlign = 'right'; }
+        const R = 52, pw = 440, px = W - 60 - pw, cy2 = moveY;
+        c.fillStyle = 'rgba(0,0,0,.55)'; rr(c, px, cy2 - R - 22, pw, R * 2 + 44, R + 22); c.fill();
+        crest(c, f, d.move.from && d.move.from.name, px + pw - R - 22, cy2, R, th); crest(c, t, d.move.to && d.move.to.name, px + R + 22, cy2, R, th);
+        c.fillStyle = th.a; c.font = font(900, 64); c.textAlign = 'center'; c.fillText('⟵', px + pw / 2, cy2 + 22); c.textAlign = 'right';
       }
     }
     await footer(c, W, H, th, d.url);
