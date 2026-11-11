@@ -41,3 +41,8 @@ alter table public.transfers add column if not exists shirt_number int;
 alter table public.transfers add column if not exists contract_until date;
 alter table public.transfers add column if not exists bio text;
 notify pgrst, 'reload schema';
+
+-- ============ v69: البطولة + «أهم الانتقالات» — آمن لو اتشغّل أكتر من مرة ============
+alter table public.transfers add column if not exists league text;
+alter table public.transfers add column if not exists featured boolean not null default false;
+notify pgrst, 'reload schema';

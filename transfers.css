@@ -53,3 +53,19 @@
 .pl-h small{color:var(--muted);display:block;font-size:12px}.pl-h b{font-size:14px}
 .pl-share{width:100%;margin:6px 0 0}
 @media(max-width:560px){.pl-hero{min-height:340px;padding:18px 16px;border-radius:26px}}
+
+/* v69: شريط البطولات + أهم الانتقالات */
+.tr-lg{margin:16px 0 4px;padding:12px 14px;border-radius:20px;border:1px solid var(--line);background:var(--panel)}.tr-lg[hidden]{display:none}
+.tr-lg>small{display:block;color:var(--muted);font-weight:700;font-size:12px;margin-bottom:10px}
+.tr-lgs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.tr-lgs::-webkit-scrollbar{display:none}
+.lgc{flex:none;display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font:800 13px inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
+.lgc img{width:20px;height:20px;object-fit:contain}.lgc.active{background:var(--acc);color:var(--on-acc,#0b1200);border-color:var(--acc)}
+.tr-h{display:flex;align-items:center;gap:10px;margin:22px 2px 12px;font-size:20px}.tr-h::before{content:"";width:5px;height:22px;border-radius:3px;background:var(--acc)}.tr-h.sm{font-size:17px;margin-top:26px}
+.tr-top{display:grid;gap:10px}
+.tr-row.top{--st:#fff;color:#fff;border:0;background:linear-gradient(120deg,#4a35c7 0%,#8a49c9 55%,#b9569f 100%);box-shadow:0 10px 30px rgba(90,60,200,.28),inset 0 1px 0 rgba(255,255,255,.3)}
+.tr-row.top:hover{border:0;transform:translateY(-2px) scale(1.005)}
+.tr-row.top .tr-nm small,.tr-row.top .tr-meta small{color:rgba(255,255,255,.78)}
+.tr-row.top .tr-badge{background:rgba(255,255,255,.2);color:#fff;backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.4)}
+.tr-row.top .tr-line{background:rgba(255,255,255,.7)}.tr-row.top .tr-line::after{border-inline-end-color:rgba(255,255,255,.7)}
+.tr-row.top .tr-ph{border-color:rgba(255,255,255,.85)}
+.tr-row.top .tr-logo{background:#fff;border-radius:50%;padding:3px}
