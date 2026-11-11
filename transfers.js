@@ -33,7 +33,8 @@
     const nq = norm(q);
     const rows = all.filter((t) => (filter === 'all' || t.status === filter) && (lg === 'all' || t.league === lg) && (!nq || norm([t.player_name, t.from_team, t.to_team].join(' ')).includes(nq)));
     if (!rows.length) { host.innerHTML = '<p class="note">مفيش انتقالات مطابقة دلوقتي.</p>'; document.getElementById('tr-more').hidden = true; return; }
-    const top = nq ? [] : rows.filter((t) => t.featured).slice(0, 5); const ids = new Set(top.map((t) => t.id));
+    const flagged = all.some((t) => t.featured); // لو مفيش ولا انتقال متعلّم ⭐ نعرض آخر 3 رسميين تلقائيًا
+    const top = nq ? [] : (flagged ? rows.filter((t) => t.featured).slice(0, 5) : (filter === 'all' && lg === 'all' ? rows.filter((t) => t.status === 'official').slice(0, 3) : [])); const ids = new Set(top.map((t) => t.id));
     const rest = rows.filter((t) => !ids.has(t.id));
     host.innerHTML = (top.length ? `<h2 class="tr-h">أهم الانتقالات</h2><div class="tr-top">${top.map((t) => card(t, true)).join('')}</div>${rest.length ? '<h2 class="tr-h sm">آخر الانتقالات</h2>' : ''}` : '') + rest.slice(0, shown).map((t) => card(t)).join('');
     document.getElementById('tr-more').hidden = rest.length <= shown;
