@@ -11,6 +11,9 @@
     ['europe', 'أوروبا', [[39, 'الدوري الإنجليزي الممتاز', 'إنجلترا'], [140, 'الدوري الإسباني', 'إسبانيا'], [135, 'الدوري الإيطالي', 'إيطاليا'], [78, 'الدوري الألماني', 'ألمانيا'], [61, 'الدوري الفرنسي', 'فرنسا'], [2, 'دوري أبطال أوروبا', 'أوروبا'], [3, 'الدوري الأوروبي', 'أوروبا'], [848, 'دوري المؤتمر الأوروبي', 'أوروبا']]],
     ['arab', 'العالم العربي وأفريقيا', [[233, 'الدوري المصري الممتاز', 'مصر'], [307, 'دوري روشن السعودي', 'السعودية'], [305, 'دوري نجوم قطر', 'قطر'], [301, 'دوري المحترفين الإماراتي', 'الإمارات'], [200, 'الدوري المغربي', 'المغرب'], [202, 'الدوري التونسي', 'تونس'], [186, 'الدوري الجزائري', 'الجزائر'], [12, 'دوري أبطال أفريقيا', 'أفريقيا']]],
   ];
+  const OK = new Set([39, 140, 135, 78, 61, 2, 1, 4]); // المدعومة بالموسم الحالي (football-data.org)
+  for (const g of L) g[2] = g[2].filter((x) => OK.has(x[0]));
+  for (let i = L.length - 1; i >= 0; i--) if (!L[i][2].length) L.splice(i, 1);
   const ALL = new Map(L.flatMap(([, , a]) => a).map(([id, n, c]) => [id, { id, n, c }]));
   const logo = (id) => `https://media.api-sports.io/football/leagues/${id}.png`;
   const ico = (n) => (window.yrIco ? window.yrIco(n) : '');
@@ -63,7 +66,7 @@
     body.setAttribute('aria-busy', 'true'); body.innerHTML = '<p class="note">جارٍ التحميل…</p>';
     try {
       const d = await get({ action: 'scorers', leagueId: id }, 180);
-      body.innerHTML = `<div class="lg-sc">${d.players.map((p, i) => `<article class="lg-p"><b class="rk">${nAr(i + 1)}</b><span class="ph">${https(p.photo) ? `<img src="${esc(https(p.photo))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}</span><span class="nm"><b>${esc(pn(p.name))}</b><small>${https(p.team.logo) ? `<img src="${esc(https(p.team.logo))}" alt="" referrerpolicy="no-referrer">` : ''}${esc(tn(p.team.name))}</small></span><span class="st"><small>صناعة</small><b>${nAr(p.assists)}</b></span><span class="st"><small>مباريات</small><b>${nAr(p.apps)}</b></span><span class="gl"><b>${nAr(p.goals)}</b><small>هدف</small></span></article>`).join('')}</div>`;
+      body.innerHTML = `<div class="lg-sc">${d.players.map((p, i) => `<article class="lg-p"><b class="rk">${nAr(i + 1)}</b><span class="ph">${https(p.photo) ? `<img src="${esc(https(p.photo))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<i class="ini">${esc(String(pn(p.name)).trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join(''))}</i>`}</span><span class="nm"><b>${esc(pn(p.name))}</b><small>${https(p.team.logo) ? `<img src="${esc(https(p.team.logo))}" alt="" referrerpolicy="no-referrer">` : ''}${esc(tn(p.team.name))}</small></span><span class="st"><small>صناعة</small><b>${nAr(p.assists)}</b></span><span class="st"><small>مباريات</small><b>${nAr(p.apps)}</b></span><span class="gl"><b>${nAr(p.goals)}</b><small>هدف</small></span></article>`).join('')}</div>`;
     } catch (e) { body.innerHTML = `<p class="note">${esc(e.message)}</p>`; }
     body.setAttribute('aria-busy', 'false');
   }
