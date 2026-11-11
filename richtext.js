@@ -18,8 +18,7 @@
     if (h === 'tiktok.com' && (m = u.pathname.match(/\/video\/(\d+)/))) return `<div class="emb emb-tt"><blockquote class="tiktok-embed" cite="${esc(href)}" data-video-id="${m[1]}"><section><a href="${esc(href)}" target="_blank" rel="noopener noreferrer">عرض الفيديو على تيك توك ↗</a></section></blockquote></div>`;
     if (/(^|\.)facebook\.com$/.test(h) || h === 'fb.watch') {
       const isVid = /\/(videos|reel|watch)\b/.test(u.pathname) || h === 'fb.watch';
-      const fl = `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">عرض المنشور على فيسبوك ↗</a>`;
-      return `<div class="emb emb-fb${isVid ? ' vid' : ''}"><div class="fb-${isVid ? 'video' : 'post'}" data-href="${esc(href)}" data-width="500" data-show-text="true" data-lazy="true">${fl}</div></div><p class="emb-fbl">${fl}</p>`;
+      return `<div class="emb emb-fb${isVid ? ' vid' : ''}"><iframe src="https://www.facebook.com/plugins/${isVid ? 'video' : 'post'}.php?href=${encodeURIComponent(href)}&show_text=true&width=560" loading="lazy" allowfullscreen allow="encrypted-media; picture-in-picture" title="منشور فيسبوك"></iframe></div>`;
     }
     return `<a class="emb-link" href="${esc(href)}" target="_blank" rel="noopener noreferrer"><b>${esc(h)}</b><span>${esc(decodeURIComponent(u.pathname).slice(0, 70) || '/')}</span><i>↗</i></a>`;
   };
@@ -49,15 +48,6 @@
     if (root.querySelector('.twitter-tweet')) { await load('https://platform.twitter.com/widgets.js', 'yr-tw'); try { window.twttr && window.twttr.widgets && window.twttr.widgets.load(root); } catch { /* اختياري */ } }
     if (root.querySelector('.instagram-media')) { await load('https://www.instagram.com/embed.js', 'yr-ig'); try { window.instgrm && window.instgrm.Embeds.process(); } catch { /* اختياري */ } }
     if (root.querySelector('.tiktok-embed')) await load('https://www.tiktok.com/embed.js', 'yr-tt');
-    if (root.querySelector('.fb-post,.fb-video')) { if (!document.getElementById('fb-root')) { const r = document.createElement('div'); r.id = 'fb-root'; document.body.appendChild(r); } await load('https://connect.facebook.net/ar_AR/sdk.js#xfbml=1&version=v19.0', 'yr-fb'); try { window.FB && window.FB.XFBML.parse(root); } catch { /* اختياري */ }
-      // لو الـ SDK ما رسمش المنشور (محجوب أو بطيء) نرجع للإطار المباشر بعد ثواني
-      setTimeout(() => root.querySelectorAll('.fb-post,.fb-video').forEach((el) => {
-        if (el.querySelector('iframe') || el.dataset.fb === '1') return; el.dataset.fb = '1';
-        const vid = el.classList.contains('fb-video');
-        const f = document.createElement('iframe'); f.loading = 'lazy'; f.setAttribute('allowfullscreen', ''); f.allow = 'encrypted-media; picture-in-picture'; f.title = 'منشور فيسبوك';
-        f.src = `https://www.facebook.com/plugins/${vid ? 'video' : 'post'}.php?href=${encodeURIComponent(el.dataset.href)}&show_text=true&width=500`;
-        el.textContent = ''; el.appendChild(f);
-      }), 4500); }
   }
   window.yrRich = { render, hydrate };
 })();
