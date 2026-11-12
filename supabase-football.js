@@ -322,7 +322,7 @@
     });
     return out.join('');
   };
-  const pitchBox = (l, isHome, hidden) => `<div class="pitch-wrap" data-team="${isHome ? 'home' : 'away'}"${hidden ? ' hidden' : ''}><div class="pitch" dir="ltr" aria-label="تشكيلة الفريق"><i class="pitch-mid"></i><i class="pitch-circle"></i><i class="pitch-box top"></i><i class="pitch-box bottom"></i>${pitchPlayers(l, isHome)}</div></div>`;
+  const pitchBox = (l, isHome, hidden, name = '') => `<div class="pitch-wrap" data-team="${isHome ? 'home' : 'away'}"${hidden ? ' hidden' : ''}><div class="pitch" dir="ltr" aria-label="تشكيلة الفريق"><i class="pitch-mid"></i><i class="pitch-circle"></i><i class="pitch-box top"></i><i class="pitch-box bottom"></i>${pitchPlayers(l, isHome)}<span class="pt-team" dir="rtl">${escapeHtml(name)}</span><span class="pt-brand">YALLA RIYADA</span><span class="pt-form">${escapeHtml(l.formation || '')}</span></div>${l.coach ? `<div class="coach-card"><span class="cc-av">${escapeHtml(String(pn(l.coach)).trim().charAt(0))}</span><span class="cc-tx"><b>${escapeHtml(pn(l.coach))}</b><small>المدرب</small></span></div>` : ''}</div>`;
   const benchList = (title, lineup, teamName) => `<div class="bench"><h3>${escapeHtml(title)}</h3>
       ${lineup.coach ? `<p class="coach">المدرب: <b>${escapeHtml(pn(lineup.coach))}</b></p>` : ''}
       <ul>${lineup.subs.map((p) => `<li${pAttrs(p)} class="${p.id > 0 ? 'clickable' : ''}"><span class="sq-img sm">${photoImg(p.id)}</span><span class="pl-no sm">${escapeHtml(p.number ?? '')}</span>${escapeHtml(shortName(p.name))}</li>`).join('') || '<li class="note">لا يوجد احتياط معلن.</li>'}</ul></div>`;
@@ -335,7 +335,7 @@
     const H = tn(m.home_team); const A = tn(m.away_team);
     const pitch = gridOk
       ? `<div class="team-switch" role="tablist" aria-label="اختر الفريق"><button type="button" class="ts-btn active" data-lt="home" aria-selected="true"><span>${escapeHtml(H)}</span><b dir="ltr">${escapeHtml(home.formation)}</b></button><button type="button" class="ts-btn" data-lt="away" aria-selected="false"><span>${escapeHtml(A)}</span><b dir="ltr">${escapeHtml(away.formation)}</b></button></div>
-         <div class="pitch-stage">${pitchBox(home, true, false)}${pitchBox(away, false, true)}</div>`
+         <div class="pitch-stage">${pitchBox(home, true, false, H)}${pitchBox(away, false, true, A)}</div>`
       : `<div class="starters">${[[H, home], [A, away]].map(([n, l]) => `<div class="bench"><h3>${escapeHtml(n)} <small dir="ltr">${escapeHtml(l.formation)}</small></h3><ul>${l.start.map((p) => `<li${pAttrs(p)} class="${p.id > 0 ? 'clickable' : ''}"><span class="sq-img sm">${photoImg(p.id)}</span><span class="pl-no sm">${escapeHtml(p.number ?? '')}</span>${escapeHtml(shortName(p.name))}</li>`).join('')}</ul></div>`).join('')}</div>`;
     return `${pitch}<div class="benches">${benchList(`احتياط ${H}`, home)}${benchList(`احتياط ${A}`, away)}</div>`;
   };
