@@ -80,16 +80,18 @@
     // الصفحة من اليمين لليسار: الفريق صاحب الأرض على اليمين، والرقم يُكتب LTR، فنكتب الضيف أولًا ليكون صاحب الأرض على اليمين
     return `<div class="score" dir="ltr">${escapeHtml(m.away_score)} : ${escapeHtml(m.home_score)}</div>`;
   };
-  const fixtureCard = (m, ctx) => `<a class="match" href="match.html?fixture=${encodeURIComponent(m.fixture_id)}&sport=${encodeURIComponent(m.sport || 'football')}&day=${encodeURIComponent(ctx.day)}${m.has_stream ? '&watch=1' : ''}">
-      <div class="match-meta"><span>${escapeHtml(m.league_label || m.league || '')}</span>${statusTag(m)}</div>
-      <div class="teams">${teamMarkup(m.home_team, m.home_logo, m.sport)}${centerMarkup(m)}${teamMarkup(m.away_team, m.away_logo, m.sport)}</div>
-      <div class="match-foot"><span>${escapeHtml(formatDate(m.kickoff))}</span><span>${m.has_stream ? '<b class="watch-tag">▶ شاهد</b> ' : ''}التفاصيل ←</span></div>
+  // سطر الحالة تحت النتيجة (بدل رأس البطاقة وتذييلها): الدقيقة للمباشر، "انتهت"، أو التاريخ للقادمة
+  const stLine = (m) => {
+    if (m.status === 'live') return `<span class="mx-st live">${m.minute ? `${escapeHtml(m.minute)}'` : 'مباشر'}</span>`;
+    if (m.status === 'finished') return '<span class="mx-st">انتهت</span>';
+    if (m.status === 'postponed' || m.status === 'cancelled') return '';
+    return '';
+  };
+  const mxCard = (m, href, watch) => `<a class="match mx${m.status === 'live' ? ' is-live' : ''}" href="${href}">
+      <div class="teams">${teamMarkup(m.home_team, m.home_logo, m.sport)}<div class="mx-mid">${centerMarkup(m)}${stLine(m)}</div>${teamMarkup(m.away_team, m.away_logo, m.sport)}</div>${watch ? '<b class="watch-tag mx-w">▶ شاهد</b>' : ''}
     </a>`;
-  const manualCard = (m) => `<a class="match" href="match.html?id=${encodeURIComponent(m.id)}">
-      <div class="match-meta"><span>${escapeHtml(m.league || 'كرة القدم')}</span>${statusTag(m)}</div>
-      <div class="teams">${teamMarkup(m.home_team, m.home_logo)}${centerMarkup(m)}${teamMarkup(m.away_team, m.away_logo)}</div>
-      <div class="match-foot"><span>${escapeHtml(formatDate(m.kickoff))}</span><span>${m.has_embed ? '<b class="watch-tag">▶ شاهد</b> ' : ''}التفاصيل ←</span></div>
-    </a>`;
+  const fixtureCard = (m, ctx) => mxCard(m, `match.html?fixture=${encodeURIComponent(m.fixture_id)}&sport=${encodeURIComponent(m.sport || 'football')}&day=${encodeURIComponent(ctx.day)}${m.has_stream ? '&watch=1' : ''}`, m.has_stream);
+  const manualCard = (m) => mxCard(m, `match.html?id=${encodeURIComponent(m.id)}`, m.has_embed);
 
 
   // أي مباراة لها رابط مشغّل رسمي في fixture_streams تُعلَّم لتظهر عليها علامة «شاهد»
@@ -170,8 +172,10 @@
   let leagueOrder = null;
   const loadLeagueOrder = async () => {
     if (leagueOrder !== null || !db) return leagueOrder || [];
-    try { const { data: tt } = await db.from('site_settings').select('value').eq('key', 'top_teams').maybeSingle(); customTop = Array.isArray(tt?.value) ? tt.value : null; } catch { /* اختياري */ }
-    try { const { data } = await db.from('site_settings').select('value').eq('key', 'league_order').maybeSingle(); leagueOrder = Array.isArray(data?.value) ? data.value : []; } catch { leagueOrder = []; }
+    const one = async (key) => { try { return await db.from('site_settings').select('value').eq('key', key).maybeSingle(); } catch { return { data: null }; } };
+    const [tt, lo] = await Promise.all([one('top_teams'), one('league_order')]);
+    customTop = Array.isArray(tt?.data?.value) ? tt.data.value : null;
+    leagueOrder = Array.isArray(lo?.data?.value) ? lo.data.value : [];
     return leagueOrder;
   };
   const loadManualMatches = async (day) => {
@@ -416,6 +420,14 @@
     };
     let data = { fixtures: [], leagues: [], manual: [], error: '' };
     let token = 0;
+    let closed = new Set(); try { closed = new Set(JSON.parse(localStorage.getItem('yr-lg-closed') || '[]')); } catch { /* اختياري */ }
+    host.addEventListener('click', (e) => {
+      const h = e.target.closest('.league-title[data-lg]'); if (!h) return;
+      const k = h.dataset.lg; const sec = h.closest('.league-group'); const off = !sec.classList.contains('closed');
+      sec.classList.toggle('closed', off); if (off) closed.add(k); else closed.delete(k);
+      try { localStorage.setItem('yr-lg-closed', JSON.stringify([...closed].slice(-40))); } catch { /* اختياري */ }
+    });
+    host.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.league-title[data-lg]')) { e.preventDefault(); e.target.click(); } });
 
     const syncUrl = () => {
       const p = new URLSearchParams({ sport: state.sport, day: state.day });
@@ -487,12 +499,12 @@
       // مهمة = اللي الأدمن علّمها ⭐ + مباريات أشهر الفرق عند الجمهور المصري (بحد أقصى ٨)، والمباشر الأول
       const auto = rows.filter((m) => !m.featured && !m.manual && !m.hide_important && teamRank(m) < 99).sort((a, b) => rank(a) - rank(b) || teamRank(a) - teamRank(b) || new Date(a.kickoff || 0) - new Date(b.kickoff || 0)).slice(0, 8);
       const star = [...rows.filter((m) => m.featured), ...auto].sort((a, b) => rank(a) - rank(b) || (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || teamRank(a) - teamRank(b) || new Date(a.kickoff || 0) - new Date(b.kickoff || 0));
-      const featuredHtml = star.length && state.league === 'all' ? `<section class="league-group featured-group" aria-label="مباريات مهمة"><h2 class="league-title"><span>⭐ مباريات مهمة</span><small>${star.length}</small></h2><div class="match-grid">${star.map(card).join('')}</div></section>` : '';
+      const featuredHtml = star.length && state.league === 'all' ? `<section class="league-group featured-group${closed.has('star') ? ' closed' : ''}" aria-label="مباريات مهمة"><h2 class="league-title" data-lg="star" role="button" tabindex="0"><span>⭐ مباريات مهمة</span><small>${star.length}</small><i class="lg-chev" aria-hidden="true"></i></h2><div class="match-grid">${star.map(card).join('')}</div></section>` : '';
       host.innerHTML = featuredHtml + keys.map((k) => {
         const items = groups.get(k).sort(byTime);
         const logo = safeUrl(items.find((m) => m.league_logo)?.league_logo);
-        return `<section class="league-group" aria-label="${escapeHtml(items[0].league_label)}">
-          <h2 class="league-title">${logo ? `<img src="${escapeHtml(logo)}" alt="" loading="lazy">` : ''}<span>${escapeHtml(items[0].league_label)}</span><small>${items.length}</small></h2>
+        return `<section class="league-group${closed.has(String(k)) ? ' closed' : ''}" aria-label="${escapeHtml(items[0].league_label)}">
+          <h2 class="league-title" data-lg="${escapeHtml(String(k))}" role="button" tabindex="0">${logo ? `<img src="${escapeHtml(logo)}" alt="" loading="lazy" decoding="async">` : ''}<span>${escapeHtml(items[0].league_label)}</span><small>${items.length}</small><i class="lg-chev" aria-hidden="true"></i></h2>
           <div class="match-grid">${items.map(card).join('')}</div></section>`;
       }).join('');
       if (count) count.textContent = `${rows.length} ${rows.length === 1 ? 'مباراة' : 'مباراة'}${q ? ' مطابقة للبحث' : ''}`;
@@ -505,22 +517,29 @@
       $('results-count') && ($('results-count').textContent = 'جارٍ التحميل…');
       data = { fixtures: [], leagues: [], manual: [], error: '' };
       if (!db) { data.error = 'بيانات Supabase غير مكتملة. أضف رابط المشروع والمفتاح في supabase-config.js.'; host.removeAttribute('aria-busy'); return render(); }
+      const orderP = loadLeagueOrder(); // بالتوازي مع طلب المباريات بدل ما ينتظرها
       const [api, manual] = await Promise.allSettled([
         request({ action: 'fixtures', sport: state.sport, date: localDate(dayOff(state.day)) }),
         state.sport === 'football' ? loadManualMatches(state.day) : Promise.resolve([]),
       ]);
       if (my !== token) return; // وصل رد قديم بعد تغيير الاختيار
-      if (api.status === 'fulfilled') { data.fixtures = api.value?.fixtures || []; data.leagues = api.value?.leagues || []; data.fixtures = await applyOverrides(data.fixtures); await markStreams(data.fixtures); if (my !== token) return; }
+      let late = false; // تعديلات الأدمن وعلامة «شاهد» بتتحمّل بعد أول عرض عشان الصفحة تظهر أسرع
+      if (api.status === 'fulfilled') { data.fixtures = api.value?.fixtures || []; data.leagues = api.value?.leagues || []; late = true; }
       else { console.error('matches:', api.reason); data.error = `تعذّر تحميل المباريات: ${api.reason?.message || 'خطأ غير معروف'}`; }
       if (state.sport === 'football' && (api.status !== 'fulfilled' || !data.fixtures.length)) {
         const saved = await loadSnapshots(localDate(dayOff(state.day))); if (my !== token) return;
-        if (saved.length) { data.fixtures = saved; data.leagues = []; data.error = ''; data.fromSnapshot = true; await markStreams(data.fixtures); if (my !== token) return; }
+        if (saved.length) { data.fixtures = saved; data.leagues = []; data.error = ''; data.fromSnapshot = true; late = true; }
       }
-      await loadLeagueOrder();
+      await orderP; if (my !== token) return;
       if (manual.status === 'fulfilled') data.manual = manual.value;
       host.removeAttribute('aria-busy');
       if (state.league !== 'all' && !data.leagues.some((l) => l.key === state.league) && state.league !== 'manual') state.league = 'all';
       render();
+      if (late && data.fixtures.length) {
+        const ov = await applyOverrides(data.fixtures); if (my !== token) return;
+        data.fixtures = ov; await markStreams(data.fixtures); if (my !== token) return;
+        if (ov.some((m) => m.edited || m.has_stream)) render();
+      }
     }
 
     /* أحداث */

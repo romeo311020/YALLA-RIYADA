@@ -1196,3 +1196,58 @@ svg.i{width:1.2em;height:1.2em;fill:none;stroke:currentColor;stroke-width:2;stro
 .team-switch{max-width:540px;border-radius:999px;padding:5px}.ts-btn{border-radius:999px;flex-direction:row;justify-content:center;gap:8px}.ts-btn b{opacity:.75}
 @media(max-width:600px){#tab-lineup .pl{width:66px}#tab-lineup .pl-img{width:46px;height:46px}#tab-lineup .pl .pl-name{font-size:11px;max-width:66px}#tab-lineup .pl .pl-no{width:20px;height:20px;font-size:10.5px}.pt-brand{display:none}}
 #match-body .tabs{border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none;padding:0}
+
+/* ===== v71: قائمة المباريات مضغوطة (مثل 365) + تخفيف الأداء ===== */
+.mc-toolbar{display:flex;gap:8px;align-items:center;margin:4px 0 10px;flex-wrap:nowrap}
+.mc-toolbar .sport-tabs{flex:none;width:auto;padding:3px;border-radius:14px}
+.mc-toolbar .sport-tab{min-height:40px;padding:4px 12px;font-size:13.5px}
+.mc-toolbar .search-box{min-width:0;flex:1}
+.mc-toolbar .search-box input{min-height:46px;border-radius:14px;font-size:14px}
+@media(max-width:700px){.mc-toolbar .sport-tabs{width:auto}.mc-toolbar .sport-tab{flex:none;padding:4px 10px}.mc-toolbar .sport-tab span{display:none}.mc-toolbar .search-box{min-width:0}}
+.daybar{margin:0 0 6px}
+.dchip{min-height:62px;padding:6px 10px;border-radius:14px}
+.dchip small{font-size:11px}.dchip b{font-size:20px;line-height:1.1}.dchip em{font-size:11px}
+.league-chips{padding-bottom:8px}.chip{min-height:36px;font-size:13px;padding:4px 12px}
+.results-count{display:none}
+.match-groups .league-group{margin:10px 0;animation:none!important;content-visibility:auto;contain-intrinsic-size:auto 320px}
+.match-groups .match-grid{display:grid;grid-template-columns:1fr;gap:8px;margin:8px 0 0}
+@media(min-width:760px){.match-groups .match-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1100px){.match-groups .match-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.match-groups .match-grid>*{animation:none!important}
+.league-title{cursor:pointer;user-select:none;margin:0;padding:11px 14px;font-size:15.5px;border-radius:16px;background:var(--panel);border:1px solid var(--line);gap:10px}
+.league-title img{width:26px;height:26px;border-radius:8px;padding:2px}
+.league-title small{border:0;background:var(--panel2);color:var(--muted);padding:1px 9px}
+.lg-chev{flex:none;width:9px;height:9px;border-inline-end:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin-inline-start:4px;margin-bottom:3px;transition:transform .2s}
+.league-group.closed .lg-chev{transform:rotate(-45deg);margin-bottom:0}
+.league-group.closed .match-grid{display:none}
+/* بطاقة المباراة */
+.match.mx{padding:12px 10px 10px;border-radius:18px;background:var(--panel);border:1px solid var(--line);box-shadow:none;transition:none;overflow:hidden}
+.match.mx::before{display:none}
+a.match.mx:hover{transform:none;box-shadow:none;border-color:var(--line)}
+a.match.mx:active{background:var(--panel2);transform:none}
+.mx .teams{padding:0;gap:4px;grid-template-columns:minmax(0,1fr) 92px minmax(0,1fr);align-items:start}
+.mx .team{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:14px;font-weight:800;line-height:1.3;min-width:0;animation:none}
+.mx .crest{width:52px;height:52px;margin:0;box-shadow:none;border:0;background:#fff;transition:none}
+.mx .crest img{padding:3px}
+.mx .team-name{font-size:14px;font-weight:800;text-align:center;overflow-wrap:anywhere}
+.mx-mid{display:grid;justify-items:center;align-content:center;gap:6px;min-height:52px}
+.mx .score{font-size:32px;letter-spacing:0;text-shadow:none;animation:none}
+.mx .kick{font-size:20px;animation:none}
+.mx-st{font-size:12px;font-weight:800;color:var(--muted)}
+.mx-st.live{color:#fff;background:#dc2626;padding:1px 9px;border-radius:999px}
+.mx.is-live .score{color:var(--acc)}
+.mx-w{display:block;width:max-content;margin:8px auto 0;font-size:11.5px;animation:none}
+/* أداء: بلاش blur على الهيدر والشريط السفلي في الموبايل (بيعلّق السكرول) وبلاش الأنيميشن اللانهائي */
+@media(max-width:900px){
+  header.header{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:var(--bg)!important}
+  .tabbar{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:color-mix(in srgb,var(--bg) 97%,var(--panel))!important}
+  .mh-share::after,.sh-main::after{animation:none!important;display:none}
+  .watch-tag,.push-ico,.tag.live::before{animation:none!important}
+  .mh .mh-league,.mh .st,.mh .mh-share{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+.match-groups .featured-group{border:0;background:none;padding:0;border-radius:0}
+.match-groups .league-title::before{display:none}
+.match-groups .featured-group .league-title{background:linear-gradient(120deg,color-mix(in srgb,#f5c518 18%,var(--panel)),var(--panel));border-color:color-mix(in srgb,#f5c518 45%,var(--line))}
+.daybar .dnav{flex:0 0 34px;min-height:62px;border-radius:12px;font-size:20px}
+.daybar{gap:6px}
