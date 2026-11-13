@@ -1,11 +1,11 @@
 /* ===== صفحة الإشعارات (زجاجية) ===== */
-.np-page{max-width:1040px;padding-bottom:40px}
+.np-page{max-width:760px;padding-bottom:40px}
 .np-back{display:inline-block;margin:6px 0 12px;font-size:13px;font-weight:700;color:var(--muted,#64748b);text-decoration:none}
-.np-hero{display:flex;align-items:center;gap:18px;padding:22px 24px;border-radius:22px;margin-bottom:18px;color:#fff;background:radial-gradient(120% 140% at 100% 0,#22c55e55,transparent 55%),linear-gradient(135deg,#0f172a,#14532d);box-shadow:0 14px 34px -18px rgba(15,23,42,.6)}
-.np-hero h1{margin:2px 0 6px;font-size:clamp(22px,4vw,30px);font-weight:900}
+.np-hero{display:flex;align-items:center;gap:18px;padding:16px 20px;border-radius:20px;margin:12px 0 14px;color:#fff;background:radial-gradient(120% 140% at 100% 0,#22c55e55,transparent 55%),linear-gradient(135deg,#0f172a,#14532d);box-shadow:0 14px 34px -18px rgba(15,23,42,.6)}
+.np-hero h1{margin:0 0 4px;font-size:clamp(21px,4vw,26px);font-weight:900}
 .np-hero p,.np-page .np-hero p{margin:0;font-size:13.5px;line-height:1.8;color:#d1fae5;max-width:520px}
 .np-hero .kicker{font-size:10.5px;letter-spacing:.2em;font-weight:800;color:#86efac}
-.np-bell{flex:none;width:64px;height:64px;border-radius:20px;display:grid;place-items:center;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.np-bell{flex:none;width:54px;height:54px;border-radius:20px;display:grid;place-items:center;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
 .np-bell svg,.np-orb svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .np-layout{display:grid;gap:16px;grid-template-columns:1fr}
 @media(min-width:900px){.np-layout{grid-template-columns:320px 1fr;align-items:start}.np-side{position:sticky;top:84px}}
@@ -52,3 +52,55 @@
 .nw-msg{min-height:18px;margin:10px 0 0;font-size:12.5px;font-weight:700;color:#16a34a}
 .np-login{text-align:center;display:grid;gap:10px;justify-items:center;padding:30px 18px}.np-login h2{margin:0}
 @media(max-width:560px){.np-hero{padding:18px}.np-bell{width:52px;height:52px}.np-grid2{grid-template-columns:1fr 1fr}}
+
+/* ===== v74: التصميم الجديد ===== */
+.np-stack{display:grid;gap:14px}
+.np-skel{height:84px;border-radius:20px;background:linear-gradient(90deg,rgba(100,116,139,.12),rgba(100,116,139,.22),rgba(100,116,139,.12));background-size:200% 100%;animation:npSk 1.2s linear infinite}.np-skel.tall{height:170px}
+@keyframes npSk{to{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){.np-skel{animation:none}}
+.np-status{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 16px;border-radius:20px;background:var(--card,#fff);border:1px solid var(--line,rgba(15,23,42,.1));box-shadow:0 8px 24px -18px rgba(15,23,42,.3)}
+[data-theme=dark] .np-status{background:#111827;border-color:rgba(255,255,255,.08)}
+.np-ico{flex:none;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:#e2e8f0;color:#64748b}
+.np-ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.np-status.on{background:linear-gradient(135deg,rgba(22,163,74,.1),transparent)}.np-status.on .np-ico{background:#16a34a;color:#fff}
+.np-status.warn .np-ico{background:#fef3c7;color:#d97706}
+.np-st-t{flex:1 1 180px;min-width:0}.np-st-t b{display:block;font-size:15px;font-weight:900}
+.np-st-t p{margin:4px 0 0;font-size:12.5px;line-height:1.7;color:var(--muted,#64748b)}.np-st-t p.err{color:#dc2626}
+.np-status .np-acts{justify-content:flex-start}
+.nw-btn svg{width:15px;height:15px;fill:currentColor;margin-inline-end:6px}
+.nw-btn:disabled{opacity:.55;cursor:default}
+.np-ch{display:flex;align-items:center;gap:10px;margin-bottom:8px}.np-ch h2{margin:0;font-size:16px;font-weight:900}
+.np-chico{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:rgba(22,163,74,.12);color:#16a34a}
+.np-chico svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.np-sum{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 14px}
+.np-sum div{border-radius:16px;background:rgba(22,163,74,.08);padding:12px;text-align:center}
+.np-sum b{display:block;font-size:24px;font-weight:900;color:#16a34a}.np-sum small{font-size:12px;font-weight:700;color:var(--muted,#64748b)}
+.np-empty-box{display:grid;gap:4px;text-align:center;padding:16px;border-radius:16px;background:rgba(22,163,74,.08);margin-bottom:14px}.np-empty-box b{font-size:14px}.np-empty-box span{font-size:12.5px;color:var(--muted,#64748b);line-height:1.7}
+.np-cta{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-radius:16px;color:#fff;font-weight:900;font-size:14.5px;text-decoration:none;background:linear-gradient(135deg,#16a34a,#14532d)}
+.np-cta svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.np-types{padding-bottom:8px}
+.np-row{position:relative;display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line,rgba(15,23,42,.08));cursor:pointer}
+.np-ri{flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:rgba(22,163,74,.1);color:#15803d}
+.np-ri svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.np-rt{flex:1;min-width:0}.np-rt b{display:block;font-size:14px;font-weight:900}.np-rt small{display:block;margin-top:2px;font-size:12px;line-height:1.6;color:var(--muted,#64748b)}
+.np-sw{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.np-knob{flex:none;position:relative;width:46px;height:26px;border-radius:99px;background:#cbd5e1;transition:background .2s}
+.np-knob::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3);transition:inset-inline-start .2s}
+.np-sw:checked~.np-knob{background:#16a34a}.np-sw:checked~.np-knob::after{inset-inline-start:23px}
+.np-sw:focus-visible~.np-knob{outline:2px solid #16a34a;outline-offset:2px}
+.np-note{margin:8px 0 4px;font-size:12px;line-height:1.8;color:var(--muted,#64748b)}.np-note.err,.np-sub.err{color:#dc2626}
+.np-save{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:15px;border:0;border-radius:18px;font:inherit;font-weight:900;font-size:15.5px;color:#fff;cursor:pointer;background:linear-gradient(135deg,#16a34a,#14532d);box-shadow:0 12px 26px -14px rgba(22,101,52,.8)}
+.np-save svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.np-save:disabled{opacity:.55;cursor:default;box-shadow:none}
+.np-spin{width:18px;height:18px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:spin .8s linear infinite}
+.np-msg{min-height:20px;margin:10px 0 0;text-align:center;font-size:13px;font-weight:800;color:#16a34a}.np-msg.err{color:#dc2626}
+/* صفحة اختيار المفضلة */
+.pf-head{display:flex;align-items:center;gap:12px;margin:12px 0 14px}
+.pf-head h1{margin:0;font-size:clamp(20px,4vw,24px);font-weight:900}.pf-head p{margin:3px 0 0;font-size:12.5px;line-height:1.7;color:var(--muted,#64748b)}
+.pf-back{flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--card,#fff);border:1px solid var(--line,rgba(15,23,42,.12));color:inherit}
+.pf-back svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.pf-bar{position:sticky;bottom:0;z-index:20;display:flex;align-items:center;gap:12px;margin-top:14px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-radius:18px;background:var(--card,#fff);border:1px solid var(--line,rgba(15,23,42,.12));box-shadow:0 -10px 30px -18px rgba(15,23,42,.45)}
+[data-theme=dark] .pf-bar{background:#111827}
+.pf-sum{flex:1;font-size:13px;font-weight:700;color:var(--muted,#64748b)}.pf-sum b{color:#16a34a;font-size:16px}
+.pf-bar .np-save{width:auto;flex:none;padding:12px 22px;font-size:14.5px;border-radius:14px}
+@media(max-width:899px){.pf-bar{bottom:calc(78px + env(safe-area-inset-bottom))}}
