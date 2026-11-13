@@ -199,14 +199,29 @@ window.yrMountPlayer = function (url, title) {
   let last = 0;
   document.addEventListener('touchend', (e) => { const n = Date.now(); if (n - last < 300 && !e.target.closest('input,textarea,select')) e.preventDefault(); last = n; }, { passive: false });
 })();
+/* عنوان المشغّل حسب حالة المباراة: مباشر / ملخص بعد النهاية / قادمة */
+window.yrPlayerTitle = function () {
+  const p = document.getElementById('match-player'); if (!p) return;
+  const st = document.getElementById('mh-status'); const cls = st ? st.className : '';
+  const k = /st-live/.test(cls) ? 'live' : /st-finished/.test(cls) ? 'fin' : 'other';
+  p.dataset.st = k;
+  const h = p.querySelector('.player-top h2'); if (!h) return;
+  const dot = h.querySelector('.live-dot'); const txt = k === 'live' ? 'البث المباشر' : k === 'fin' ? 'ملخص المباراة' : 'المشغّل';
+  h.replaceChildren(); if (k === 'live' && dot) h.append(dot); h.append(document.createTextNode(txt));
+  if (!dot && k === 'live') { const d = document.createElement('span'); d.className = 'live-dot'; h.prepend(d); }
+};
 /* إظهار زر «المشغّل» في شريط الأزرار (موبايل) */
 window.yrPlayerReady = function () {
   const t = document.querySelector('.tab-player'); if (t) t.hidden = false;
   const grid = document.querySelector('.watch-grid'); if (grid) grid.classList.add('has-player');
+  window.yrPlayerTitle();
+  /* من كارت فيه بث: افتح تبويب «المشغّل» مباشرة (بدون أي سكرول للأسفل) */
+  if (/[?&]watch=1/.test(location.search) && window.yrSelectTab && window.matchMedia('(max-width:1099px)').matches) window.yrSelectTab('player');
 };
 
 /* هيرو المباراة: شارة الحالة + عدّاد تنازلي للمباريات القادمة */
 window.yrHero = function (m) {
+  setTimeout(() => window.yrPlayerTitle && window.yrPlayerTitle(), 0);
   const lg = document.getElementById('mh-league'); if (lg) lg.textContent = m.league || '';
   const st = document.getElementById('mh-status');
   if (st) {

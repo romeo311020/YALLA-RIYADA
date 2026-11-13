@@ -102,9 +102,9 @@
   const mxCard = (m, href, watch) => { const k = favKey(m); const on = favSet.has(k); return `<article class="match mx${m.status === 'live' ? ' is-live' : ''}" data-fk="${escapeHtml(k)}">
       <div class="mx-head"><button type="button" class="mx-fav${on ? ' on' : ''}" data-fav="${escapeHtml(k)}" aria-pressed="${on}" aria-label="${on ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}">${STAR}</button><span class="mx-lg">${escapeHtml(m.league_label || m.league || '')}${m.round ? ` • ${escapeHtml(m.round)}` : ''}</span>${pill(m)}</div>
       <a class="mx-link" href="${href}"><div class="teams">${teamMarkup(m.home_team, m.home_logo, m.sport)}<div class="mx-mid">${centerMarkup(m)}${stLine(m)}</div>${teamMarkup(m.away_team, m.away_logo, m.sport)}</div>
-      <div class="mx-foot">${watch ? '<b class="watch-tag mx-w">▶ شاهد</b>' : '<span></span>'}<span class="mx-more">التفاصيل <i aria-hidden="true"></i></span></div></a>
+      <div class="mx-foot"><span class="mx-more">التفاصيل <i aria-hidden="true"></i></span>${watch ? `<b class="mx-watch"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>${m.status === 'finished' ? 'الملخص' : 'شاهد'}</b>` : '<span></span>'}<span></span></div></a>
     </article>`; };
-  const fixtureCard = (m, ctx) => mxCard(m, `match.html?fixture=${encodeURIComponent(m.fixture_id)}&sport=${encodeURIComponent(m.sport || 'football')}&day=${encodeURIComponent(ctx.day)}`, m.has_stream);
+  const fixtureCard = (m, ctx) => mxCard(m, `match.html?fixture=${encodeURIComponent(m.fixture_id)}&sport=${encodeURIComponent(m.sport || 'football')}&day=${encodeURIComponent(ctx.day)}${m.has_stream ? '&watch=1' : ''}`, m.has_stream);
   const manualCard = (m) => mxCard(m, `match.html?id=${encodeURIComponent(m.id)}`, m.has_embed);
 
 
