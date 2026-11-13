@@ -139,14 +139,28 @@
     try {
       if (!db || !m || m.status !== 'scheduled' || !m.fixture_id || !m.kickoff || new Date(m.kickoff).getTime() <= Date.now()) return;
       if ($('#pd-box')) return;
-      const hero = $('#match-hero'); if (!hero) return;
-      const box = document.createElement('section'); box.className = 'panel pd-box'; box.id = 'pd-box';
-      box.innerHTML = '<div class="pd-hd"><h2>توقّع النتيجة</h2><a href="predictions.html">لوحة الصدارة</a></div>';
-      hero.after(box);
+      const slot = $('#pd-slot') || $('#match-hero'); if (!slot) return;
+      const box = document.createElement('div'); box.id = 'pd-box'; box.className = 'pd-launch';
+      const mn = () => mine.get(Number(m.fixture_id));
+      const label = () => { const s = mn(); return s ? `توقعك ${nAr(s.pick_home)} : ${nAr(s.pick_away)} · تعديل` : 'توقّع النتيجة واكسب نقاط'; };
+      box.innerHTML = `<button type="button" class="pd-open"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/></svg><span><b>توقّع النتيجة</b><small id="pd-lab">واكسب نقاط وتصدّر</small></span></button>`;
+      if (slot.id === 'pd-slot') slot.append(box); else slot.after(box);
       await getUser();
-      if (!user) { box.insertAdjacentHTML('beforeend', loginBox()); return; }
-      await loadMine().catch(() => {});
-      box.append(card(m, { noHead: true }));
+      if (user) { await loadMine().catch(() => {}); const l = $('#pd-lab'); if (l) l.textContent = label(); }
+      const close = () => { const o = $('#pd-modal'); if (o) { o.classList.remove('on'); setTimeout(() => o.remove(), 180); } document.removeEventListener('keydown', esc2); };
+      const esc2 = (e) => { if (e.key === 'Escape') close(); };
+      box.querySelector('.pd-open').addEventListener('click', async () => {
+        if ($('#pd-modal')) return;
+        const o = document.createElement('div'); o.id = 'pd-modal'; o.className = 'pd-modal';
+        o.innerHTML = '<div class="pd-glass" role="dialog" aria-modal="true" aria-label="توقّع النتيجة"><button type="button" class="pd-x2" aria-label="إغلاق">✕</button><div class="pd-hd"><h2>توقّع النتيجة</h2><a href="predictions.html">لوحة الصدارة</a></div><div class="pd-mbody"></div></div>';
+        document.body.append(o); requestAnimationFrame(() => o.classList.add('on'));
+        o.addEventListener('click', (e) => { if (e.target === o) close(); });
+        o.querySelector('.pd-x2').addEventListener('click', close);
+        document.addEventListener('keydown', esc2);
+        const body = o.querySelector('.pd-mbody');
+        if (!user) { body.innerHTML = loginBox(); return; }
+        body.append(card(m, { noHead: true, onSave: () => { const l = $('#pd-lab'); if (l) l.textContent = label(); setTimeout(close, 900); } }));
+      });
     } catch (e) { console.error(e); }
   };
 

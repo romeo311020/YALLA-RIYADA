@@ -44,3 +44,25 @@
 [data-theme=light] .pd-save.ok,[data-theme=light] .pd-save:disabled,[data-theme=light] .pd-sum b,[data-theme=light] .pd-hd a,[data-theme=light] .pd-res b.fin,[data-theme=light] .pd-lb .pt,[data-theme=light] .pd-subtabs button.active{color:#2f6b00}
 [data-theme=light] .pd-subtabs button.active{border-color:#2f6b00}
 [data-theme=light] .pd-pt.p1{background:#e6f3c8;color:#2f6b00}
+
+/* زر التوقع + نافذة زجاجية */
+.pd-launch{margin:0}
+.pd-open{width:100%;display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:18px;border:1px solid rgba(198,255,61,.5);cursor:pointer;font:inherit;color:inherit;text-align:start;background:linear-gradient(135deg,rgba(198,255,61,.2),rgba(34,197,94,.12));transition:transform .2s,box-shadow .2s}
+.pd-open:hover{transform:translateY(-2px);box-shadow:0 12px 26px -14px rgba(132,204,22,.7)}
+.pd-open svg{flex:none;width:34px;height:34px;padding:7px;border-radius:12px;background:#c6ff3d;color:#0b1200;fill:none;stroke:currentColor;stroke-width:2;box-sizing:border-box}
+.pd-open span{display:grid;gap:2px}.pd-open b{font-size:15px;font-weight:900}.pd-open small{font-size:12px;color:var(--muted)}
+.pd-modal{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:16px;background:rgba(10,15,25,.38);opacity:0;transition:opacity .18s}
+.pd-modal.on{opacity:1}
+.pd-glass{position:relative;width:min(440px,100%);max-height:90vh;overflow:auto;padding:22px 18px 18px;border-radius:26px;color:#fff;background:rgba(15,23,42,.42);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);border:1px solid rgba(255,255,255,.35);box-shadow:0 30px 80px -20px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.4);transform:translateY(14px) scale(.97);transition:transform .22s}
+.pd-modal.on .pd-glass{transform:none}
+.pd-glass .pd-hd a{color:#c6ff3d}.pd-glass .pd-meta,.pd-glass .pd-x,.pd-glass .pd-login p{color:rgba(255,255,255,.8)}
+.pd-glass .pd-cr{background:rgba(255,255,255,.22)}
+.pd-glass .pd-b{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.35);color:#fff}
+.pd-glass .pd-b:active{background:#c6ff3d;color:#0b1200}
+.pd-glass .pd-save.ok,.pd-glass .pd-save:disabled{background:rgba(255,255,255,.22);color:#c6ff3d}
+.pd-glass .pd-login{border-color:rgba(255,255,255,.35)}
+.pd-glass .btn{background:#c6ff3d;color:#0b1200}
+.pd-x2{position:absolute;top:12px;left:12px;width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.18);color:#fff;cursor:pointer;font-size:14px}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.pd-glass{background:rgba(20,30,45,.92)}}
+.pd-glass .pd-card{background:transparent;border:0;padding:0;margin:0;color:#fff}.pd-glass .pd-t b,.pd-glass .pd-in output,.pd-glass .pd-hd h2{color:#fff}.pd-glass .pd-msg{color:#fecaca}
+.pd-glass .pd-hd{padding-left:42px}

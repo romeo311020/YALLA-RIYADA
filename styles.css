@@ -802,20 +802,27 @@ html{touch-action:manipulation}
 .tab-panel{margin:0;animation:tabIn .4s var(--ease) both}
 .tab-player{display:none}
 
-/* كمبيوتر: المشغّل يمين، الأدوات والتفاصيل يسار */
+/* كمبيوتر: يمين = النتائج والتبويبات، شمال = المشغّل والأزرار والتوقع */
+.m-split{display:flex;flex-direction:column;gap:16px}
+.m-right,.m-left{display:contents}
+.m-split #match-hero{order:0}.m-split #pd-slot{order:1}.m-split #match-body{order:2}.m-split .match-player{order:3}.m-split .watch-actions{order:4}
+#pd-slot:empty{display:none}
 @media(min-width:1100px){
-  .watch-grid:has(.match-player:not([hidden])){grid-template-columns:minmax(0,1fr) 410px;grid-template-rows:auto 1fr}
-  .watch-grid:has(.match-player:not([hidden])) .match-player{grid-column:1;grid-row:1/span 2;position:sticky;top:78px}
-  .watch-grid:has(.match-player:not([hidden])) .watch-actions{grid-column:2;grid-row:1}
-  .watch-grid:has(.match-player:not([hidden])) #match-body{grid-column:2;grid-row:2}
-  .watch-grid:has(.match-player:not([hidden])) .match-player-frame{max-height:calc(100vh - 190px)}
+  .m-split:has(.match-player:not([hidden])){display:grid;grid-template-columns:minmax(360px,440px) minmax(0,1fr);gap:20px;align-items:start}
+  .m-split:has(.match-player:not([hidden])) .m-right{display:block;grid-column:1}
+  .m-split:has(.match-player:not([hidden])) .m-left{display:flex;flex-direction:column;gap:14px;grid-column:2;position:sticky;top:78px}
+  .m-split:has(.match-player:not([hidden])) .m-right #match-hero{margin-top:0}
+  .m-split:has(.match-player:not([hidden])) .match-player,.m-split:has(.match-player:not([hidden])) #pd-slot,.m-split:has(.match-player:not([hidden])) .watch-actions{order:0}
+  .m-split:has(.match-player:not([hidden])) .match-player-frame{max-height:calc(100vh - 230px)}
+  .m-split:has(.match-player:not([hidden])) .mh .teams{gap:8px}
+  .m-split:has(.match-player:not([hidden])) .mh .crest{width:84px;height:84px}
+  .m-split:has(.match-player:not([hidden])) .mh .team-name{font-size:15px}
+  .m-split:has(.match-player:not([hidden])) .mh .vs,.m-split:has(.match-player:not([hidden])) .mh .score{font-size:clamp(26px,3vw,40px)}
   .tab.was{background:var(--acc);color:var(--on-acc)}
 }
 /* موبايل وتابلت: شريط خمس أزرار والمحتوى تحته */
 @media(max-width:1099px){
   .tab-player{display:block}
-  .watch-grid{display:flex;flex-direction:column}
-  .watch-grid #match-body{order:1}.watch-grid .match-player{order:2}.watch-grid .watch-actions{order:3}
   .watch-grid.tabbed:not([data-view="player"]) .match-player,.watch-grid.tabbed:not([data-view="player"]) .watch-actions{display:none}
   .watch-grid.tabbed[data-view="player"] .tab-panel{display:none}
   .match-player{border-radius:20px;padding:10px}

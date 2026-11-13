@@ -1,6 +1,6 @@
 // يلا رياضة — Service Worker: يجعل الموقع قابلًا للتثبيت كتطبيق، ويعرض آخر نسخة محفوظة لو انقطع الإنترنت.
 // الاستراتيجية: الشبكة أولًا (تحديثاتك تظهر فورًا)، والنسخة المحفوظة احتياطية فقط. لا نحفظ طلبات Supabase أو المباريات.
-const CACHE = 'yalla-riyada-v20';
+const CACHE = 'yalla-riyada-v21';
 const SHELL = ['./', 'matches.html', 'news.html', 'transfers.html', 'leagues.html', 'predictions.html', 'league.html', 'player.html', 'article.html', 'player.html', 'store.html', 'about.html', 'styles.css', 'app.js', 'icon-192.png', 'favicon.svg'];
 
 self.addEventListener('install', (event) => {

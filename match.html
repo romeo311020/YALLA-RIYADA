@@ -20,6 +20,8 @@
   <div id="shared-header"></div>
   <main class="wrap page wide">
     <h1 id="match-title" class="sr-only">تفاصيل المباراة</h1>
+    <div class="watch-grid m-split">
+    <div class="m-right">
     <section class="panel mh" id="match-hero">
       <div class="mh-glow mh-glow-a" aria-hidden="true"></div><div class="mh-glow mh-glow-b" aria-hidden="true"></div>
       <div class="mh-top"><span class="mh-league" id="mh-league"></span><span class="st" id="mh-status"></span></div>
@@ -27,14 +29,6 @@
       <div class="countdown" id="mh-count" hidden aria-live="off"></div>
       <p class="note">جارٍ تحميل تفاصيل المباراة...</p>
     </section>
-    <div class="watch-grid">
-    <section class="match-player" id="match-player" hidden>
-      <div class="player-top"><h2><span class="live-dot"></span>البث المباشر</h2><button type="button" class="theater-close" id="theater-close">✕ إغلاق السينما</button></div>
-      <div class="match-player-frame" id="match-player-frame"></div>
-    </section>
-    <aside class="watch-actions" id="match-actions" hidden aria-label="أدوات المشاهدة">
-      <div class="player-bar" id="match-player-bar"></div>
-    </aside>
     <div id="match-body" hidden>
       <div class="tabs" role="tablist" aria-label="أقسام المباراة">
         <button type="button" class="tab tab-player" role="tab" data-tab="player" aria-selected="false" hidden>المشغّل</button>
@@ -47,6 +41,16 @@
       <section class="panel tab-panel" id="tab-lineup" role="tabpanel" hidden></section>
       <section class="panel tab-panel" id="tab-stats" role="tabpanel" hidden></section>
       <section class="panel tab-panel" id="tab-info" role="tabpanel" hidden></section>
+    </div>
+    </div>
+    <div class="m-left"><div id="pd-slot"></div>
+    <section class="match-player" id="match-player" hidden>
+      <div class="player-top"><h2><span class="live-dot"></span>البث المباشر</h2><button type="button" class="theater-close" id="theater-close">✕ إغلاق السينما</button></div>
+      <div class="match-player-frame" id="match-player-frame"></div>
+    </section>
+    <aside class="watch-actions" id="match-actions" hidden aria-label="أدوات المشاهدة">
+      <div class="player-bar" id="match-player-bar"></div>
+    </aside>
     </div>
     </div>
   </main>
