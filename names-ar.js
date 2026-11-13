@@ -509,19 +509,56 @@
   const TM = normMap(TEAMS);
   normMap(EXTRA).forEach((v, k) => { if (!TM.has(k)) TM.set(k, v); });
   const PM = normMap(PLAYERS);
+  const FIX = { 'trezeguet': 'تريزيجيه', 'mahmoud hassan trezeguet': 'محمود حسن تريزيجيه', 'ali maher': 'علي ماهر', 'hossam hassan': 'حسام حسن', 'zizo': 'زيزو', 'ahmed sayed zizo': 'زيزو', 'mohanad lasheen': 'مهند لاشين', 'nasser maher': 'ناصر ماهر', 'mohamed hany': 'محمد هاني',
+    'ahmed fotouh': 'أحمد فتوح', 'ahmed fatouh': 'أحمد فتوح', 'hossam abdelmaguid': 'حسام عبد المجيد', 'ramy rabia': 'رامي ربيعة', 'mostafa shobeir': 'مصطفى شوبير', 'mahmoud saber': 'محمود صابر', 'marwan attia': 'مروان عطية', 'hamza abdelkarim': 'حمزة عبد الكريم', 'ibrahim adel': 'إبراهيم عادل' };
+  Object.entries(FIX).forEach(([k, v]) => PM.set(key(k), v));
 
   /* ---------- كتابة تقريبية بالعربي لأي اسم غير موجود في القاموس ---------- */
   const WORDS = {
     real: 'ريال', united: 'يونايتد', city: 'سيتي', town: 'تاون', rovers: 'روفرز', wanderers: 'واندررز', athletic: 'أتلتيك', atletico: 'أتلتيكو', sporting: 'سبورتينغ', racing: 'راسينغ', deportivo: 'ديبورتيفو',
     olympique: 'أولمبيك', olympic: 'أولمبيك', sport: 'سبورت', sports: 'سبورتس', dynamo: 'دينامو', inter: 'إنتر', stade: 'ستاد', union: 'يونيون', albion: 'ألبيون', county: 'كاونتي', rangers: 'رينجرز', athletics: 'أتلتيكس',
-    de: 'دي', del: 'ديل', da: 'دا', do: 'دو', dos: 'دوس', van: 'فان', von: 'فون', di: 'دي', la: 'لا', le: 'لو', el: 'ال', al: 'ال', women: '(سيدات)', w: '(سيدات)', ii: 'الثاني', b: 'ب',
+    charles: 'تشارلز', john: 'جون', james: 'جيمس', george: 'جورج', michael: 'مايكل', peter: 'بيتر', paul: 'بول', patrick: 'باتريك', joseph: 'جوزيف', daniel: 'دانيال', david: 'ديفيد', samuel: 'صامويل', emmanuel: 'إيمانويل', thomas: 'توماس', william: 'ويليام', richard: 'ريتشارد', robert: 'روبرت', stephen: 'ستيفن', steven: 'ستيفن', francis: 'فرانسيس', frank: 'فرانك', isaac: 'إسحاق', gift: 'غيفت', blessings: 'بليسينغز', precious: 'بريشوس', lucky: 'لاكي',
+    abdel: 'عبد', abdul: 'عبد', abdal: 'عبد', abd: 'عبد', abou: 'أبو', abu: 'أبو', aboul: 'أبو', de: 'دي', del: 'ديل', da: 'دا', do: 'دو', dos: 'دوس', van: 'فان', von: 'فون', di: 'دي', la: 'لا', le: 'لو', el: 'ال', al: 'ال', women: '(سيدات)', w: '(سيدات)', ii: 'الثاني', b: 'ب',
     u17: 'تحت 17', u18: 'تحت 18', u19: 'تحت 19', u20: 'تحت 20', u21: 'تحت 21', u23: 'تحت 23',
   };
   const INITIAL = { a: 'أ', b: 'ب', c: 'س', d: 'د', e: 'إ', f: 'ف', g: 'ج', h: 'هـ', i: 'إ', j: 'ج', k: 'ك', l: 'ل', m: 'م', n: 'ن', o: 'أ', p: 'ب', q: 'ك', r: 'ر', s: 'س', t: 'ت', u: 'أ', v: 'ف', w: 'و', x: 'إ', y: 'ي', z: 'ز' };
   const CONS = { b: 'ب', d: 'د', f: 'ف', h: 'ه', k: 'ك', l: 'ل', m: 'م', n: 'ن', p: 'ب', r: 'ر', s: 'س', t: 'ت', v: 'ف', w: 'و', z: 'ز', q: 'ك', x: 'كس', j: 'ج' };
   const VOW = 'aeiou';
+
+  /* ---------- أسماء عربية شائعة: بدل الكتابة الصوتية الغلط (Mohamed → محمد وليس موهاميد) ---------- */
+  const ARN = {};
+  const arn = (ar, ...ens) => ens.forEach((e) => { ARN[e] = ar; });
+  arn('محمد', 'mohamed', 'mohammed', 'mohamad', 'mohammad', 'muhammad', 'muhammed', 'mohamud', 'mohd', 'mhmd');
+  arn('أحمد', 'ahmed', 'ahmad', 'ahmet'); arn('محمود', 'mahmoud', 'mahmud', 'mahmood'); arn('مصطفى', 'mostafa', 'mustafa', 'moustafa', 'mostapha');
+  arn('حسام', 'hossam', 'hosam', 'houssam', 'husam'); arn('حسن', 'hassan', 'hasan', 'hosni'); arn('حسين', 'hussein', 'hussain', 'hosein', 'houssein', 'husain');
+  arn('حمزة', 'hamza', 'hamzah'); arn('مروان', 'marwan', 'merwan'); arn('رامي', 'ramy', 'rami'); arn('كريم', 'karim', 'kareem'); arn('عمر', 'omar', 'umar');
+  arn('يوسف', 'youssef', 'yousef', 'yusuf', 'youssouf', 'yussef', 'yousseph'); arn('خالد', 'khaled', 'khalid'); arn('طارق', 'tarek', 'tariq', 'tarik'); arn('وليد', 'walid', 'waleed');
+  arn('عمرو', 'amr', 'amro', 'amru'); arn('شريف', 'sherif', 'sherief', 'sharif'); arn('عصام', 'essam', 'issam'); arn('عماد', 'emad', 'imad'); arn('حازم', 'hazem', 'hazim');
+  arn('هاني', 'hany', 'hani', 'hanny'); arn('إسلام', 'islam'); arn('أيمن', 'ayman'); arn('وائل', 'wael'); arn('سامي', 'sami'); arn('سامح', 'sameh'); arn('سعد', 'saad', 'saed');
+  arn('سعيد', 'said', 'saeed', 'saied'); arn('سالم', 'salem'); arn('صالح', 'saleh'); arn('فيصل', 'faisal', 'faysal', 'feisal'); arn('فهد', 'fahad', 'fahd'); arn('سلطان', 'sultan');
+  arn('ناصر', 'nasser', 'naser', 'nasir', 'nasr'); arn('ماهر', 'maher', 'mahir'); arn('مهند', 'mohanad', 'mohannad', 'muhannad'); arn('علي', 'ali', 'aly'); arn('إبراهيم', 'ibrahim', 'ebrahim', 'brahim');
+  arn('إسماعيل', 'ismail', 'ismael', 'esmail', 'ismaeel'); arn('خليل', 'khalil'); arn('نبيل', 'nabil'); arn('بلال', 'bilal'); arn('أمين', 'amine', 'amin'); arn('ياسين', 'yassine', 'yasin', 'yassin');
+  arn('زكريا', 'zakaria', 'zakariya', 'zakaryia'); arn('إدريس', 'idris', 'driss'); arn('عبدالله', 'abdullah', 'abdallah', 'abdulla'); arn('رياض', 'riyad', 'riyadh', 'riad');
+  arn('أشرف', 'achraf', 'ashraf'); arn('حكيم', 'hakim'); arn('زياش', 'ziyech'); arn('محرز', 'mahrez'); arn('صلاح', 'salah', 'salaah'); arn('عادل', 'adel'); arn('سيد', 'sayed', 'sayyid', 'sayid');
+  arn('لاشين', 'lasheen', 'lashin'); arn('فتوح', 'fotouh', 'fatouh', 'fotoh', 'fatouh'); arn('ربيعة', 'rabia', 'rabie', 'rabea'); arn('صابر', 'saber', 'sabir', 'sabr'); arn('عطية', 'attia', 'atia', 'atiyah', 'attiya');
+  arn('عاشور', 'ashour', 'ashur'); arn('توفيق', 'tawfik', 'tawfiq', 'taufik'); arn('فتحي', 'fathy', 'fathi'); arn('جابر', 'gaber', 'gabr', 'jaber'); arn('غزال', 'ghazal'); arn('النني', 'elneny');
+  arn('حجازي', 'hegazi', 'hegazy', 'higazi'); arn('الشناوي', 'shenawy', 'shennawy'); arn('شوبير', 'shobeir', 'shobier', 'shoubir', 'shobair'); arn('زيزو', 'zizo'); arn('تريزيجيه', 'trezeguet', 'trézéguet');
+  arn('مرموش', 'marmoush', 'marmush'); arn('إمام', 'emam', 'imam'); arn('حمدي', 'hamdi', 'hamdy'); arn('أكرم', 'akram'); arn('رمضان', 'ramadan'); arn('صبحي', 'sobhi', 'sobhy'); arn('عبد الله', 'abdallah');
+  arn('مجدي', 'magdy', 'majdi'); arn('ماجد', 'maged', 'majed', 'majid'); arn('جمال', 'gamal', 'jamal'); arn('كمال', 'kamal'); arn('جلال', 'galal', 'jalal'); arn('منصور', 'mansour', 'mansur');
+  arn('عصمت', 'esmat'); arn('رضا', 'reda', 'redha', 'rida'); arn('عوض', 'awad'); arn('رفعت', 'refaat', 'rifaat'); arn('شحاتة', 'shehata', 'chehata'); arn('بدر', 'badr', 'bader');
+  arn('سليم', 'selim', 'salim', 'slim'); arn('مراد', 'mourad', 'murad'); arn('نادر', 'nader'); arn('عمّار', 'ammar'); arn('باسم', 'basem', 'bassem'); arn('بسام', 'bassam');
+  const ABD = [['المجيد', 'maguid|majeed|maged|magid|mejid'], ['الكريم', 'karim|kareem'], ['الرحمن', 'rahman|rahmane|rehman'], ['العزيز', 'aziz|azeez'], ['الحميد', 'hamid|hameed'], ['السلام', 'salam|salaam'],
+    ['الرازق', 'razek|razzaq|razeq|razik'], ['الفتاح', 'fattah|fatah'], ['اللطيف', 'latif|lateef'], ['المنعم', 'monem|moneim|moniem|monaem|mounim'], ['الوهاب', 'wahab|wahhab'], ['الحليم', 'halim|haleem'],
+    ['الغني', 'ghani|ghany'], ['القادر', 'qader|kader|kadir|gader'], ['الله', 'allah|llah'], ['الناصر', 'nasser|naser'], ['الهادي', 'hadi|hady'], ['الجواد', 'gawad|jawad'], ['الستار', 'sattar|satar'], ['الحفيظ', 'hafiz|hafeez'], ['الظاهر', 'zaher|zahir'], ['الغفار', 'ghaffar|ghafar']];
+  const arnWord = (w) => {
+    if (ARN[w]) return ARN[w];
+    const m = w.match(/^(abdel|abdul|abdal|abdol|abd)([a-z]{3,})$/);
+    if (m) { const hit = ABD.find(([, re]) => new RegExp(`^(${re})$`).test(m[2])); if (hit) return `عبد ${hit[0]}`; }
+    return '';
+  };
   const translitWord = (w) => {
     if (WORDS[w]) return WORDS[w];
+    { const a = arnWord(w); if (a) return a; }
     if (/\d/.test(w)) return w;
     let out = '';
     for (let i = 0; i < w.length; i += 1) {
