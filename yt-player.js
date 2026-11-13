@@ -18,6 +18,18 @@
 
   function mount(box, videoId, title, plainUrl) {
     box.replaceChildren();
+  const SV = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+  const IC = {
+    play: SV('<path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/>'),
+    pause: SV('<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" stroke="none"/>'),
+    replay: SV('<path d="M4 12a8 8 0 108-8H8M8 1.5L4.5 4 8 6.5"/>'),
+    back: SV('<path d="M5 8V4M5 8h4M5.4 8A8 8 0 1112 20"/><path d="M10 11.5v4M13.5 11.5h1.6a.9.9 0 01.9.9v2.2a.9.9 0 01-.9.9h-1.6a.9.9 0 01-.9-.9v-2.2a.9.9 0 01.9-.9z" stroke-width="1.4"/>'),
+    fwd: SV('<path d="M19 8V4M19 8h-4M18.6 8A8 8 0 1012 20"/><path d="M10 11.5v4M13.5 11.5h1.6a.9.9 0 01.9.9v2.2a.9.9 0 01-.9.9h-1.6a.9.9 0 01-.9-.9v-2.2a.9.9 0 01.9-.9z" stroke-width="1.4"/>'),
+    vol: SV('<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 010 6M18 6.5a7.5 7.5 0 010 11"/>'),
+    vol1: SV('<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 010 6"/>'),
+    mute: SV('<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>'),
+    fs: SV('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'),
+  };
     const root = document.createElement('div'); root.className = 'yr-player'; root.tabIndex = 0; root.setAttribute('aria-label', 'مشغّل الفيديو');
     root.innerHTML = `
       <div class="yr-video"><div class="yr-yt"></div></div>
@@ -29,19 +41,19 @@
         </div>
         <span class="yr-title"></span>
       </div>
-      <div class="yr-big"><span>▶</span></div>
+      <div class="yr-big"><span>${IC.play}</span></div>
       <div class="yr-toast"></div>
       <div class="yr-load"><i></i><div class="yr-msg">جارٍ تحميل الفيديو…</div><div class="yr-bar"><b></b></div><small class="yr-pct">0%</small></div>
       <div class="yr-ctl">
         <div class="yr-seek"><div class="yr-track"><div class="yr-buf"></div><div class="yr-prog"></div><div class="yr-knob"></div></div></div>
         <div class="yr-row">
-          <button type="button" class="yr-btn main b-play" aria-label="تشغيل">▶</button>
-          <button type="button" class="yr-btn b-back" aria-label="رجوع ١٠ ثواني">⟲</button>
-          <button type="button" class="yr-btn b-fwd" aria-label="تقديم ١٠ ثواني">⟳</button>
-          <div class="yr-vol"><button type="button" class="yr-btn b-mute" aria-label="الصوت">🔊</button><input class="b-vol" type="range" min="0" max="100" value="100" aria-label="مستوى الصوت"></div>
+          <button type="button" class="yr-btn main b-play" aria-label="تشغيل">${IC.play}</button>
+          <button type="button" class="yr-btn b-back" aria-label="رجوع ١٠ ثواني">${IC.back}</button>
+          <button type="button" class="yr-btn b-fwd" aria-label="تقديم ١٠ ثواني">${IC.fwd}</button>
+          <div class="yr-vol"><button type="button" class="yr-btn b-mute" aria-label="الصوت">${IC.vol}</button><input class="b-vol" type="range" min="0" max="100" value="100" aria-label="مستوى الصوت"></div>
           <span class="yr-time">0:00 / 0:00</span><span class="yr-live">● مباشر</span><span class="yr-sp"></span>
           <button type="button" class="yr-btn yr-speed b-speed" aria-label="السرعة">1×</button>
-          <button type="button" class="yr-btn b-fs" aria-label="ملء الشاشة">⛶</button>
+          <button type="button" class="yr-btn b-fs" aria-label="ملء الشاشة">${IC.fs}</button>
         </div>
       </div>`;
     box.appendChild(root);
@@ -70,7 +82,7 @@
     const wake = () => { root.classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(() => root.classList.add('idle'), 2600); };
     const toggle = () => { if (!yt) return; const s = yt.getPlayerState(); if (s === 0) { yt.seekTo(0); yt.playVideo(); } else if (s === 1) yt.pauseVideo(); else yt.playVideo(); };
     const seekBy = (n) => { if (!yt || isLive) return; yt.seekTo(Math.max(0, yt.getCurrentTime() + n), true); toast((n > 0 ? '+' : '') + n + ' ث'); };
-    const setVol = (v) => { yt.setVolume(v); if (v === 0) yt.mute(); else yt.unMute(); $('b-vol').value = v; $('b-mute').textContent = v === 0 ? '🔇' : v < 50 ? '🔉' : '🔊'; };
+    const setVol = (v) => { yt.setVolume(v); if (v === 0) yt.mute(); else yt.unMute(); $('b-vol').value = v; $('b-mute').innerHTML = v === 0 ? IC.mute : v < 50 ? IC.vol1 : IC.vol; };
     const fs = async () => { try { if (document.fullscreenElement) await document.exitFullscreen(); else await (box.requestFullscreen ? box.requestFullscreen() : box.webkitRequestFullscreen()); } catch (e) { /* ignore */ } };
 
     $('b-play').onclick = toggle;
@@ -101,7 +113,7 @@
         videoId, playerVars: { controls: 0, rel: 0, modestbranding: 1, iv_load_policy: 3, fs: 0, disablekb: 1, playsinline: 1, cc_load_policy: 0, origin: location.origin },
         events: {
           onReady: () => { ready = true; clearTimeout(failT); clearInterval(tick); $('yr-bar').firstChild.style.width = '100%'; $('yr-pct').textContent = '100%'; $('yr-msg').textContent = 'تم ✓'; setTimeout(() => $('yr-load').classList.add('done'), 350); timer = setInterval(update, 250); update(); },
-          onStateChange: (e) => { const s = e.data; root.classList.toggle('playing', s === 1 || s === 3); $('b-play').textContent = s === 1 ? '⏸' : s === 0 ? '↻' : '▶'; if (s === 0) root.classList.remove('playing'); wake(); },
+          onStateChange: (e) => { const s = e.data; root.classList.toggle('playing', s === 1 || s === 3); $('b-play').innerHTML = s === 1 ? IC.pause : s === 0 ? IC.replay : IC.play; if (s === 0) root.classList.remove('playing'); wake(); },
           onError: () => { clearTimeout(failT); fallback(); },
         },
       });

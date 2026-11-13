@@ -104,7 +104,7 @@
       <a class="mx-link" href="${href}"><div class="teams">${teamMarkup(m.home_team, m.home_logo, m.sport)}<div class="mx-mid">${centerMarkup(m)}${stLine(m)}</div>${teamMarkup(m.away_team, m.away_logo, m.sport)}</div>
       <div class="mx-foot">${watch ? '<b class="watch-tag mx-w">▶ شاهد</b>' : '<span></span>'}<span class="mx-more">التفاصيل <i aria-hidden="true"></i></span></div></a>
     </article>`; };
-  const fixtureCard = (m, ctx) => mxCard(m, `match.html?fixture=${encodeURIComponent(m.fixture_id)}&sport=${encodeURIComponent(m.sport || 'football')}&day=${encodeURIComponent(ctx.day)}${m.has_stream ? '&watch=1' : ''}`, m.has_stream);
+  const fixtureCard = (m, ctx) => mxCard(m, `match.html?fixture=${encodeURIComponent(m.fixture_id)}&sport=${encodeURIComponent(m.sport || 'football')}&day=${encodeURIComponent(ctx.day)}`, m.has_stream);
   const manualCard = (m) => mxCard(m, `match.html?id=${encodeURIComponent(m.id)}`, m.has_embed);
 
 
@@ -696,9 +696,8 @@
           if (note && !$('watch-btn')) {
             const btn = document.createElement('button');
             btn.type = 'button'; btn.id = 'watch-btn'; btn.className = 'btn primary watch-btn'; btn.textContent = '▶ شاهد المباراة';
-            btn.addEventListener('click', () => player.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+            btn.addEventListener('click', () => { if (window.yrSelectTab && window.matchMedia('(max-width:1099px)').matches) window.yrSelectTab('player'); player.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
             note.after(btn);
-            if (p.get('watch') === '1') setTimeout(() => player.scrollIntoView({ block: 'start' }), 300);
           }
         }
       } catch (error) {

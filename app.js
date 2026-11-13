@@ -159,18 +159,19 @@ window.yrMountPlayer = function (url, title) {
   player.hidden = false; if (actions) actions.hidden = false; window.yrPlayerReady();
   if (bar && !bar.dataset.on) {
     bar.dataset.on = '1';
+    const S = (d) => '<svg viewBox="0 0 24 24" aria-hidden="true">' + d + '</svg>';
     const mk = (ico, t, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'pbtn'; b.innerHTML = '<i aria-hidden="true">' + ico + '</i><span></span>'; b.lastChild.textContent = t; b.addEventListener('click', fn); bar.append(b); return b; };
     const label = (b, t) => { b.lastChild.textContent = t; };
     const setTheater = (on) => { player.classList.toggle('theater', on); document.body.style.overflow = on ? 'hidden' : ''; label(th, on ? 'إغلاق' : 'سينما'); };
-    const th = mk('🎬', 'سينما', () => setTheater(!player.classList.contains('theater')));
-    mk('⛶', 'ملء الشاشة', async () => {
+    const th = mk(S('<rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M8 21h8M12 17v4"/>'), 'سينما', () => setTheater(!player.classList.contains('theater')));
+    mk(S('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'), 'ملء الشاشة', async () => {
       try {
         await (box.requestFullscreen ? box.requestFullscreen() : box.webkitRequestFullscreen());
         if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
       } catch (e) { setTheater(true); }
     });
-    mk('↻', 'تحديث', () => build());
-    const sh = mk('🔗', 'مشاركة', async () => {
+    mk(S('<path d="M20 12a8 8 0 11-2.6-5.9M20 4v4.5h-4.5"/>'), 'تحديث', () => build());
+    const sh = mk(S('<circle cx="6" cy="12" r="2.6"/><circle cx="17.5" cy="6" r="2.6"/><circle cx="17.5" cy="18" r="2.6"/><path d="M8.3 10.8l7-3.6M8.3 13.2l7 3.6"/>'), 'مشاركة', async () => {
       if (window.yrMatchShare) window.yrMatchShare(); else window.yrShare({ title: document.title, text: document.title + ' — شاهد المباراة على يلا رياضة', url: location.href });
     });
     const close = document.getElementById('theater-close'); if (close) close.addEventListener('click', () => setTheater(false));
@@ -202,7 +203,6 @@ window.yrMountPlayer = function (url, title) {
 window.yrPlayerReady = function () {
   const t = document.querySelector('.tab-player'); if (t) t.hidden = false;
   const grid = document.querySelector('.watch-grid'); if (grid) grid.classList.add('has-player');
-  if (/[?&]watch=1/.test(location.search) && window.yrSelectTab && window.matchMedia('(max-width:1099px)').matches) window.yrSelectTab('player');
 };
 
 /* هيرو المباراة: شارة الحالة + عدّاد تنازلي للمباريات القادمة */

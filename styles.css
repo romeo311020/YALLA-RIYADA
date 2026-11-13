@@ -1325,3 +1325,31 @@ a.match.mx:active{background:var(--panel2);transform:none}
 .lg-row span:not(.lg-ph0){flex:1;min-width:0}.lg-row small{color:var(--muted);font-weight:700}
 .lg-ck{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);flex:none}
 .lg-row.on{border-color:#16a34a;background:color-mix(in srgb,#16a34a 10%,var(--panel))}.lg-row.on .lg-ck{background:#16a34a;border-color:#16a34a;box-shadow:inset 0 0 0 3px var(--panel)}
+
+/* ===== المشغّل v77: شكل أنضف ===== */
+.match-player,:root[data-theme="light"] .match-player{background:linear-gradient(165deg,#0d1f16,#07110c 70%);color:#fff;border:1px solid rgba(198,255,61,.28);border-radius:24px;box-shadow:0 26px 56px -30px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.06);animation:none;padding:12px}
+.player-top{margin:2px 4px 12px}
+.player-top h2{font-size:16px;font-weight:900;color:#fff}
+.player-top h2::after{content:"LIVE";margin-inline-start:6px;padding:2px 9px;border-radius:99px;background:rgba(239,68,68,.16);border:1px solid rgba(239,68,68,.5);color:#fca5a5;font-size:10.5px;letter-spacing:.14em;font-weight:900}
+.match-player-frame,.match-player-frame:fullscreen{border:0;box-shadow:0 18px 40px -22px #000,0 0 0 1px rgba(255,255,255,.08);border-radius:16px}
+.match-player-frame:fullscreen{border-radius:0}
+@media(max-width:900px){.match-player-frame{min-height:0;aspect-ratio:16/9}}
+.watch-actions{animation:none;padding:8px;border-radius:20px;background:linear-gradient(165deg,#0d1f16,#07110c);border:1px solid rgba(198,255,61,.2)}
+.player-bar{gap:8px}
+.pbtn{padding:11px 4px 9px;border-radius:15px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);color:#e6efe9;font-size:12px;font-weight:800;gap:5px}
+.pbtn i{display:grid;place-items:center;width:34px;height:34px;border-radius:12px;background:rgba(198,255,61,.12);color:#c6ff3d;transition:background .2s,color .2s}
+.pbtn i svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pbtn:hover,.pbtn:focus-visible{transform:none;background:rgba(255,255,255,.1);color:#fff;border-color:rgba(198,255,61,.45)}
+.pbtn:hover i{transform:none;background:#c6ff3d;color:#0b1200}
+/* داخل المشغّل نفسه */
+.yr-top{padding:10px 12px 34px;gap:10px;align-items:center}
+.yr-logo{flex:none;gap:7px;padding:4px 10px 4px 6px;border-radius:11px}
+.yr-logo svg{width:26px;height:26px;border-radius:8px}
+.yr-logo b{font-size:17px}.yr-logo small{font-size:8px;letter-spacing:1.6px;margin-top:1px}
+.yr-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:800;color:#fff;text-shadow:0 1px 6px #000;text-align:start}
+.yr-big span{width:68px;height:68px;box-shadow:0 0 0 8px rgba(198,255,61,.2),0 14px 34px -10px rgba(0,0,0,.7)}
+.yr-big svg{width:30px;height:30px;margin-inline-start:3px}
+.yr-btn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block;margin:auto}
+.yr-btn.main svg{width:20px;height:20px}
+.yr-btn{display:grid;place-items:center}
+@media(max-width:480px){.yr-logo small{display:none}.yr-time{font-size:11px}.yr-big span{width:60px;height:60px}}
