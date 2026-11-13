@@ -87,9 +87,23 @@
     if (m.status === 'postponed' || m.status === 'cancelled') return '';
     return '';
   };
-  const mxCard = (m, href, watch) => `<a class="match mx${m.status === 'live' ? ' is-live' : ''}" href="${href}">
-      <div class="teams">${teamMarkup(m.home_team, m.home_logo, m.sport)}<div class="mx-mid">${centerMarkup(m)}${stLine(m)}</div>${teamMarkup(m.away_team, m.away_logo, m.sport)}</div>${watch ? '<b class="watch-tag mx-w">▶ شاهد</b>' : ''}
-    </a>`;
+  /* المفضلة: محفوظة في المتصفح (localStorage) */
+  let favSet = new Set(); try { favSet = new Set(JSON.parse(localStorage.getItem('yr-fav-m') || '[]')); } catch { /* اختياري */ }
+  const favKey = (m) => (m.manual ? `m:${m.id}` : `${m.sport || 'football'}:${m.fixture_id}`);
+  const saveFav = () => { try { localStorage.setItem('yr-fav-m', JSON.stringify([...favSet].slice(-300))); } catch { /* اختياري */ } };
+  const STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.7 5.5 6 .9-4.4 4.2 1 6-5.3-2.8-5.3 2.8 1-6L3.3 9.9l6-.9z"/></svg>';
+  const pill = (m) => {
+    if (m.status === 'live') return `<span class="mx-pill live">● مباشر${m.minute ? ` ${escapeHtml(m.minute)}'` : ''}</span>`;
+    if (m.status === 'finished') return '<span class="mx-pill fin">انتهت</span>';
+    if (m.status === 'postponed') return '<span class="mx-pill warn">مؤجلة</span>';
+    if (m.status === 'cancelled') return '<span class="mx-pill warn">ملغاة</span>';
+    return '<span class="mx-pill">لم تبدأ</span>';
+  };
+  const mxCard = (m, href, watch) => { const k = favKey(m); const on = favSet.has(k); return `<article class="match mx${m.status === 'live' ? ' is-live' : ''}" data-fk="${escapeHtml(k)}">
+      <div class="mx-head"><button type="button" class="mx-fav${on ? ' on' : ''}" data-fav="${escapeHtml(k)}" aria-pressed="${on}" aria-label="${on ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}">${STAR}</button><span class="mx-lg">${escapeHtml(m.league_label || m.league || '')}${m.round ? ` • ${escapeHtml(m.round)}` : ''}</span>${pill(m)}</div>
+      <a class="mx-link" href="${href}"><div class="teams">${teamMarkup(m.home_team, m.home_logo, m.sport)}<div class="mx-mid">${centerMarkup(m)}${stLine(m)}</div>${teamMarkup(m.away_team, m.away_logo, m.sport)}</div>
+      <div class="mx-foot">${watch ? '<b class="watch-tag mx-w">▶ شاهد</b>' : '<span></span>'}<span class="mx-more">التفاصيل <i aria-hidden="true"></i></span></div></a>
+    </article>`; };
   const fixtureCard = (m, ctx) => mxCard(m, `match.html?fixture=${encodeURIComponent(m.fixture_id)}&sport=${encodeURIComponent(m.sport || 'football')}&day=${encodeURIComponent(ctx.day)}${m.has_stream ? '&watch=1' : ''}`, m.has_stream);
   const manualCard = (m) => mxCard(m, `match.html?id=${encodeURIComponent(m.id)}`, m.has_embed);
 
@@ -417,6 +431,7 @@
       day: String(dayOff(params.get('day'))),
       league: params.get('league') || 'all',
       q: '',
+      fav: false,
     };
     let data = { fixtures: [], leagues: [], manual: [], error: '' };
     let token = 0;
@@ -455,25 +470,46 @@
     const paintControls = () => {
       document.querySelectorAll('[data-sport]').forEach((b) => { const on = b.dataset.sport === state.sport; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
       renderDays();
-      const sub = $('mc-sub');
-      if (sub) sub.textContent = state.sport === 'football'
-        ? 'أهم البطولات حول العالم: أوروبا وأفريقيا، الدوريات الخمسة الكبرى، السعودي والمصري والعربية.'
-        : 'أهم البطولات: NBA ويوروليغ.';
+      const nm = $('sc-nm'); const ic = $('sc-ic'); if (nm) nm.textContent = SPORT_NAME[state.sport]; if (ic) ic.textContent = SPORT_ICON[state.sport];
     };
 
     const all = () => (state.sport === 'football' ? [...data.fixtures, ...data.manual] : data.fixtures);
-    const renderChips = () => {
-      const box = $('league-chips'); if (!box) return;
+    const leagueList = () => {
       const list = all();
-      const chips = [{ key: 'all', label: 'كل البطولات', n: list.length }, ...[...data.leagues].sort((x, y) => { const f = (l) => { const i = (leagueOrder || []).findIndex((c) => String(c.k) === l.key || c.l === l.label); return i >= 0 ? i : 1000; }; return f(x) - f(y); }).map((l) => ({ key: l.key, label: l.label, n: list.filter((m) => m.league_key === l.key).length })).filter((c) => c.n > 0 || c.key === state.league)];
-      if (state.sport === 'football' && data.manual.length) chips.push({ key: 'manual', label: 'مباريات منشورة', n: data.manual.length });
-      box.innerHTML = chips.map((c) => `<button type="button" class="chip${state.league === c.key ? ' active' : ''}" data-league="${escapeHtml(c.key)}" aria-pressed="${state.league === c.key}">${escapeHtml(c.label)} <span class="chip-n">${c.n}</span></button>`).join('');
+      const rows = [{ key: 'all', label: 'كل البطولات', n: list.length, logo: '' }, ...[...data.leagues].sort((x, y) => { const f = (l) => { const i = (leagueOrder || []).findIndex((c) => String(c.k) === l.key || c.l === l.label); return i >= 0 ? i : 1000; }; return f(x) - f(y); }).map((l) => ({ key: l.key, label: l.label, n: list.filter((m) => m.league_key === l.key).length, logo: safeUrl(list.find((m) => m.league_key === l.key && m.league_logo)?.league_logo) }))];
+      if (state.sport === 'football' && data.manual.length) rows.push({ key: 'manual', label: 'مباريات منشورة', n: data.manual.length, logo: '' });
+      return rows;
+    };
+    const renderChips = () => {
+      const cur = leagueList().find((c) => c.key === state.league); const el = $('lg-cur'); if (el) el.textContent = cur ? cur.label : 'كل البطولات';
+      const fb = $('fav-filter'); if (fb) { fb.setAttribute('aria-pressed', String(state.fav)); fb.classList.toggle('on', state.fav); const n = $('fav-n'); if (n) n.textContent = favSet.size ? String(favSet.size) : ''; }
+    };
+    const closeSheet = () => { const o = $('lg-sheet'); if (o) { o.classList.remove('on'); setTimeout(() => o.remove(), 180); } document.removeEventListener('keydown', escSheet); };
+    const escSheet = (e) => { if (e.key === 'Escape') closeSheet(); };
+    const openSheet = () => {
+      if ($('lg-sheet')) return;
+      const o = document.createElement('div'); o.id = 'lg-sheet'; o.className = 'lg-sheet';
+      o.innerHTML = '<div class="lg-panel" role="dialog" aria-modal="true" aria-label="اختيار البطولة"><div class="lg-ph"><h2>البطولات</h2><button type="button" class="lg-x" aria-label="إغلاق">✕</button></div><label class="lg-find"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="lg-q" type="search" placeholder="ابحث عن بطولة" autocomplete="off"></label><div class="lg-list" id="lg-list"></div></div>';
+      document.body.append(o); requestAnimationFrame(() => o.classList.add('on'));
+      const paint = () => {
+        const q = norm($('lg-q').value); const rows = leagueList().filter((c) => !q || norm(c.label).includes(q));
+        $('lg-list').innerHTML = rows.map((c) => `<button type="button" class="lg-row${state.league === c.key ? ' on' : ''}" data-league="${escapeHtml(c.key)}">${c.logo ? `<img src="${escapeHtml(c.logo)}" alt="" loading="lazy">` : '<span class="lg-ph0" aria-hidden="true">⚽</span>'}<span>${escapeHtml(c.label)}</span><small>${c.n}</small><i class="lg-ck" aria-hidden="true"></i></button>`).join('') || '<p class="note">مفيش بطولة بالاسم ده.</p>';
+      };
+      paint();
+      $('lg-q').addEventListener('input', paint);
+      o.addEventListener('click', (e) => {
+        if (e.target === o || e.target.closest('.lg-x')) return closeSheet();
+        const b = e.target.closest('[data-league]'); if (!b) return;
+        state.league = b.dataset.league; syncUrl(); closeSheet(); render();
+      });
+      document.addEventListener('keydown', escSheet);
     };
     const render = () => {
       paintControls(); renderChips();
       const q = norm(state.q);
       const rows = all()
         .filter((m) => state.league === 'all' || m.league_key === state.league)
+        .filter((m) => !state.fav || favSet.has(favKey(m)))
         .filter((m) => !q || q.split(' ').every((w) => haystack(m).includes(w)));
       const count = $('results-count');
       if (data.error && !rows.length) {
@@ -482,7 +518,7 @@
         return;
       }
       if (!rows.length) {
-        host.innerHTML = `<div class="empty-state"><p>${q ? 'لا توجد مباريات مطابقة لبحثك.' : `لا توجد مباريات ${SPORT_NAME[state.sport]} في البطولات المهمة لهذا اليوم.`}</p>${q || state.league !== 'all' ? '<button class="btn outline" type="button" id="reset-filters">إزالة التصفية</button>' : ''}</div>`;
+        host.innerHTML = `<div class="empty-state"><p>${q ? 'لا توجد مباريات مطابقة لبحثك.' : (state.fav ? 'مفيش مباريات مفضلة في اليوم ده. اضغط على ⭐ في أي مباراة لإضافتها.' : `لا توجد مباريات ${SPORT_NAME[state.sport]} في البطولات المهمة لهذا اليوم.`)}</p>${q || state.league !== 'all' ? '<button class="btn outline" type="button" id="reset-filters">إزالة التصفية</button>' : ''}</div>`;
         if (count) count.textContent = '';
         return;
       }
@@ -496,17 +532,19 @@
       const byTime = (a, b) => rank(a) - rank(b) || teamRank(a) - teamRank(b) || new Date(a.kickoff || 0) - new Date(b.kickoff || 0);
       const keys = [...groups.keys()].sort((a, b) => pos(a, groups.get(a)[0].league_label) - pos(b, groups.get(b)[0].league_label));
       const card = (m) => (m.manual ? manualCard(m) : fixtureCard(m, state));
-      // مهمة = اللي الأدمن علّمها ⭐ + مباريات أشهر الفرق عند الجمهور المصري (بحد أقصى ٨)، والمباشر الأول
-      const auto = rows.filter((m) => !m.featured && !m.manual && !m.hide_important && teamRank(m) < 99).sort((a, b) => rank(a) - rank(b) || teamRank(a) - teamRank(b) || new Date(a.kickoff || 0) - new Date(b.kickoff || 0)).slice(0, 8);
-      const star = [...rows.filter((m) => m.featured), ...auto].sort((a, b) => rank(a) - rank(b) || (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || teamRank(a) - teamRank(b) || new Date(a.kickoff || 0) - new Date(b.kickoff || 0));
-      const featuredHtml = star.length && state.league === 'all' ? `<section class="league-group featured-group${closed.has('star') ? ' closed' : ''}" aria-label="مباريات مهمة"><h2 class="league-title" data-lg="star" role="button" tabindex="0"><span>⭐ مباريات مهمة</span><small>${star.length}</small><i class="lg-chev" aria-hidden="true"></i></h2><div class="match-grid">${star.map(card).join('')}</div></section>` : '';
-      host.innerHTML = featuredHtml + keys.map((k) => {
-        const items = groups.get(k).sort(byTime);
-        const logo = safeUrl(items.find((m) => m.league_logo)?.league_logo);
-        return `<section class="league-group${closed.has(String(k)) ? ' closed' : ''}" aria-label="${escapeHtml(items[0].league_label)}">
-          <h2 class="league-title" data-lg="${escapeHtml(String(k))}" role="button" tabindex="0">${logo ? `<img src="${escapeHtml(logo)}" alt="" loading="lazy" decoding="async">` : ''}<span>${escapeHtml(items[0].league_label)}</span><small>${items.length}</small><i class="lg-chev" aria-hidden="true"></i></h2>
-          <div class="match-grid">${items.map(card).join('')}</div></section>`;
+      const secOf = (m) => (m.status === 'live' ? 'live' : m.status === 'finished' ? 'fin' : 'up');
+      const SEC = { live: ['مباريات مباشرة', 'bolt'], up: ['المباريات القادمة', 'cal'], fin: ['المباريات المنتهية', 'cup'] };
+      const SEC_ICO = { bolt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>', cal: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>', cup: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 01-10 0zM7 6H4v1a3 3 0 003 3M17 6h3v1a3 3 0 01-3 3M12 14v4M8.5 20h7"/></svg>' };
+      const sections = ['live', 'up', 'fin'].map((sk) => {
+        const part = rows.filter((m) => secOf(m) === sk); if (!part.length) return '';
+        const gs = new Map(); part.forEach((m) => { if (!gs.has(m.league_key)) gs.set(m.league_key, []); gs.get(m.league_key).push(m); });
+        const ks = [...gs.keys()].sort((a, b) => pos(a, gs.get(a)[0].league_label) - pos(b, gs.get(b)[0].league_label));
+        const shut = closed.has('s-' + sk) || (sk === 'fin' && !q && !closed.has('s-fin-open') && rows.some((m) => secOf(m) !== 'fin'));
+        const body = ks.map((k) => { const items = gs.get(k).sort(byTime); const logo = safeUrl(items.find((m) => m.league_logo)?.league_logo);
+          return `<div class="lg-sub">${logo ? `<img src="${escapeHtml(logo)}" alt="" loading="lazy" decoding="async">` : ''}<span>${escapeHtml(items[0].league_label)}</span><small>${items.length}</small></div><div class="match-grid">${items.map(card).join('')}</div>`; }).join('');
+        return `<section class="st-sec ${sk}${shut ? ' closed' : ''}" aria-label="${SEC[sk][0]}"><button type="button" class="st-head" data-sec="${sk}" aria-expanded="${!shut}"><span class="st-ic">${SEC_ICO[SEC[sk][1]]}</span><b>${SEC[sk][0]}</b><small>${part.length}</small>${sk === 'live' ? '<em class="st-live">مباشر الآن</em>' : ''}<i class="lg-chev" aria-hidden="true"></i></button><div class="st-body">${body}</div></section>`;
       }).join('');
+      host.innerHTML = sections;
       if (count) count.textContent = `${rows.length} ${rows.length === 1 ? 'مباراة' : 'مباراة'}${q ? ' مطابقة للبحث' : ''}`;
     };
 
@@ -555,7 +593,22 @@
     $('day-strip')?.addEventListener('click', (e) => { const b = e.target.closest('.dchip'); if (b) goDay(Number(b.dataset.off)); });
     $('day-prev-btn')?.addEventListener('click', () => goDay(dayOff(state.day) + 1));
     $('day-next-btn')?.addEventListener('click', () => goDay(dayOff(state.day) - 1));
-    $('league-chips')?.addEventListener('click', (e) => { const b = e.target.closest('[data-league]'); if (!b) return; state.league = b.dataset.league; syncUrl(); render(); });
+    $('lg-open')?.addEventListener('click', openSheet);
+    $('fav-filter')?.addEventListener('click', () => { state.fav = !state.fav; render(); });
+    const dd = $('sport-menu'); const ddb = $('sport-cur');
+    const ddClose = () => { if (dd) dd.hidden = true; if (ddb) ddb.setAttribute('aria-expanded', 'false'); };
+    ddb?.addEventListener('click', (e) => { e.stopPropagation(); const open = dd.hidden; dd.hidden = !open; ddb.setAttribute('aria-expanded', String(open)); });
+    document.addEventListener('click', (e) => { if (!e.target.closest('#sport-dd')) ddClose(); });
+    dd?.addEventListener('click', ddClose);
+    host.addEventListener('click', (e) => {
+      const f = e.target.closest('[data-fav]');
+      if (f) { e.preventDefault(); const k = f.dataset.fav; const on = !favSet.has(k); if (on) favSet.add(k); else favSet.delete(k); saveFav(); if (state.fav) { render(); return; } f.classList.toggle('on', on); f.setAttribute('aria-pressed', String(on)); renderChips(); return; }
+      const h = e.target.closest('.st-head[data-sec]'); if (!h) return;
+      const sec = h.closest('.st-sec'); const k = h.dataset.sec; const shut = !sec.classList.contains('closed');
+      sec.classList.toggle('closed', shut); h.setAttribute('aria-expanded', String(!shut));
+      if (shut) { closed.add('s-' + k); closed.delete('s-fin-open'); } else { closed.delete('s-' + k); if (k === 'fin') closed.add('s-fin-open'); }
+      try { localStorage.setItem('yr-lg-closed', JSON.stringify([...closed].slice(-40))); } catch { /* اختياري */ }
+    });
     host.addEventListener('click', (e) => {
       if (e.target.closest('#retry')) load();
       if (e.target.closest('#reset-filters')) { state.q = ''; state.league = 'all'; $('match-search').value = ''; $('search-clear').hidden = true; syncUrl(); render(); }

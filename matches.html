@@ -1,14 +1,21 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="preconnect" href="https://media.api-sports.io" crossorigin><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#000000"><title>يلا رياضة | مباريات اليوم والنتائج المباشرة والتشكيلات</title><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta property="og:site_name" content="يلا رياضة | YALLA RIYADA"><meta property="og:type" content="website"><meta property="og:image" content="https://yalla-riyada-embd.vercel.app/og-image.png"><script>(function(){var d=document.documentElement,t="light";try{if(localStorage.getItem("yr-theme")==="dark")t="dark"}catch(e){}if(t==="light")d.setAttribute("data-theme","light")})()</script><link rel="stylesheet" href="styles.css"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="يلا رياضة"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="description" content="يلا رياضة: تابع مباريات اليوم لحظة بلحظة، نتائج مباشرة وتشكيلات وإحصائيات وأخبار رياضية بالعربي. الدوري المصري والسعودي والإنجليزي والإسباني ودوري أبطال أوروبا وأفريقيا."><link rel="canonical" href="https://yalla-riyada-embd.vercel.app/"><meta property="og:url" content="https://yalla-riyada-embd.vercel.app/"><meta property="og:title" content="يلا رياضة | مباريات اليوم والنتائج المباشرة والتشكيلات"><meta property="og:description" content="يلا رياضة: تابع مباريات اليوم لحظة بلحظة، نتائج مباشرة وتشكيلات وإحصائيات وأخبار رياضية بالعربي. الدوري المصري والسعودي والإنجليزي والإسباني ودوري أبطال أوروبا وأفريقيا."><meta property="og:locale" content="ar_AR"><meta name="twitter:card" content="summary_large_image"><script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "WebSite", "@id": "https://yalla-riyada-embd.vercel.app/#site", "url": "https://yalla-riyada-embd.vercel.app/", "name": "يلا رياضة", "alternateName": ["YALLA RIYADA", "Yalla Riyada", "يلا رياضه"], "inLanguage": "ar"}, {"@type": "Organization", "@id": "https://yalla-riyada-embd.vercel.app/#org", "name": "يلا رياضة", "alternateName": "YALLA RIYADA", "url": "https://yalla-riyada-embd.vercel.app/", "logo": "https://yalla-riyada-embd.vercel.app/icon-512.png", "sameAs": ["https://www.youtube.com/@YALLA-RIYADA", "https://www.tiktok.com/@yalla_riyada", "https://whatsapp.com/channel/0029VbDWnn24dTnGwIUrTz0G"]}]}</script></head><body><div id="shared-header"></div><main class="wrap page">
-    <h1 class="sr-only">مركز المباريات</h1>
+    <section class="mhero" aria-labelledby="mhero-t">
+      <div class="mhero-bg" aria-hidden="true"></div>
+      <svg class="mhero-ball" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="#fff"/><path d="M32 20l10 7-4 12H26l-4-12z" fill="#0f172a"/><path d="M32 20V6M42 27l14-5M38 39l8 11M26 39l-8 11M22 27L8 22" stroke="#0f172a" stroke-width="2.4" fill="none" stroke-linecap="round"/><circle cx="32" cy="32" r="29" fill="none" stroke="#cbd5e1" stroke-width="1.5"/></svg>
+      <div class="mhero-tx"><h1 id="mhero-t">المباريات</h1><p id="mc-sub">تابع جميع المباريات والبطولات</p></div>
+    </section>
 
     <div class="mc-toolbar">
-      <div class="sport-tabs" role="tablist" aria-label="الرياضة">
-        <button class="sport-tab active" type="button" role="tab" aria-selected="true" data-sport="football"><span aria-hidden="true">⚽</span> كرة القدم</button>
-        <button class="sport-tab" type="button" role="tab" aria-selected="false" data-sport="basketball"><span aria-hidden="true">🏀</span> كرة السلة</button>
+      <div class="sport-dd" id="sport-dd">
+        <button type="button" class="sport-cur" id="sport-cur" aria-haspopup="listbox" aria-expanded="false"><span class="sc-ic" id="sc-ic" aria-hidden="true">⚽</span><b id="sc-nm">كرة القدم</b><i class="sc-chev" aria-hidden="true"></i></button>
+        <div class="sport-menu" id="sport-menu" role="listbox" aria-label="الرياضة" hidden>
+          <button class="sport-tab active" type="button" role="option" aria-selected="true" data-sport="football"><span aria-hidden="true">⚽</span> كرة القدم</button>
+          <button class="sport-tab" type="button" role="option" aria-selected="false" data-sport="basketball"><span aria-hidden="true">🏀</span> كرة السلة</button>
+        </div>
       </div>
       <div class="search-box" role="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input id="match-search" type="search" placeholder="ابحث عن فريق أو بطولة" autocomplete="off" enterkeyhint="search" aria-label="ابحث عن فريق أو بطولة">
+        <input id="match-search" type="search" placeholder="ابحث عن مباراة..." autocomplete="off" enterkeyhint="search" aria-label="ابحث عن فريق أو بطولة">
         <button id="search-clear" type="button" hidden aria-label="مسح البحث">✕</button>
       </div>
     </div>
@@ -18,7 +25,10 @@
       <div class="days" id="day-strip"></div>
       <button class="dnav" id="day-prev-btn" type="button" aria-label="الأيام التالية">‹</button>
     </div>
-    <div class="league-chips" id="league-chips" role="group" aria-label="البطولات"></div>
+    <div class="lg-bar">
+      <button type="button" class="lg-open" id="lg-open" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><b id="lg-cur">كل البطولات</b><i class="sc-chev" aria-hidden="true"></i></button>
+      <button type="button" class="fav-filter" id="fav-filter" aria-pressed="false" aria-label="المفضلة فقط"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.7 5.5 6 .9-4.4 4.2 1 6-5.3-2.8-5.3 2.8 1-6L3.3 9.9l6-.9z"/></svg><span id="fav-n"></span></button>
+    </div>
     <p class="results-count" id="results-count" aria-live="polite"></p>
 
     <div id="matches-list" class="match-groups" aria-live="polite"></div>

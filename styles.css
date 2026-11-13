@@ -1258,3 +1258,70 @@ a.match.mx:active{background:var(--panel2);transform:none}
 .match-groups .featured-group .league-title{background:linear-gradient(120deg,color-mix(in srgb,#f5c518 18%,var(--panel)),var(--panel));border-color:color-mix(in srgb,#f5c518 45%,var(--line))}
 .daybar .dnav{flex:0 0 34px;min-height:62px;border-radius:12px;font-size:20px}
 .daybar{gap:6px}
+
+/* ===== صفحة المباريات v73: بانر + قوائم + أقسام الحالة ===== */
+.mhero{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:118px;margin:6px 0 14px;padding:18px 74px;border-radius:26px;text-align:center;color:#fff;background:linear-gradient(120deg,#052e16,#14532d 55%,#16a34a);box-shadow:0 18px 36px -22px rgba(5,46,22,.8)}
+.mhero-bg{position:absolute;inset:0;background:radial-gradient(60% 120% at 12% 100%,rgba(255,255,255,.16),transparent 60%),repeating-linear-gradient(115deg,rgba(255,255,255,.05) 0 26px,transparent 26px 52px),linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.35))}
+.mhero-bg::after{content:"";position:absolute;inset:auto 0 0 0;height:46%;background:radial-gradient(ellipse at 50% 120%,rgba(255,255,255,.22),transparent 65%)}
+.mhero-ball{position:absolute;left:12px;bottom:-10px;width:92px;height:92px;filter:drop-shadow(0 12px 14px rgba(0,0,0,.45));transform:rotate(-14deg)}
+.mhero-tx{position:relative}
+.mhero h1{margin:0;font-size:clamp(26px,5vw,38px);font-weight:900;letter-spacing:0;color:#fff}
+.mhero p{margin:6px 0 0;font-size:14px;font-weight:700;color:#d1fae5}
+@media(max-width:520px){.mhero{min-height:104px;padding:16px 56px 16px 70px;border-radius:22px}.mhero-ball{width:78px;height:78px}}
+.mc-toolbar{gap:10px}
+.sport-dd{position:relative;flex:none}
+.sport-cur{display:flex;align-items:center;gap:8px;height:48px;padding:0 14px;border-radius:16px;border:1px solid var(--line);background:color-mix(in srgb,#16a34a 10%,var(--panel));color:var(--text);font:inherit;font-weight:800;cursor:pointer}
+.sc-ic{font-size:20px}
+.sc-chev{width:8px;height:8px;border-inline-end:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin-bottom:3px;opacity:.7}
+.sport-menu{position:absolute;z-index:40;top:calc(100% + 6px);inset-inline-start:0;min-width:100%;display:grid;gap:2px;padding:6px;border-radius:16px;background:var(--panel);border:1px solid var(--line);box-shadow:0 18px 40px -18px rgba(0,0,0,.45)}
+.sport-menu[hidden]{display:none}
+.sport-menu .sport-tab{display:flex;align-items:center;gap:8px;width:100%;justify-content:flex-start;white-space:nowrap;border-radius:11px}
+.mc-toolbar .search-box input{min-height:48px;border-radius:16px}
+.lg-bar{display:flex;gap:8px;margin:0 0 12px}
+.lg-open{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;min-height:46px;border-radius:16px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:inherit;font-weight:800;cursor:pointer}
+.lg-open svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.fav-filter{flex:none;display:flex;align-items:center;gap:6px;min-width:46px;min-height:46px;padding:0 14px;justify-content:center;border-radius:16px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font:inherit;font-weight:800;cursor:pointer}
+.fav-filter svg,.mx-fav svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.fav-filter.on{color:#b45309;border-color:#f59e0b;background:#fef3c7}.fav-filter.on svg{fill:#f59e0b;stroke:#f59e0b}
+.st-sec{margin:12px 0}
+.st-head{width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:18px;border:1px solid color-mix(in srgb,#16a34a 22%,var(--line));background:color-mix(in srgb,#16a34a 9%,var(--panel));color:var(--text);font:inherit;font-size:16px;cursor:pointer;text-align:start}
+.st-head b{font-weight:900}.st-head small{padding:1px 9px;border-radius:99px;background:var(--panel2);color:var(--muted);font-weight:800}
+.st-ic{display:grid;place-items:center;width:32px;height:32px;border-radius:11px;background:#16a34a;color:#fff}.st-ic svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.st-sec.live .st-ic{background:#dc2626}
+.st-live{margin-inline-start:auto;font-style:normal;font-size:12px;font-weight:900;color:#fff;background:#dc2626;padding:3px 11px;border-radius:99px}
+.st-head .lg-chev{margin-inline-start:auto}.st-head .st-live+.lg-chev{margin-inline-start:4px}
+.st-sec.closed .lg-chev{transform:rotate(-45deg);margin-bottom:0}
+.st-sec.closed .st-body{display:none}
+.lg-sub{display:flex;align-items:center;gap:8px;margin:12px 4px 0;font-size:13.5px;font-weight:800;color:var(--muted)}
+.lg-sub img{width:20px;height:20px;object-fit:contain;background:#fff;border-radius:6px;padding:1px}
+.lg-sub small{margin-inline-start:auto;font-weight:700}
+.match.mx{padding:0}
+.mx-head{display:flex;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px solid var(--line)}
+.mx-fav{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--muted);display:grid;place-items:center;cursor:pointer;padding:0}
+.mx-fav.on{color:#f59e0b;border-color:#f59e0b;background:#fef3c7}.mx-fav.on svg{fill:#f59e0b}
+.mx-lg{flex:1;min-width:0;font-size:12.5px;font-weight:800;color:#15803d;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mx-pill{flex:none;font-size:12px;font-weight:800;padding:4px 12px;border-radius:99px;background:color-mix(in srgb,#16a34a 14%,var(--panel));color:#15803d}
+.mx-pill.live{background:#dc2626;color:#fff}.mx-pill.fin{background:var(--panel2);color:var(--muted)}.mx-pill.warn{background:#fef3c7;color:#b45309}
+.mx-link{display:block;color:inherit;text-decoration:none;padding:12px 10px 10px}
+.mx-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
+.mx-foot .mx-w{margin:0}
+.mx-more{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#15803d;padding:6px 14px;border-radius:99px;border:1px solid color-mix(in srgb,#16a34a 30%,var(--line));background:color-mix(in srgb,#16a34a 8%,var(--panel))}
+.mx-more i{width:7px;height:7px;border-inline-start:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(135deg)}
+.match.mx:active{background:var(--panel)}
+.mx .mx-st{display:none}
+.lg-sheet{position:fixed;inset:0;z-index:300;display:flex;align-items:flex-end;justify-content:center;background:rgba(10,15,25,.5);opacity:0;transition:opacity .18s}
+.lg-sheet.on{opacity:1}
+.lg-panel{width:min(520px,100%);max-height:82vh;display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:24px 24px 0 0;background:var(--panel);color:var(--text);transform:translateY(24px);transition:transform .22s}
+.lg-sheet.on .lg-panel{transform:none}
+@media(min-width:700px){.lg-sheet{align-items:center}.lg-panel{border-radius:24px}}
+.lg-ph{display:flex;align-items:center;justify-content:space-between}.lg-ph h2{margin:0;font-size:18px}
+.lg-x{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:inherit;cursor:pointer}
+.lg-find{display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
+.lg-find svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;opacity:.6}
+.lg-find input{flex:1;border:0;background:transparent;color:inherit;font:inherit;padding:12px 0;outline:0;min-width:0}
+.lg-list{overflow:auto;display:grid;gap:6px;padding-bottom:8px}
+.lg-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:transparent;color:inherit;font:inherit;font-weight:800;cursor:pointer;text-align:start}
+.lg-row img,.lg-ph0{width:30px;height:30px;object-fit:contain;background:#fff;border-radius:9px;padding:2px;display:grid;place-items:center;font-size:16px;flex:none}
+.lg-row span:not(.lg-ph0){flex:1;min-width:0}.lg-row small{color:var(--muted);font-weight:700}
+.lg-ck{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);flex:none}
+.lg-row.on{border-color:#16a34a;background:color-mix(in srgb,#16a34a 10%,var(--panel))}.lg-row.on .lg-ck{background:#16a34a;border-color:#16a34a;box-shadow:inset 0 0 0 3px var(--panel)}
