@@ -321,6 +321,7 @@
             <label>العنوان<input id="push-title" maxlength="80" required placeholder="مثال: الأهلي يفوز على الزمالك"></label>
             <label>النص<textarea id="push-body" rows="3" maxlength="200" placeholder="سطر أو اتنين"></textarea></label>
             <label>الرابط عند الضغط (داخل الموقع)<input id="push-url" dir="ltr" value="news.html" placeholder="article.html?id=…"></label>
+            <label>نوع الإشعار<select id="push-kind"><option value="">عام (يوصل للكل)</option><option value="match_start">بداية مباراة</option><option value="goals">أهداف ونتائج</option><option value="team_news">أخبار الفرق</option><option value="player_news">أخبار اللاعبين</option><option value="transfers">انتقالات</option></select></label>
             <label>المستلمون<select id="push-audience"><option value="all">كل المشتركين</option></select></label>
             <div class="row"><button class="btn primary" id="push-send" type="submit">🚀 إرسال</button><button class="btn outline" id="push-test" type="button">إرسال تجريبي لجهازي بس</button></div>
             <p class="note" id="push-msg" role="status"></p>
@@ -337,7 +338,8 @@
           <form id="pt-form" class="form-stack admin-form">
             <div class="row"><label>النوع<select id="pt-kind"><option value="team">فريق</option><option value="player">لاعب</option></select></label>
             <label>الاسم بالإنجليزي (زي ما بيظهر في الـ API)<input id="pt-en" dir="ltr" maxlength="80" required placeholder="Real Madrid"></label>
-            <label>الاسم بالعربي<input id="pt-ar" maxlength="80" required placeholder="ريال مدريد"></label></div>
+            <label>الاسم بالعربي<input id="pt-ar" maxlength="80" required placeholder="ريال مدريد"></label>
+            <label>رقم API-Football (للّوجو/الصورة)<input id="pt-api" type="number" min="1" inputmode="numeric" dir="ltr" placeholder="541"></label></div>
             <button class="btn primary" type="submit">＋ إضافة</button>
             <p class="note" id="pt-msg" role="status"></p>
           </form>

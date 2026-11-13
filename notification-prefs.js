@@ -24,13 +24,19 @@
   window.addEventListener('beforeunload', (e) => { if (isDirty() && !saving) { e.preventDefault(); e.returnValue = ''; } });
 
   const cnt = (kind) => targets.filter((x) => x.kind === kind && draft.has(x.id)).length;
+  const media = (x) => {
+    if (x.logo_url && /^https:\/\//.test(x.logo_url)) return x.logo_url;
+    return x.api_id > 0 ? `https://media.api-sports.io/football/${x.kind === 'team' ? 'teams' : 'players'}/${Number(x.api_id)}.png` : '';
+  };
+  const avatar = (x, name) => { const u = media(x); return `<i class="av ${x.kind}" aria-hidden="true">${u ? `<img src="${esc(u)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}<b>${initial(name)}</b></i>`; };
   const initial = (n) => esc(String(n).trim().charAt(0));
 
   async function load() {
     const { data: u } = await db.auth.getUser(); user = u?.user || null;
     if (!user) { host.innerHTML = '<section class="np-card np-login"><h2>سجّل دخولك الأول</h2><p class="np-sub">الاختيارات مرتبطة بحسابك.</p><a class="nw-btn pri" href="account.html">تسجيل الدخول</a></section>'; try { localStorage.setItem('yr-next', 'notification-preferences.html'); } catch { /* ok */ } return; }
+    const getT = async () => { let x = await db.from('push_targets').select('id,kind,name_ar,name_en,api_id,logo_url').eq('active', true).order('sort_order'); if (x.error) x = await db.from('push_targets').select('id,kind,name_ar,name_en').eq('active', true).order('sort_order'); return x; };
     const [t, f, r] = await Promise.all([
-      db.from('push_targets').select('id,kind,name_ar').eq('active', true).order('sort_order'),
+      getT(),
       db.from('push_follows').select('target_id').eq('user_id', user.id),
       db.from('push_target_requests').select('id,kind,name').eq('user_id', user.id).eq('status', 'pending').order('created_at'),
     ]);
@@ -44,21 +50,22 @@
     const k = KIND[tab]; const qq = q.trim().toLowerCase();
     const items = targets.filter((x) => x.kind === tab && (!qq || x.name_ar.toLowerCase().includes(qq)));
     const mine = pending.filter((x) => x.kind === tab && (!qq || x.name.toLowerCase().includes(qq)));
-    const chips = items.map((x) => `<label class="np-chip"><input type="checkbox" data-t="${esc(x.id)}"${draft.has(x.id) ? ' checked' : ''}><i class="av" aria-hidden="true">${initial(x.name_ar)}</i><span class="nm">${esc(x.name_ar)}</span><i class="ck" aria-hidden="true">${I.ok}</i></label>`).join('')
-      + mine.map((x) => `<div class="np-chip pending"><i class="av" aria-hidden="true">${initial(x.name)}</i><span class="nm">${esc(x.name)}<small>قيد المراجعة</small></span></div>`).join('');
+    const chips = items.map((x) => `<label class="pf-row"><input type="checkbox" data-t="${esc(x.id)}"${draft.has(x.id) ? ' checked' : ''}>${avatar(x, x.name_ar)}<span class="nm"><b>${esc(x.name_ar)}</b>${x.name_en ? `<small dir="ltr">${esc(x.name_en)}</small>` : ''}</span><i class="ck" aria-hidden="true">${I.ok}</i></label>`).join('')
+      + mine.map((x) => `<div class="pf-row pending"><i class="av ${x.kind}" aria-hidden="true"><b>${initial(x.name)}</b></i><span class="nm"><b>${esc(x.name)}</b><small>قيد المراجعة</small></span></div>`).join('');
     const empty = qq ? `<p class="np-empty">مفيش نتيجة لـ «${esc(q.trim())}».</p>` : `<p class="np-empty">لا يوجد ${k.many} متاحين حاليًا.</p>`;
-    return chips ? `<div class="np-grid2">${chips}</div>` : empty;
+    return chips ? `<div class="pf-list">${chips}</div>` : empty;
   }
   function render() {
     const k = KIND[tab]; const total = cnt('team') + cnt('player'); const dirty = isDirty();
-    const tabBtn = (kind, label) => `<button type="button" role="tab" class="np-tab${tab === kind ? ' on' : ''}" data-tab="${kind}" aria-selected="${tab === kind}">${label}<span>${nAr(cnt(kind))}</span></button>`;
+    const TI = { team: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4l-5 3 2 4 2-1v10h10V10l2 1 2-4-5-3a4 4 0 01-8 0z"/></svg>', player: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c.8-4 3.7-6 7.5-6s6.7 2 7.5 6"/></svg>' };
+    const tabBtn = (kind, label) => `<button type="button" role="tab" class="pf-tab${tab === kind ? ' on' : ''}" data-tab="${kind}" aria-selected="${tab === kind}"><span class="pf-ti">${TI[kind]}</span><b>${label}</b><small>${nAr(cnt(kind))} مختار</small></button>`;
     const form = adding ? `<form class="np-form" id="nw-form"><input id="nw-name" maxlength="60" minlength="2" required placeholder="${k.ph}" aria-label="اسم ${k.one}" autocomplete="off"><button class="nw-btn pri" type="submit">إرسال</button><button class="nw-btn ghost" type="button" id="nw-cancel">إلغاء</button><p class="hint">هنراجع الطلب، ولما نوافق عليه هيظهر لك ويتفعّل تلقائيًا.</p></form>` : '';
-    host.innerHTML = `<section class="np-card"><div class="np-tabs" role="tablist">${tabBtn('team', 'الفرق')}${tabBtn('player', 'اللاعبون')}</div>
+    host.innerHTML = `<section class="np-card"><div class="pf-tabs" role="tablist">${tabBtn('team', 'الفرق')}${tabBtn('player', 'اللاعبون')}</div>
       <p class="np-sub">${k.sub}</p>
       <label class="np-search">${I.search}<input id="np-q" type="search" value="${esc(q)}" placeholder="ابحث في ${k.many}" autocomplete="off" aria-label="بحث"></label>
       <div id="pf-list">${list()}</div>
       ${reqOk ? `<button type="button" class="np-add" id="nw-add">${I.plus}<span>مش لاقي ${k.one}؟ اطلب إضافته</span></button>` : ''}${form}</section>
-      <div class="pf-bar"><div class="pf-sum"><b>${nAr(cnt('team'))}</b> فرق · <b>${nAr(cnt('player'))}</b> لاعبين</div>
+      <div class="sv-bar"><div class="pf-sum"><b>${nAr(cnt('team'))}</b> فرق · <b>${nAr(cnt('player'))}</b> لاعبين</div>
       <button class="np-save" id="pf-save" type="button"${saving || !dirty ? ' disabled' : ''}>${saving ? '<i class="np-spin"></i><span>جارٍ الحفظ…</span>' : '<span>حفظ الاختيارات</span>'}</button></div>
       <p class="np-msg${err ? ' err' : ''}" id="np-msg" role="status">${esc(msg || (total && !dirty ? '' : ''))}</p>`;
     wire();
@@ -68,7 +75,7 @@
     host.querySelectorAll('[data-t]').forEach((c) => c.addEventListener('change', () => { if (c.checked) draft.add(c.dataset.t); else draft.delete(c.dataset.t); msg = ''; refresh(); }));
   }
   function refresh() {
-    host.querySelectorAll('.np-tab').forEach((t) => { const sp = t.querySelector('span'); if (sp) sp.textContent = nAr(cnt(t.dataset.tab)); });
+    host.querySelectorAll('.pf-tab').forEach((t) => { const sp = t.querySelector('small'); if (sp) sp.textContent = `${nAr(cnt(t.dataset.tab))} مختار`; });
     const s = host.querySelector('.pf-sum'); if (s) s.innerHTML = `<b>${nAr(cnt('team'))}</b> فرق · <b>${nAr(cnt('player'))}</b> لاعبين`;
     const b = document.getElementById('pf-save'); if (b) b.disabled = saving || !isDirty();
     const m = document.getElementById('np-msg'); if (m) m.textContent = '';

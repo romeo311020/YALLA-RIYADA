@@ -1275,7 +1275,7 @@
       const st = await callFn('send-push', { action: 'stats' });
       $('push-devices').textContent = st.devices; const ts = st.targets || []; $('push-ntargets').textContent = ts.filter((t) => t.active).length;
       $('push-audience').innerHTML = `<option value="all">كل المشتركين (${st.devices} جهاز)</option>` + ts.map((t) => `<option value="${esc(t.id)}">متابعو: ${esc(t.name_ar)} (${t.followers})</option>`).join('');
-      $('push-stats').innerHTML = ts.length ? ts.map((t) => `<article class="admin-list-item"><div><strong>${t.kind === 'team' ? '👕' : '⚽'} ${esc(t.name_ar)}</strong><small>${t.active ? 'ظاهر للمستخدمين' : 'مخفي'}</small></div><span class="pill ${t.followers ? 'ok' : 'off'}">${t.followers} متابع</span></article>`).join('') : '<p class="note">لا يوجد.</p>';
+      $('push-stats').innerHTML = ts.length ? ts.map((t) => `<article class="admin-list-item"><div><strong>${t.api_id ? `<img src="https://media.api-sports.io/football/${t.kind === 'team' ? 'teams' : 'players'}/${Number(t.api_id)}.png" alt="" width="26" height="26" loading="lazy" style="border-radius:50%;vertical-align:middle;background:#fff;object-fit:contain" onerror="this.remove()"> ` : (t.kind === 'team' ? '👕 ' : '⚽ ')}${esc(t.name_ar)}</strong><small>${t.active ? 'ظاهر للمستخدمين' : 'مخفي'}</small></div><span class="pill ${t.followers ? 'ok' : 'off'}">${t.followers} متابع</span></article>`).join('') : '<p class="note">لا يوجد.</p>';
     } catch (e) { if (!keep) say('push-msg', /الدالة|send-push|Failed|غير/.test(e.message) ? `الدالة send-push مش جاهزة: ${e.message}` : e.message); }
     const { data } = await client.from('news').select('id,title,excerpt,body').eq('is_published', true).order('created_at', { ascending: false }).limit(25);
     pushNews = data || [];
@@ -1291,8 +1291,8 @@
     if (action === 'send' && !window.confirm(`إرسال الإشعار إلى: ${label}؟\n\n«${title}»`)) return;
     const btns = [$('push-send'), $('push-test')]; btns.forEach((b) => { b.disabled = true; }); say('push-msg', 'جارٍ الإرسال…');
     try {
-      const r = await callFn('send-push', { action, title, body: $('push-body').value.trim(), url: $('push-url').value.trim() || 'news.html', audience: aud === 'all' ? 'all' : 'target', target_id: aud === 'all' ? undefined : aud });
-      say('push-msg', r.note || `تم ✓ — اتبعت لـ ${r.sent} جهاز${r.failed ? ` · فشل ${r.failed}` : ''}${r.removed ? ` · اتشال ${r.removed} اشتراك منتهي` : ''}${action === 'test' && !r.total ? ' — مفيش اشتراك على حسابك. فعّل الإشعارات من «حسابي» الأول.' : ''}`);
+      const r = await callFn('send-push', { action, title, body: $('push-body').value.trim(), url: $('push-url').value.trim() || 'news.html', audience: aud === 'all' ? 'all' : 'target', target_id: aud === 'all' ? undefined : aud, kind: $('push-kind').value || undefined });
+      say('push-msg', r.note || `تم ✓ — اتبعت لـ ${r.sent} جهاز${r.skipped ? ` · تخطّينا ${r.skipped} قفلوا النوع ده` : ''}${r.failed ? ` · فشل ${r.failed}` : ''}${r.removed ? ` · اتشال ${r.removed} اشتراك منتهي` : ''}${action === 'test' && !r.total ? ' — مفيش اشتراك على حسابك. فعّل الإشعارات من «حسابي» الأول.' : ''}`);
       if (action === 'send') loadPush(true);
     } catch (e) { say('push-msg', e.message); } finally { btns.forEach((b) => { b.disabled = false; }); }
   };
@@ -1320,17 +1320,20 @@
     loadRequests();
     const { data, error } = await client.from('push_targets').select('*').order('kind').order('sort_order');
     if (error) { $('pt-list').innerHTML = ''; say('pt-msg', /push_targets|relation/.test(error.message) ? 'شغّل ملف supabase-push-step1.sql في Supabase الأول.' : error.message); return; }
-    $('pt-list').innerHTML = (data || []).map((t) => `<article class="admin-list-item"><div><strong>${t.kind === 'team' ? '👕' : '⚽'} ${esc(t.name_ar)}</strong><small dir="ltr">${esc(t.name_en)} · <span class="pill ${t.active ? 'ok' : 'off'}">${t.active ? 'ظاهر' : 'مخفي'}</span></small></div><div class="row"><button type="button" class="btn outline" data-pt-toggle="${esc(t.id)}" data-on="${t.active ? 1 : 0}">${t.active ? 'إخفاء' : 'إظهار'}</button><button type="button" class="btn outline" data-pt-del="${esc(t.id)}">حذف</button></div></article>`).join('') || '<p class="note">لا يوجد. أضف أول فريق أو لاعب.</p>';
+    $('pt-list').innerHTML = (data || []).map((t) => `<article class="admin-list-item"><div><strong>${t.kind === 'team' ? '👕' : '⚽'} ${esc(t.name_ar)}</strong><small dir="ltr">${esc(t.name_en)} · <span class="pill ${t.active ? 'ok' : 'off'}">${t.active ? 'ظاهر' : 'مخفي'}</span></small></div><div class="row"><button type="button" class="btn outline" data-pt-toggle="${esc(t.id)}" data-on="${t.active ? 1 : 0}">${t.active ? 'إخفاء' : 'إظهار'}</button><button type="button" class="btn outline" data-pt-img="${esc(t.id)}" data-cur="${esc(t.api_id || '')}">رقم الصورة</button><button type="button" class="btn outline" data-pt-del="${esc(t.id)}">حذف</button></div></article>`).join('') || '<p class="note">لا يوجد. أضف أول فريق أو لاعب.</p>';
   }
   $('pt-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const row = { kind: $('pt-kind').value, name_en: $('pt-en').value.trim(), name_ar: $('pt-ar').value.trim(), sort_order: 100 };
+    const apiId = parseInt($('pt-api')?.value, 10); if (apiId > 0) row.api_id = apiId;
     if (!row.name_en || !row.name_ar) return;
     const { error } = await client.from('push_targets').insert(row);
-    say('pt-msg', error ? (/duplicate|unique/.test(error.message) ? 'موجود بالفعل.' : error.message) : 'تمت الإضافة ✓');
-    if (!error) { $('pt-en').value = ''; $('pt-ar').value = ''; loadPushTargets(); }
+    say('pt-msg', error ? (/duplicate|unique/.test(error.message) ? 'موجود بالفعل.' : /api_id/.test(error.message) ? 'شغّل ملف supabase-push-media.sql في Supabase الأول.' : error.message) : 'تمت الإضافة ✓');
+    if (!error) { $('pt-en').value = ''; $('pt-ar').value = ''; if ($('pt-api')) $('pt-api').value = ''; loadPushTargets(); }
   });
   $('pt-list').addEventListener('click', async (e) => {
+    const im = e.target.closest('[data-pt-img]');
+    if (im) { const v = window.prompt('رقم الفريق/اللاعب في API-Football (فاضي = بدون صورة):', im.dataset.cur || ''); if (v === null) return; const n = parseInt(v, 10); const { error } = await client.from('push_targets').update({ api_id: n > 0 ? n : null }).eq('id', im.dataset.ptImg); say('pt-msg', error ? (/api_id/.test(error.message) ? 'شغّل ملف supabase-push-media.sql في Supabase الأول.' : error.message) : 'تم حفظ رقم الصورة ✓'); loadPushTargets(); return; }
     const tg = e.target.closest('[data-pt-toggle]'); const dl = e.target.closest('[data-pt-del]');
     if (tg) { const { error } = await client.from('push_targets').update({ active: tg.dataset.on !== '1' }).eq('id', tg.dataset.ptToggle); say('pt-msg', error ? error.message : 'تم.'); loadPushTargets(); }
     if (dl && window.confirm('حذف الهدف ده؟ هيتشال من متابعات كل المستخدمين.')) { const { error } = await client.from('push_targets').delete().eq('id', dl.dataset.ptDel); say('pt-msg', error ? error.message : 'تم الحذف.'); loadPushTargets(); }

@@ -22,6 +22,9 @@
     ball: sv('<circle cx="12" cy="12" r="9"/><path d="M12 7.5l3.6 2.6-1.4 4.2H9.8L8.4 10.1zM12 7.5V3.2M15.6 10.1l4-1.2M14.2 14.3l2.5 3.3M9.8 14.3l-2.5 3.3M8.4 10.1l-4-1.2"/>'),
     news: sv('<path d="M5 4h14v16H5z"/><path d="M8.5 9h7M8.5 12.5h7M8.5 16h4"/>'),
     user: sv('<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c.8-4 3.7-6 7.5-6s6.7 2 7.5 6"/>'),
+    star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="fillg" d="M12 2.8l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.6l-5.8 3.1 1.1-6.5L2.6 9.6l6.5-.9z"/></svg>',
+    shirt: sv('<path d="M8 4l-5 3 2 4 2-1v10h10V10l2 1 2-4-5-3a4 4 0 01-8 0z"/>'),
+    sliders: sv('<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>'),
     swap: sv('<path d="M4 8h14l-3-3M20 16H6l3 3"/>'),
   };
   /* أنواع الإشعارات — المفتاح بيتخزّن في push_prefs.kinds ويتفلتر به الإرسال من الإدارة */
@@ -67,24 +70,22 @@
       desc = 'اضغط على الأيقونة جنب عنوان الموقع ← «الإشعارات» ← سماح، وبعدين حدّث الصفحة.';
     } else if (sub) {
       st = 'on'; title = 'الإشعارات مفعّلة'; desc = devNote || 'تقدر تستقبل التنبيهات على جهازك.';
-      acts = `<button class="nw-btn" id="pn-test" type="button">${I.play}<span>تجربة إشعار</span></button><button class="nw-btn ghost" id="pn-off" type="button">إيقاف</button>`;
+      acts = `<button class="nw-btn" id="pn-test" type="button">${I.bell}<span>تجربة إشعار</span></button><button class="nw-btn ghost" id="pn-off" type="button">إيقاف</button>`;
     } else {
       title = 'الإشعارات غير مفعّلة'; desc = devNote || 'فعّلها علشان توصلك تنبيهات اللي بتتابعه.';
       acts = '<button class="nw-btn pri" id="pn-on" type="button">تفعيل الإشعارات</button>';
     }
-    return `<section class="np-status ${st}"><div class="np-ico">${st === 'on' ? I.ok : st === 'warn' ? I.off : I.bell}</div><div class="np-st-t"><b>${title}</b><p id="pn-devnote" class="${devKind}">${esc(desc)}</p></div>${acts ? `<div class="np-acts">${acts}</div>` : ''}</section>`;
+    return `<section class="np-status ${st}">${acts ? `<div class="np-acts">${acts}</div>` : ''}<div class="np-st-t"><b>${title}</b><p id="pn-devnote" class="${devKind}">${esc(desc)}</p></div><div class="np-ico">${st === 'on' ? I.ok : st === 'warn' ? I.off : I.bell}</div></section>`;
   }
   function favs() {
-    const total = counts.team + counts.player;
-    const sum = !counts.ok ? '<p class="np-sub">تعذّر تحميل اختياراتك. حاول تحدّث الصفحة.</p>'
-      : total ? `<div class="np-sum"><div><b>${nAr(counts.team)}</b><small>${counts.team === 1 ? 'فريق مختار' : 'فرق مختارة'}</small></div><div><b>${nAr(counts.player)}</b><small>${counts.player === 1 ? 'لاعب مختار' : 'لاعبين مختارين'}</small></div></div>`
-      : '<div class="np-empty-box"><b>لسه ما اخترتش حاجة</b><span>اختار فرقك ولاعبينك المفضلين علشان توصلك إشعارات خاصة بيهم.</span></div>';
-    return `<section class="np-card"><div class="np-ch"><span class="np-chico">${I.users}</span><h2>الفرق واللاعبون المفضلون</h2></div><p class="np-sub">اختر الفرق واللاعبين الذين ترغب في متابعة أخبارهم والحصول على إشعارات خاصة بهم.</p>${sum}<a class="np-cta" href="notification-preferences.html"><span>اختيار الفرق واللاعبين</span>${I.go}</a></section>`;
+    const sumHtml = !counts.ok ? '<p class="np-sub err">تعذّر تحميل اختياراتك. حاول تحدّث الصفحة.</p>'
+      : `<div class="np-sum"><div>${I.users}<b>${nAr(counts.player)}</b><small>${counts.player === 1 ? 'لاعب مختار' : 'لاعبين مختارين'}</small></div><div>${I.shirt}<b>${nAr(counts.team)}</b><small>${counts.team === 1 ? 'فريق مختار' : 'فرق مختارة'}</small></div></div>`;
+    return `<section class="np-card np-fav"><div class="np-ch"><span class="np-star">${I.star}</span><div><h2>مفضلاتك</h2><p class="np-sub">الفرق واللاعبون الذين تتابعهم للحصول على إشعارات خاصة بهم.</p></div></div>${sumHtml}<a class="np-cta" href="notification-preferences.html"><span>${I.sliders}<b>إدارة المفضلات</b></span></a></section>`;
   }
   function types() {
     const rows = KINDS.map(([k, t, d, ic]) => `<label class="np-row"><span class="np-ri">${ic}</span><span class="np-rt"><b>${t}</b><small>${d}</small></span><input type="checkbox" class="np-sw" data-k="${k}"${on(k) ? ' checked' : ''} aria-label="${t}"><i class="np-knob" aria-hidden="true"></i></label>`).join('');
     const warn = prefsOk ? '' : '<p class="np-note err">حفظ التفضيلات لسه مش متفعّل على السيرفر (ملف SQL ناقص).</p>';
-    return `<section class="np-card np-types"><div class="np-ch"><span class="np-chico">${I.gear}</span><h2>تخصيص أنواع الإشعارات</h2></div>${rows}${warn}<p class="np-note">اختياراتك بتتطبّق على الإشعارات اللي بتتبعت من الإدارة حسب نوعها. إشعارات المباريات التلقائية (الأهداف وبداية المباراة) لسه ما اتفعّلتش على السيرفر.</p></section>
+    return `<section class="np-card np-types"><div class="np-ch"><span class="np-chico">${I.gear}</span><div><h2>تخصيص أنواع الإشعارات</h2><p class="np-sub">اختر نوع الإشعارات التي ترغب في استقبالها.</p></div></div>${rows}${warn}<p class="np-note">اختياراتك بتتطبّق على الإشعارات اللي بتتبعت من الإدارة حسب نوعها. إشعارات المباريات التلقائية (الأهداف وبداية المباراة) لسه ما اتفعّلتش على السيرفر.</p></section>
       <button class="np-save" id="np-save" type="button"${prefsOk && !saving ? '' : ' disabled'}>${saving ? '<i class="np-spin"></i><span>جارٍ الحفظ…</span>' : I.save + '<span>حفظ التفضيلات</span>'}</button><p class="np-msg${saveErr ? ' err' : ''}" id="np-msg" role="status">${esc(saveMsg)}</p>`;
   }
   function render() {
