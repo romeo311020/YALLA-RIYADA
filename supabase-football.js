@@ -127,6 +127,31 @@
     } catch (e) { console.error('streams lookup:', e); }
   };
 
+
+  /* ---- صفحة المباراة: كارت المصدر والجودة + مباريات أخرى مباشرة ---- */
+  const hostName = (u) => { try { const h = new URL(u).hostname.replace(/^www\./, ''); if (/youtube|youtu\.be/.test(h)) return 'YouTube'; if (/facebook|fb\.watch/.test(h)) return 'Facebook'; if (/tiktok/.test(h)) return 'TikTok'; return h; } catch { return 'مباشر'; } };
+  const mdChan = (url, m) => {
+    const box = $('md-chan'); const btn = $('md-chan-b'); const dd = $('md-chan-d'); if (!box || !btn || !dd) return;
+    const name = hostName(url); const yt = name === 'YouTube';
+    $('md-src-t').textContent = name; $('md-q-t').textContent = m.status === 'finished' ? 'ملخص المباراة' : 'جودة البث';
+    dd.innerHTML = `<div class="md-row on"><span>المصدر</span><b>${escapeHtml(name)}</b></div><div class="md-row"><span>الجودة</span><b>${yt ? 'تلقائية — حسب سرعة الاتصال' : 'حسب المصدر'}</b></div><p>مصدر واحد متاح لهذه المباراة. السرعة بتتغيّر من زر السرعة داخل المشغّل.</p>`;
+    box.hidden = false;
+    btn.addEventListener('click', () => { const o = dd.hidden; dd.hidden = !o; btn.setAttribute('aria-expanded', String(o)); box.classList.toggle('open', o); });
+  };
+  const mdMore = async (cur, sport, day) => {
+    const sec = $('md-more'); const track = $('md-track'); if (!sec || !track) return;
+    try {
+      const res = await request({ action: 'fixtures', sport, date: localDate(dayOff(day)) });
+      const live = (res?.fixtures || []).filter((x) => x.status === 'live' && String(x.fixture_id) !== String(cur.fixture_id)).slice(0, 12);
+      if (!live.length) return;
+      const crest = (n, l) => { const u = safeUrl(l); return `<span class="mc-c">${u ? `<img src="${escapeHtml(u)}" alt="" loading="lazy" decoding="async">` : `<b>${escapeHtml(String(tn(n)).charAt(0))}</b>`}</span>`; };
+      track.innerHTML = live.map((x) => `<a class="md-card" href="match.html?fixture=${encodeURIComponent(x.fixture_id)}&sport=${encodeURIComponent(sport)}&day=${encodeURIComponent(day)}"><div class="mc-t">${crest(x.home_team, x.home_logo)}<em>VS</em>${crest(x.away_team, x.away_logo)}</div><div class="mc-n"><span>${escapeHtml(tn(x.home_team))}</span><span>${escapeHtml(tn(x.away_team))}</span></div>${x.home_score != null ? `<div class="mc-s">${escapeHtml(String(x.home_score))} - ${escapeHtml(String(x.away_score))}</div>` : ''}<span class="mc-l">مباشر الآن <i></i></span></a>`).join('');
+      sec.hidden = false;
+      const step = () => Math.max(160, track.clientWidth * 0.8);
+      $('md-prev')?.addEventListener('click', () => track.scrollBy({ left: step(), behavior: 'smooth' }));
+      $('md-next')?.addEventListener('click', () => track.scrollBy({ left: -step(), behavior: 'smooth' }));
+    } catch (e) { console.error('other live:', e); }
+  };
   const dayOff = (v) => { const n = { yesterday: -1, today: 0, tomorrow: 1 }[v] ?? parseInt(v, 10); return Number.isFinite(n) ? Math.max(-7, Math.min(7, n)) : 0; };
   /* تعديلات الأدمن على مباريات الـ API (تأجيل/إلغاء/نتيجة/موعد) */
   /* أشهر الفرق عند الجمهور المصري (ترتيب تقديري حسب الشعبية). بيتطابق بالاسم الإنجليزي من الـ API أو العربي */
@@ -654,6 +679,15 @@
         document.title = `${H} × ${A} | يلا رياضة`;
         score.innerHTML = `${teamMarkup(m.home_team, m.home_logo, sport, m.home_id)}${centerMarkup(m)}${teamMarkup(m.away_team, m.away_logo, sport, m.away_id)}`;
         if (note) note.textContent = formatDate(m.kickoff);
+        { const hero0 = $('match-hero'); if (hero0 && !hero0.querySelector('.mh-when')) {
+          const d = new Date(m.kickoff); const ok = !Number.isNaN(d.getTime());
+          const iso = ok ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '';
+          const clock = m.status === 'live' && m.minute ? `${m.minute}'` : ok ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+          const ic = (p) => `<svg viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
+          const w = document.createElement('div'); w.className = 'mh-when'; w.setAttribute('dir', 'ltr');
+          w.innerHTML = `<span>${ic('<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>')}<b>${iso}</b></span><i></i><span>${ic('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>')}<b>${clock}</b></span>`;
+          (iso || clock) && hero0.insertBefore(w, $('mh-count') || null);
+        } }
         window.yrMatchShare = () => {
           const live = m.status === 'live', fin = m.status === 'finished', has = m.home_score != null && m.away_score != null;
           window.yrShareBloom({ type: 'match', url: location.href.split('#')[0], league: m.league_label || m.league, home: { name: H, logo: safeUrl(m.home_logo) }, away: { name: A, logo: safeUrl(m.away_logo) }, score: has ? `${m.away_score} - ${m.home_score}` : '', live, finished: fin, minute: m.minute, time: formatTime(m.kickoff), when: formatDate(m.kickoff), title: `${H} × ${A}` });
@@ -661,6 +695,7 @@
         { const hero = $('match-hero'); if (hero && !hero.querySelector('.mh-share')) { const b = document.createElement('button'); b.type = 'button'; b.className = 'mh-share'; b.innerHTML = window.yrIco('share') + ' شارك المباراة'; b.addEventListener('click', () => window.yrMatchShare()); hero.append(b); } }
         if (sport === 'football' && window.yrPredictMount) window.yrPredictMount(m);
         window.yrHero && window.yrHero({ league: m.league_label || m.league, kickoff: m.kickoff, status: m.status, note: ['live', 'postponed', 'cancelled'].includes(m.status) ? m.status_note : '' });
+        mdMore(m, sport, day);
         if (sport === 'football' && body) {
           // تشكيلة يدوية من لوحة الأدمن (إن وُجدت) تتفوق على تشكيلة المزوّد
           let manual = null; let manualInfo = null;
@@ -692,6 +727,7 @@
             player.hidden = false; window.yrPlayerReady && window.yrPlayerReady();
           } else {
           window.yrMountPlayer(url, `مشغّل مباراة ${H} ضد ${A}`);
+          mdChan(url, m);
           }
           if (note && !$('watch-btn')) {
             const btn = document.createElement('button');

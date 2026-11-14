@@ -16,8 +16,9 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="predict.css">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="يلا رياضة"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="description" content="تفاصيل المباراة على يلا رياضة: الملخص والتشكيلة والإحصائيات."><meta property="og:title" content="تفاصيل المباراة | يلا رياضة"><meta property="og:description" content="تفاصيل المباراة على يلا رياضة: الملخص والتشكيلة والإحصائيات."><meta property="og:locale" content="ar_AR"><meta name="twitter:card" content="summary_large_image"><meta name="robots" content="index,follow"></head>
-<body>
+<body class="page-match">
   <div id="shared-header"></div>
+  <div class="md-bar" id="md-bar"><a class="md-logo" href="matches.html" aria-label="يلا رياضة"><img src="favicon.svg" alt="يلا رياضة" width="40" height="40"></a><span class="md-lg" id="md-lg">تفاصيل المباراة</span><a class="md-back" id="md-back" href="matches.html"><span>العودة</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a></div>
   <main class="wrap page wide">
     <h1 id="match-title" class="sr-only">تفاصيل المباراة</h1>
     <div class="watch-grid m-split">
@@ -31,11 +32,11 @@
     </section>
     <div id="match-body" hidden>
       <div class="tabs" role="tablist" aria-label="أقسام المباراة">
-        <button type="button" class="tab tab-player" role="tab" data-tab="player" aria-selected="false" hidden>المشغّل</button>
-        <button type="button" class="tab" role="tab" data-tab="lineup" aria-selected="false">التشكيلة</button>
-        <button type="button" class="tab active" role="tab" data-tab="summary" aria-selected="true">الملخص</button>
-        <button type="button" class="tab" role="tab" data-tab="stats" aria-selected="false">الإحصائيات</button>
-        <button type="button" class="tab" role="tab" data-tab="info" aria-selected="false">التفاصيل</button>
+        <button type="button" class="tab tab-player" role="tab" data-tab="player" aria-selected="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg><span>المشغّل</span></button>
+        <button type="button" class="tab" role="tab" data-tab="lineup" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14c2.4.2 3.7 1.7 4 4"/></svg><span>التشكيلة</span></button>
+        <button type="button" class="tab active" role="tab" data-tab="summary" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l4 4v13H6z"/><path d="M9 11h7M9 14.5h7M9 18h4"/></svg><span>الملخص</span></button>
+        <button type="button" class="tab" role="tab" data-tab="stats" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg><span>الإحصائيات</span></button>
+        <button type="button" class="tab" role="tab" data-tab="info" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>التفاصيل</span></button>
       </div>
       <section class="panel tab-panel" id="tab-summary" role="tabpanel"></section>
       <section class="panel tab-panel" id="tab-lineup" role="tabpanel" hidden></section>
@@ -48,11 +49,14 @@
       <div class="player-top"><h2><span class="live-dot"></span>البث المباشر</h2><button type="button" class="theater-close" id="theater-close">✕ إغلاق السينما</button></div>
       <div class="match-player-frame" id="match-player-frame"></div>
     </section>
+    <section class="md-chan" id="md-chan" hidden aria-label="مصدر وجودة البث"><button type="button" class="md-chan-b" id="md-chan-b" aria-expanded="false"><span class="md-q"><b id="md-q-t">جودة البث</b><em class="md-hd" id="md-hd" hidden>HD</em></span><i class="md-sep" aria-hidden="true"></i><span class="md-src"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M8 3l4 3 4-3M8 21h8"/></svg><b id="md-src-t">مصدر البث</b></span><i class="md-chev" aria-hidden="true"></i></button><div class="md-chan-d" id="md-chan-d" hidden></div></section>
     <aside class="watch-actions" id="match-actions" hidden aria-label="أدوات المشاهدة">
       <div class="player-bar" id="match-player-bar"></div>
     </aside>
     </div>
     </div>
+    <section class="md-more" id="md-more" hidden aria-label="مباريات أخرى"><div class="md-mh"><h2 id="md-more-t">مباريات أخرى مباشرة</h2><span class="md-live-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.2" fill="currentColor"/><path d="M7.8 7.8a6 6 0 000 8.4M16.2 7.8a6 6 0 010 8.4M4.9 4.9a10 10 0 000 14.2M19.1 4.9a10 10 0 010 14.2"/></svg></span><i class="md-rule" aria-hidden="true"></i></div><div class="md-rail"><button type="button" class="md-arr" id="md-prev" aria-label="السابق"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button><div class="md-track" id="md-track"></div><button type="button" class="md-arr" id="md-next" aria-label="التالي"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button></div></section>
+    <a class="md-promo" href="matches.html"><img src="favicon.svg" alt="" width="40" height="40"><b>تابع جميع المباريات والبطولات على يلا رياضة</b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H4M10 6l-6 6 6 6"/></svg></a>
   </main>
   <div id="shared-footer"></div>
   <script src="app.js"></script>

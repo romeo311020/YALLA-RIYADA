@@ -223,10 +223,12 @@ window.yrPlayerReady = function () {
 window.yrHero = function (m) {
   setTimeout(() => window.yrPlayerTitle && window.yrPlayerTitle(), 0);
   const lg = document.getElementById('mh-league'); if (lg) lg.textContent = m.league || '';
+  const mdl = document.getElementById('md-lg'); if (mdl && m.league) mdl.textContent = m.league;
   const st = document.getElementById('mh-status');
   if (st) {
     st.className = 'st st-' + (m.status || 'scheduled');
-    st.textContent = m.status === 'live' ? '● مباشر' + (m.note ? ' · ' + m.note : '') : m.status === 'finished' ? 'انتهت' : m.status === 'postponed' ? 'مؤجلة' : m.status === 'cancelled' ? 'ملغاة' : 'قادمة';
+    st.textContent = m.status === 'live' ? 'مباشر الآن' : m.status === 'finished' ? 'انتهت المباراة · FULL TIME' : m.status === 'postponed' ? 'مؤجلة' : m.status === 'cancelled' ? 'ملغاة' : 'لم تبدأ بعد';
+    if (m.status === 'live') { const d = document.createElement('i'); d.className = 'st-dot'; st.append(d); }
   }
   const box = document.getElementById('mh-count'); if (!box) return;
   if (window.__yrCount) { clearInterval(window.__yrCount); window.__yrCount = null; }
