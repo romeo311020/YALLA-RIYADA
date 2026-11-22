@@ -365,9 +365,8 @@
     });
     return out.join('');
   };
-  const pitchBox = (l, isHome, hidden, name = '') => `<div class="pitch-wrap" data-team="${isHome ? 'home' : 'away'}"${hidden ? ' hidden' : ''}><div class="pitch" dir="ltr" aria-label="تشكيلة الفريق"><i class="pitch-mid"></i><i class="pitch-circle"></i><i class="pitch-box top"></i><i class="pitch-box bottom"></i>${pitchPlayers(l, isHome)}<span class="pt-team" dir="rtl">${escapeHtml(name)}</span><span class="pt-brand">YALLA RIYADA</span><span class="pt-form">${escapeHtml(l.formation || '')}</span></div>${l.coach ? `<div class="coach-card"><span class="cc-av">${escapeHtml(String(pn(l.coach)).trim().charAt(0))}</span><span class="cc-tx"><b>${escapeHtml(pn(l.coach))}</b><small>المدرب</small></span></div>` : ''}</div>`;
+  const pitchBox = (l, isHome, hidden, name = '') => `<div class="pitch-wrap" data-team="${isHome ? 'home' : 'away'}"${hidden ? ' hidden' : ''}><div class="pitch" dir="ltr" aria-label="تشكيلة الفريق"><i class="pitch-mid"></i><i class="pitch-circle"></i><i class="pitch-box top"></i><i class="pitch-box bottom"></i>${pitchPlayers(l, isHome)}<span class="pt-team" dir="rtl">${escapeHtml(name)}</span><span class="pt-brand">YALLA RIYADA</span><span class="pt-form">${escapeHtml(l.formation || '')}</span></div>${l.coach ? `<div class="coach-card"><span class="cc-av">${safeUrl(l.coach_photo) ? `<img src="${escapeHtml(safeUrl(l.coach_photo))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}<i>${escapeHtml(String(pn(l.coach)).trim().charAt(0))}</i></span><span class="cc-tx"><b>${escapeHtml(pn(l.coach))}</b><small>المدرب</small></span></div>` : ''}</div>`;
   const benchList = (title, lineup, teamName) => `<div class="bench"><h3>${escapeHtml(title)}</h3>
-      ${lineup.coach ? `<p class="coach">المدرب: <b>${escapeHtml(pn(lineup.coach))}</b></p>` : ''}
       <ul>${lineup.subs.map((p) => `<li${pAttrs(p)} class="${p.id > 0 ? 'clickable' : ''}"><span class="sq-img sm">${photoImg(p.id)}</span><span class="pl-no sm">${escapeHtml(p.number ?? '')}</span>${escapeHtml(shortName(p.name))}</li>`).join('') || '<li class="note">لا يوجد احتياط معلن.</li>'}</ul></div>`;
   const renderLineup = (m, res) => {
     const lineups = res.lineups || [];
@@ -785,7 +784,7 @@
           root.removeAttribute('aria-busy');
           root.innerHTML = `<section class="tp-hero"><span class="tp-av">${logo ? `<img src="${escapeHtml(logo)}" alt="">` : '⚽'}</span>
               <div class="tp-hi"><small>${t.national ? 'منتخب' : 'نادي'}${t.country ? ' · ' + escapeHtml(countryAr(t.country)) : ''}</small><h1>${escapeHtml(tn(t.name))}</h1>
-              <div class="tp-acts"><button type="button" class="tp-btn" onclick="window.yrTeamShare&&window.yrTeamShare()">مشاركة</button><a class="tp-btn ghost" href="notification-preferences.html">متابعة الفريق</a></div></div></section>
+              <div class="tp-acts"><button type="button" class="tp-btn" onclick="window.yrTeamShare&&window.yrTeamShare()">مشاركة</button><a class="tp-btn ghost" href="notification-preferences.html?follow=team:${id}&n=${encodeURIComponent(t.name || '')}">🔔 متابعة الفريق</a></div></div></section>
             <nav class="tp-tabs" role="tablist"><button class="tp-tab active" data-t="ov" role="tab" aria-selected="true">نظرة عامة</button><button class="tp-tab" data-t="mt" role="tab" aria-selected="false">المباريات</button><button class="tp-tab" data-t="pl" role="tab" aria-selected="false">اللاعبين</button></nav>
             <div class="tp-pane" id="pane-ov">
               <section class="tp-card"><h2>معلومات الفريق</h2><div class="tp-tiles">${[['سنة التأسيس', t.founded], ['الملعب', v.name ? tn(v.name) : ''], ['المدينة', v.city], ['السعة', v.capacity ? nAr(v.capacity) : ''], ['المدرب', c && c.name ? pn(c.name) : '']].filter((x) => x[1]).map(([k, x]) => tile('', String(x), k)).join('')}</div></section>
@@ -828,7 +827,7 @@
           root.removeAttribute('aria-busy');
           root.innerHTML = `<section class="tp-hero"><span class="tp-av round">${photoImg(id)}</span>
               <div class="tp-hi"><small>${[posAr(r.position), p.nationality ? countryAr(p.nationality) : ''].filter(Boolean).join(' · ')}</small><h1>${escapeHtml(pn(p.name))}</h1>
-              ${tm.name ? `<a class="tp-tl" href="${tm.id ? 'team.html?id=' + tm.id : '#'}">${tl ? `<img src="${escapeHtml(tl)}" alt="">` : ''}${escapeHtml(tn(tm.name))}</a>` : ''}</div></section>
+              ${tm.name ? `<a class="tp-tl" href="${tm.id ? 'team.html?id=' + tm.id : '#'}">${tl ? `<img src="${escapeHtml(tl)}" alt="">` : ''}${escapeHtml(tn(tm.name))}</a>` : ''}<div class="tp-acts"><a class="tp-btn" href="notification-preferences.html?follow=player:${id}&n=${encodeURIComponent(p.name || '')}">🔔 متابعة اللاعب</a></div></div></section>
             <div class="tp-tiles tp-tiles4">${[['العمر', p.age ? p.age + ' سنة' : ''], ['الطول', unitAr(p.height)], ['الوزن', unitAr(p.weight)], ['الرقم', r.number ? '#' + r.number : '']].filter((x) => x[1]).map(([k, x]) => tile('', String(x), k)).join('')}</div>
             <nav class="tp-tabs" role="tablist"><button class="tp-tab active" data-t="ov" role="tab" aria-selected="true">نظرة عامة</button><button class="tp-tab" data-t="cp" role="tab" aria-selected="false">البطولات</button><button class="tp-tab" data-t="inf" role="tab" aria-selected="false">معلومات</button></nav>
             <div class="tp-pane" id="pane-ov"><section class="tp-card"><h2>إحصائيات موسم ${escapeHtml(String(r.season))}/${escapeHtml(String(Number(r.season) + 1).slice(2))}</h2>

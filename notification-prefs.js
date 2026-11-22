@@ -43,7 +43,21 @@
     if (t.error) { host.innerHTML = '<section class="np-card"><p class="np-sub err">تعذّر تحميل القوائم. حدّث الصفحة وحاول تاني.</p></section>'; return; }
     targets = t.data || []; saved = new Set((f.data || []).map((x) => x.target_id)); draft = new Set(saved);
     reqOk = !r.error; pending = r.error ? [] : (r.data || []);
+    // جاي من زر «متابعة» في صفحة فريق/لاعب: ?follow=team:541&n=الاسم
+    let prefill = '';
+    try {
+      const sp = new URLSearchParams(location.search); const [fk, fid] = String(sp.get('follow') || '').split(':'); const nm = (sp.get('n') || '').slice(0, 60);
+      if ((fk === 'team' || fk === 'player') && Number(fid) > 0) {
+        tab = fk;
+        const hit = targets.find((x) => x.kind === fk && Number(x.api_id) === Number(fid));
+        if (hit) { q = ''; if (saved.has(hit.id)) { msg = `إنت بالفعل بتتابع ${hit.name_ar} ✓`; } else { draft.add(hit.id); msg = `تم تحديد ${hit.name_ar} — اضغط «حفظ الاختيارات» عشان توصلك إشعاراته.`; } }
+        else if (reqOk && nm) { adding = true; prefill = nm; msg = 'الاسم ده مش في القايمة لسه — ابعت طلب إضافته وهنفعّله لك.'; }
+      }
+    } catch { /* ignore */ }
     render();
+    if (prefill) { const i = host.querySelector('#nw-name'); if (i) i.value = prefill; }
+    if (msg) say(msg, false);
+    const hl = host.querySelector('.pf-row input:checked'); if (hl && !prefill) hl.closest('.pf-row').scrollIntoView({ block: 'center' });
   }
 
   function list() {

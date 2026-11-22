@@ -2,13 +2,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Lalezar&display=swap');
 
 :root{
-  --bg:#000; --bg2:#0b0b0b; --panel:#111; --panel2:#1b1b1b; --line:#2c2c2c;
-  --text:#fff; --muted:#a3a3a3; --inv:#fff; --on-inv:#000; --focus:#fff;
-  --acc:#c6ff3d; --on-acc:#000; --r:16px; color-scheme:dark;
+  --bg:#06100b; --bg2:#0a1811; --panel:#0e1c15; --panel2:#142a1f; --line:#1f3a2b;
+  --text:#eef7f1; --muted:#93ab9d; --inv:#eef7f1; --on-inv:#06100b; --focus:#c6ff3d;
+  --acc:#c6ff3d; --on-acc:#06100b; --gold:#f5c451; --soft:rgba(198,255,61,.1); --r:16px; color-scheme:dark;
 }
 :root[data-theme="light"]{
   --bg:#f2f8f4; --bg2:#e7f1ea; --panel:#ffffff; --panel2:#e9f3ec; --line:#cfe1d5;
-  --text:#0b1f14; --muted:#4f6659; --inv:#0b1f14; --on-inv:#fff; --focus:#0b6b34; --acc:#0f8a3f; --on-acc:#fff;
+  --text:#0b1f14; --muted:#4f6659; --inv:#0b1f14; --on-inv:#fff; --focus:#0b6b34; --acc:#0f8a3f; --on-acc:#fff; --gold:#b7791f; --soft:rgba(15,138,63,.1);
   color-scheme:light;
 }
 
@@ -1519,3 +1519,65 @@ body.page-match #match-body{margin-top:-14px}
   .m-split:has(.match-player:not([hidden])) .mh .team-name{font-size:13px}
   .page-match .cd{width:50px}
 }
+
+/* ===== v83: المشغّل (شريط زجاجي + أكبر) + الصفحة تتبع الثيم ===== */
+.md-glass{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:8px 12px;border-radius:16px;color:#fff;
+  background:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.05)),linear-gradient(135deg,#0b3a22,#06130c);
+  border:1px solid rgba(255,255,255,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 14px 26px -18px rgba(0,0,0,.7)}
+.mg-logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#000;border:1px solid rgba(184,255,59,.45);flex:none}
+.mg-logo img{width:22px;height:22px}
+.mg-name{display:flex;flex-direction:column;gap:2px}.mg-name b{display:block;font-size:15px;line-height:1.3;font-weight:900;color:#fff}.mg-name small{display:block;font-size:8.5px;line-height:1;letter-spacing:2px;color:#a9c5b4;font-weight:800}
+.mg-sep{flex:1}
+.mg-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 13px;border-radius:99px;font-size:12.5px;font-weight:900;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);color:#fff}
+.mg-badge[data-k="live"]{background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.6)}
+.mg-badge[data-k="live"]::before{content:"";width:8px;height:8px;border-radius:50%;background:#ef4444;animation:stPulse 1.4s infinite}
+.mg-badge[data-k="fin"]{background:rgba(184,255,59,.14);border-color:rgba(184,255,59,.5);color:#d9ff7a}
+/* مفيش حاجة فوق الفيديو نفسه */
+.yr-top,.yr-title{display:none!important}
+.match-player[data-st] .yr-top::before{display:none!important}
+.yr-ctl{padding:40px 12px 10px}
+.yr-btn{width:44px;height:44px}
+.yr-btn.main{width:48px;height:48px;border-radius:50%}
+.yr-time{font-size:13px;font-weight:700}
+.yr-big span{background:rgba(0,0,0,.35);border:2.5px solid rgba(255,255,255,.8);color:#fff;box-shadow:0 0 0 8px rgba(255,255,255,.1),0 18px 40px -12px #000}
+.yr-big svg{fill:#fff;stroke:#fff}
+@media(max-width:700px){
+  /* المشغّل بعرض الشاشة كله */
+  .page-match .match-player{padding:0;margin-inline:-16px}
+  .page-match .md-glass{margin-inline:16px}
+  .page-match .match-player-frame{border-radius:0;box-shadow:none;margin:0}
+  .yr-vol{display:none}
+  .yr-btn{width:42px;height:42px}
+  .yr-row{gap:2px}
+}
+@media(min-width:1100px){.md-glass{border-radius:14px}}
+
+/* صفحات المباراة/الفريق/اللاعب بتتبع الثيم (فاتح/داكن) — مفيش خلط */
+body.page-match,body.tp-page{background:var(--bg)!important;color:var(--text)}
+.page-match #match-body{background:var(--bg)}
+.page-match .tab{background:var(--panel);border-color:var(--line);color:var(--muted)}
+.page-match .tab.active{background:var(--soft);color:var(--acc);border-color:var(--acc);box-shadow:none}
+.page-match .tab.active::after{background:var(--acc)}
+.md-chan-b,.md-chan-d,.md-card{background:var(--panel);border-color:var(--line);color:var(--text)}
+.md-sep{background:var(--line)}.md-row span,.md-chan-d p{color:var(--muted)}
+.md-mh h2{color:var(--text)}.mc-c{background:var(--panel2)}.mc-l{background:var(--soft);color:var(--acc)}
+.md-hd{background:var(--text);color:var(--bg)}
+
+/* ===== v83: التشكيلة صغيرة ومنظمة ===== */
+#tab-lineup .pitch,.pitch-wrap .pitch{max-width:440px;aspect-ratio:3/4}
+#tab-lineup .pl,.pitch-wrap .pl{width:62px}
+#tab-lineup .pl-img,.pitch-wrap .pl-img{width:38px;height:38px;border-width:2px}
+#tab-lineup .pl .pl-no{width:17px;height:17px;font-size:9.5px}
+#tab-lineup .pl .pl-name,.pitch-wrap .pl-name{margin-top:2px;font-size:10px;font-weight:800;max-width:62px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;line-height:1.3}
+@media(max-width:600px){.pitch-wrap .pitch{aspect-ratio:3/4.3}#tab-lineup .pl-img,.pitch-wrap .pl-img{width:34px;height:34px}#tab-lineup .pl,.pitch-wrap .pl{width:58px}#tab-lineup .pl .pl-name,.pitch-wrap .pl-name{font-size:9.5px;max-width:58px}}
+.team-switch .ts-btn{padding:8px 10px;font-size:13px;gap:8px;min-width:0}
+.team-switch .ts-btn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.team-switch .ts-btn b{font-size:11.5px;flex:none}
+.coach-card{max-width:440px;margin:10px auto 0;padding:8px 12px;gap:10px;border-radius:14px}
+.cc-av{position:relative;width:42px;height:42px;overflow:hidden;font-size:0}
+.cc-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;z-index:1}
+.cc-av i{font-style:normal;font-size:17px;font-weight:900}
+.cc-tx b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cc-tx small{font-size:11.5px}
+.bench{padding:9px 10px;border-radius:14px}.bench h3{font-size:13px}.bench li{font-size:12px;padding:3px 0;gap:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bench .sq-img.sm{width:26px;height:26px}.bench .pl-no.sm{width:19px;height:19px;font-size:10px}
+.benches{gap:8px}

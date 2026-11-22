@@ -16,10 +16,12 @@ const FOOTBALL_LEAGUE_LIST: [number, string][] = [
   // الترتيب حسب شعبية البطولات عند الجمهور المصري (الأدمن يقدر يغيّره من لوحة التحكم ← البطولات).
   // كأس مصر بتتعرف بالاسم وبتتحط تلقائيًا بعد الدوري الإيطالي/الألماني/الفرنسي (المركز ١٠).
   [233, 'الدوري المصري الممتاز'], [39, 'الدوري الإنجليزي الممتاز'], [2, 'دوري أبطال أوروبا'], [140, 'الدوري الإسباني'], [6, 'كأس أمم أفريقيا'],
+  [5, 'دوري الأمم الأوروبية'], [36, 'تصفيات كأس أمم أفريقيا'],
   [307, 'الدوري السعودي'], [135, 'الدوري الإيطالي'], [78, 'الدوري الألماني'], [61, 'الدوري الفرنسي'],
   [3, 'الدوري الأوروبي'], [20, 'كأس الكونفدرالية الأفريقية'],
   // بعد الـ١٢ المطلوبين: بطولات مهمة للمصريين
   [12, 'دوري أبطال أفريقيا'], [1, 'كأس العالم'], [29, 'تصفيات كأس العالم - أفريقيا'], [15, 'كأس العالم للأندية'],
+  [10, 'مباريات ودية للمنتخبات'], [667, 'مباريات ودية للأندية'],
   [143, 'كأس ملك إسبانيا'], [45, 'كأس الاتحاد الإنجليزي'], [48, 'كأس الرابطة الإنجليزية'],
 ];
 // فرق مهمة للجمهور المصري: مبارياتها تظهر حتى لو بطولتها مش في القائمة (إنتر ميامي = ميسي، طرابزون سبور = محمد صلاح...)
@@ -37,6 +39,16 @@ const loadCustomTeams = async () => {
   return customTeams.names;
 };
 const FOOTBALL_LEAGUES: Record<number, string> = Object.fromEntries(FOOTBALL_LEAGUE_LIST);
+// الودية: نعرض بس المباريات المهمة (منتخبات كبيرة / أندية كبيرة) عشان القائمة ما تتملّاش بمباريات مالهاش لازمة
+const FRIENDLY_NATIONS = /^(egypt|saudi arabia|morocco|algeria|tunisia|senegal|nigeria|ivory coast|cameroon|ghana|mali|brazil|argentina|france|england|spain|germany|italy|portugal|netherlands|belgium|croatia|uruguay|colombia|mexico|usa|united states|japan|south korea|turkey|denmark|switzerland)$/i;
+const FRIENDLY_CLUBS = /atl[eé]tico madrid|tottenham|dortmund|napoli|ac milan|\broma\b|benfica|porto|ajax|newcastle|aston villa|leverkusen|sevilla|al[- ]?ittihad(?! alex)|al[- ]?ahli (jeddah|saudi)|al[- ]?ahli$|al[- ]?shabab|al[- ]?ettifaq|wydad|raja|esperance|mamelodi|inter\b/i;
+// deno-lint-ignore no-explicit-any
+const nameLabel = (item: any): string | null => {
+  const n = String(item.league?.name ?? '');
+  if (/^uefa nations league$/i.test(n)) return 'دوري الأمم الأوروبية';
+  if (/africa cup of nations.*qualif|afcon.*qualif/i.test(n)) return 'تصفيات كأس أمم أفريقيا';
+  return null;
+};
 // بطولات مصرية بالاسم (احتياطًا لو رقمها مختلف) + أسماء البلدان للبطولات الأخرى
 const EGYPT_NAMED: [RegExp, string][] = [[/super/i, 'السوبر المصري'], [/league cup/i, 'كأس الرابطة المصرية'], [/cup|kass|كأس/i, 'كأس مصر'], [/second league|2nd division|division 2/i, 'الدوري المصري - الدرجة الثانية']];
 const COUNTRY_AR: Record<string, string> = { Egypt: 'مصر', Saudi_Arabia: 'السعودية', 'Saudi-Arabia': 'السعودية', Morocco: 'المغرب', Tunisia: 'تونس', Algeria: 'الجزائر', UAE: 'الإمارات', 'United-Arab-Emirates': 'الإمارات', Qatar: 'قطر', Kuwait: 'الكويت', Jordan: 'الأردن', Iraq: 'العراق', Libya: 'ليبيا', Sudan: 'السودان', Lebanon: 'لبنان', Syria: 'سوريا', Bahrain: 'البحرين', Oman: 'عمان', England: 'إنجلترا', Spain: 'إسبانيا', Italy: 'إيطاليا', Germany: 'ألمانيا', France: 'فرنسا', Portugal: 'البرتغال', Netherlands: 'هولندا', Belgium: 'بلجيكا', Turkey: 'تركيا', Scotland: 'اسكتلندا', Greece: 'اليونان', Russia: 'روسيا', Ukraine: 'أوكرانيا', Brazil: 'البرازيل', Argentina: 'الأرجنتين', USA: 'أمريكا', Mexico: 'المكسيك', Japan: 'اليابان', China: 'الصين', 'South-Korea': 'كوريا الجنوبية', Australia: 'أستراليا', 'South-Africa': 'جنوب أفريقيا', Nigeria: 'نيجيريا', Ghana: 'غانا', Senegal: 'السنغال', World: 'العالم', Europe: 'أوروبا', Africa: 'أفريقيا', Asia: 'آسيا', 'South-America': 'أمريكا الجنوبية' };
@@ -148,7 +160,7 @@ function normalizeFootball(item: any): Normalized {
     away_logo: item.teams?.away?.logo ?? null,
     league: item.league?.name ?? 'كرة القدم',
     league_key: String(id),
-    league_label: FOOTBALL_LEAGUES[id] ?? egyptLabel(item) ?? otherLabel(item),
+    league_label: FOOTBALL_LEAGUES[id] ?? nameLabel(item) ?? egyptLabel(item) ?? otherLabel(item),
     league_logo: item.league?.logo ?? null,
     home_score: item.goals?.home ?? null,
     away_score: item.goals?.away ?? null,
@@ -208,6 +220,7 @@ function extractDetails(item: any) {
       team_id: l.team?.id ?? null,
       formation: l.formation ?? '',
       coach: l.coach?.name ?? '',
+      coach_photo: l.coach?.photo ?? null,
       // deno-lint-ignore no-explicit-any
       start: (l.startXI ?? []).map((x: any) => pl(x.player)).filter(Boolean),
       // deno-lint-ignore no-explicit-any
@@ -233,7 +246,13 @@ function extractDetails(item: any) {
 const isImportant = (sport: Sport, item: any, custom: string[] = []) =>
   sport === 'football'
     ? !SKIP_NAME.test(String(item.league?.name ?? '')) && (
-        Number(item.league?.id) in FOOTBALL_LEAGUES || egyptLabel(item) !== null ||
+        (() => {
+          const lid = Number(item.league?.id);
+          const t = [item.teams?.home?.name, item.teams?.away?.name].map((n) => String(n ?? '').trim());
+          if (lid === 10) return t.some((n) => FRIENDLY_NATIONS.test(n)); // ودية المنتخبات: لو أي منتخب كبير
+          if (lid === 667) return t.some((n) => PRIORITY_TEAMS.test(n) || FRIENDLY_CLUBS.test(n) || custom.includes(n.toLowerCase()));
+          return lid in FOOTBALL_LEAGUES || nameLabel(item) !== null;
+        })() || egyptLabel(item) !== null ||
         [item.teams?.home?.name, item.teams?.away?.name].some((n) => PRIORITY_TEAMS.test(String(n ?? '')) || custom.includes(String(n ?? '').trim().toLowerCase())))
     : BASKETBALL_LEAGUES.some((l) => l.test(String(item.league?.name ?? '')));
 
@@ -483,7 +502,20 @@ Deno.serve(async (request) => {
               result: gf > ga ? 'W' : gf < ga ? 'L' : 'D',
             };
           });
-        out = { matches };
+        // المباريات القادمة (طلب منفصل: فشله لا يمنع آخر النتائج)
+        // deno-lint-ignore no-explicit-any
+        let upRows: any[] = [];
+        try { upRows = await call('fixtures', { team: String(id), next: '8', timezone: 'Africa/Cairo' }); } catch { /* الخطة قد لا تدعم next */ }
+        const upcoming = upRows
+          .filter((r) => ['NS', 'TBD', 'PST'].includes(r.fixture?.status?.short))
+          .sort((a, b) => new Date(a.fixture.date).getTime() - new Date(b.fixture.date).getTime())
+          .slice(0, 8)
+          .map((r) => ({
+            fixture_id: r.fixture.id, date: r.fixture.date, league: r.league?.name ?? '',
+            home: r.teams?.home?.name ?? '', away: r.teams?.away?.name ?? '', home_logo: r.teams?.home?.logo ?? null, away_logo: r.teams?.away?.logo ?? null,
+            is_home: r.teams?.home?.id === id,
+          }));
+        out = { matches, upcoming };
       } else if (body.action === 'team') {
         const [t, squad, coach] = [
           await call('teams', { id: String(id) }),
@@ -522,6 +554,14 @@ Deno.serve(async (request) => {
             photo: row.player?.photo ?? `https://media.api-sports.io/football/players/${id}.png`,
           },
           team: { id: first.team?.id ?? null, name: first.team?.name ?? '', logo: first.team?.logo ?? null },
+          competitions: st.map((x: any) => ({
+            league: x.league?.name ?? '', league_logo: x.league?.logo ?? null, team: x.team?.name ?? '',
+            appearances: Number(x.games?.appearences) || 0, minutes: Number(x.games?.minutes) || 0,
+            goals: Number(x.goals?.total) || 0, assists: Number(x.goals?.assists) || 0,
+            yellow: Number(x.cards?.yellow) || 0, red: Number(x.cards?.red) || 0,
+            rating: Number(x.games?.rating) > 0 ? Number(Number(x.games.rating).toFixed(1)) : null,
+          })),
+          injured: Boolean(row.player?.injured),
           position: first.games?.position ?? '', number: first.games?.number ?? null, season,
           stats: {
             appearances: sum((x) => x.games?.appearences), minutes: sum((x) => x.games?.minutes),

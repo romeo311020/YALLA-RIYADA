@@ -35,10 +35,7 @@
       <div class="yr-video"><div class="yr-yt"></div></div>
       <div class="yr-hit"></div>
       <div class="yr-top">
-        <div class="yr-logo" aria-label="يلا رياضة">
-          <svg viewBox="0 0 128 128" aria-hidden="true"><rect width="128" height="128" rx="30" fill="#000"/><path d="M32 40L64 78M96 40L64 78M64 78V106" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="64" cy="37" r="12.5" fill="#c6ff3d"/></svg>
-          <span><b>يلا رياضة</b><small>YALLA RIYADA</small></span>
-        </div>
+        
         <span class="yr-title"></span>
       </div>
       <div class="yr-big"><span>${IC.play}</span></div>

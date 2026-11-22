@@ -205,6 +205,7 @@ window.yrPlayerTitle = function () {
   const st = document.getElementById('mh-status'); const cls = st ? st.className : '';
   const k = /st-live/.test(cls) ? 'live' : /st-finished/.test(cls) ? 'fin' : 'other';
   p.dataset.st = k;
+  const gb = document.getElementById('mg-badge'); if (gb) { gb.dataset.k = k; gb.textContent = k === 'live' ? 'بث مباشر' : k === 'fin' ? 'ملخص المباراة' : 'المشغّل'; }
   const h = p.querySelector('.player-top h2'); if (!h) return;
   const dot = h.querySelector('.live-dot'); const txt = k === 'live' ? 'البث المباشر' : k === 'fin' ? 'ملخص المباراة' : 'المشغّل';
   h.replaceChildren(); if (k === 'live' && dot) h.append(dot); h.append(document.createTextNode(txt));
