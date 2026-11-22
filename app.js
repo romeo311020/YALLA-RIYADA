@@ -59,20 +59,19 @@
 
   /* ---------- روابط التواصل الاجتماعي (تظهر في الفوتر وصفحة حسابي) ---------- */
   const SOCIALS = [
-    { id: 'whatsapp', name: 'واتساب', note: 'أخبار ومباريات أول بأول', url: 'https://whatsapp.com/channel/0029VbDWnn24dTnGwIUrTz0G', c: '#25d366',
+    { id: 'whatsapp', name: 'قناة واتساب', note: 'أخبار ومباريات أول بأول', url: 'https://whatsapp.com/channel/0029VbDWnn24dTnGwIUrTz0G', c: '#25d366',
       icon: '<path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20.5l1.7-5.2A8.5 8.5 0 1 1 21 11.5z"/><path d="M9 8.8c.3 2.6 2.6 4.9 5.2 5.2l1.2-1.3-2-1-.9.7a4.4 4.4 0 0 1-1.7-1.7l.7-.9-1-2z"/>' },
     { id: 'youtube', name: 'يوتيوب', note: '@YALLA-RIYADA', url: 'https://www.youtube.com/@YALLA-RIYADA', c: '#ff2d3d',
       icon: '<rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.2v5.6l5-2.8z" fill="currentColor"/>' },
     { id: 'tiktok', name: 'تيك توك', note: '@yalla_riyada', url: 'https://www.tiktok.com/@yalla_riyada', c: '#25f4ee',
       icon: '<path d="M14 3v11.2a3.7 3.7 0 1 1-3.7-3.7"/><path d="M14 3c.4 2.4 1.9 3.9 4.5 4.2"/>' },
-    { id: 'x', name: 'إكس', note: '@yalla_riyada', url: 'https://x.com/yalla_riyada', c: '#e7e9ea', fill: 'M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.41l-5.8-7.58-6.64 7.58H.47l8.6-9.83L0 1.15h7.59l5.24 6.93zm-1.29 19.5h2.04L6.49 3.24H4.3z' },
-    { id: 'facebook', name: 'فيسبوك', note: '', url: 'https://www.facebook.com/share/v/1ELDVQuWZB/', c: '#1877f2', fill: 'M24 12.07C24 5.45 18.63.07 12 .07S0 5.45 0 12.07c0 5.99 4.39 10.95 10.13 11.85v-8.39H7.08v-3.47h3.05V9.43c0-3.01 1.79-4.67 4.53-4.67 1.31 0 2.69.23 2.69.23v2.95h-1.52c-1.49 0-1.96.93-1.96 1.87v2.25h3.33l-.53 3.47h-2.8v8.39C19.61 23.03 24 18.06 24 12.07z' },
   ];
-  const sIco = (s) => s.fill ? `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${s.fill}"/></svg>` : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${s.icon}</svg>`;
-  const socialCards = () => `<div class="follow-row">${SOCIALS.map((s, i) => `<a class="follow-chip" style="--c:${s.c};--i:${i}" href="${s.url}" target="_blank" rel="noopener noreferrer" aria-label="${s.name}"><span class="fc-ico">${sIco(s)}</span><b>${s.name}</b></a>`).join('')}</div>`;
-  const socialDots = () => `<div class="follow-dots" role="group" aria-label="تابعنا">${SOCIALS.map((s, i) => `<a class="follow-dot" style="--c:${s.c};--i:${i}" href="${s.url}" target="_blank" rel="noopener noreferrer" aria-label="${s.name}" title="${s.name}">${sIco(s)}</a>`).join('')}</div>`;
+  const socialCards = () => `<div class="follow-grid">${SOCIALS.map((s, i) => `<a class="follow-card" style="--c:${s.c};--i:${i}" href="${s.url}" target="_blank" rel="noopener noreferrer" aria-label="${s.name}">
+      <span class="follow-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${s.icon}</svg></span>
+      <span class="follow-txt"><b>${s.name}</b><small dir="ltr">${s.note}</small></span><span class="follow-go" aria-hidden="true">↗</span></a>`).join('')}</div>`;
+  const socialDots = () => `<div class="follow-dots" role="group" aria-label="تابعنا">${SOCIALS.map((s, i) => `<a class="follow-dot" style="--c:${s.c};--i:${i}" href="${s.url}" target="_blank" rel="noopener noreferrer" aria-label="${s.name}" title="${s.name}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${s.icon}</svg></a>`).join('')}</div>`;
   const followHost = $('follow-us');
-  if (followHost) followHost.innerHTML = `<div class="follow-box"><div class="follow-head"><h3>تابعنا على السوشيال</h3></div>${socialCards()}</div>`;
+  if (followHost) followHost.innerHTML = `<div class="follow-box"><div class="follow-head"><span class="kicker">FOLLOW US</span><h3>تابعنا على السوشيال</h3><p class="note">كل جديد في المباريات والأخبار والعروض.</p></div>${socialCards()}</div>`;
 
   /* ---------- الفوتر ---------- */
   const footer = $('shared-footer');
@@ -130,14 +129,10 @@ window.yrMountPlayer = function (url, title) {
   const ytId = window.yrYT ? window.yrYT.parse(url) : (String(url).match(/(?:embed\/|watch\?v=|youtu\.be\/)([\w-]{11})/) || [])[1];
   let ytCtl = null;
   const buildYT = () => {
-    // فيديو يوتيوب: مشغّل يوتيوب الأصلي نفسه (بأزراره وشكله الرسمي) داخل الإطار
-    const f = document.createElement('iframe');
-    f.src = 'https://www.youtube.com/embed/' + ytId + '?rel=0&playsinline=1&modestbranding=1';
-    f.title = title || 'مشغّل المباراة';
-    f.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen';
-    f.allowFullscreen = true; f.referrerPolicy = 'strict-origin-when-cross-origin';
-    f.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;background:#000';
-    box.replaceChildren(f);
+    // فيديو يوتيوب: مشغّل يلا رياضة الخاص (شعار + أزرار + شريط تحميل). أي رابط تاني بيفضل في الإطار العادي.
+    const go = () => { if (ytCtl) ytCtl.destroy(); ytCtl = window.yrYT.mount(box, ytId, title || '', url); };
+    if (window.yrYT) { go(); return; }
+    const sc = document.createElement('script'); sc.src = 'yt-player.js'; sc.onload = go; sc.onerror = () => { box.replaceChildren(); const f = document.createElement('iframe'); f.src = url; f.allowFullscreen = true; f.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0'; box.appendChild(f); }; document.head.appendChild(sc);
   };
   const build = () => {
     if (ytId && /(^|\.)youtube(-nocookie)?\.com|youtu\.be/.test((() => { try { return new URL(url).hostname; } catch (e) { return ''; } })())) { buildYT(); return null; }
@@ -222,6 +217,7 @@ window.yrPlayerReady = function () {
   const grid = document.querySelector('.watch-grid'); if (grid) grid.classList.add('has-player');
   window.yrPlayerTitle();
   /* من كارت فيه بث: افتح تبويب «المشغّل» مباشرة (بدون أي سكرول للأسفل) */
+  if (/[?&]watch=1/.test(location.search) && window.yrSelectTab && window.matchMedia('(max-width:1099px)').matches) window.yrSelectTab('player');
 };
 
 /* هيرو المباراة: شارة الحالة + عدّاد تنازلي للمباريات القادمة */

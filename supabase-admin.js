@@ -89,7 +89,7 @@
     important: () => loadImportant(),
     lineups: () => luSrcChange(),
     names: () => { loadUnknownNames(); return loadSavedNames(); },
-    streams: () => Promise.all([loadStreams(), loadApiFixtures('stream'), loadApiFixtures('ws')]),
+    streams: () => Promise.all([loadStreams(), loadApiFixtures('stream')]),
     store: () => Promise.all([loadStoreSetting(), loadProducts(), loadCategories()]),
     orders: () => loadOrders(),
     news: () => loadNews(),
@@ -370,10 +370,9 @@
   const fixtureCache = new Map();
   const ar = (n) => (window.YR_NAMES ? window.YR_NAMES.team(n) : n) || n;
   async function loadApiFixtures(kind) {
-    const IDS = { stream: ['stream-fixture-id', 'stream-fixture-day', 'stream-fixture-status'], ws: ['ws-fixture', 'ws-day', 'ws-fixture-status'], lineup: ['lineup-fixture-select', 'lineup-fixture-day', 'lineup-fixture-status'] }[kind] || ['lineup-fixture-select', 'lineup-fixture-day', 'lineup-fixture-status'];
-    const select = $(IDS[0]);
-    const dayEl = $(IDS[1]);
-    const statusId = IDS[2];
+    const select = $(kind === 'stream' ? 'stream-fixture-id' : 'lineup-fixture-select');
+    const dayEl = $(kind === 'stream' ? 'stream-fixture-day' : 'lineup-fixture-day');
+    const statusId = kind === 'stream' ? 'stream-fixture-status' : 'lineup-fixture-status';
     const offsets = { yesterday: -1, today: 0, tomorrow: 1 };
     select.innerHTML = '<option value="">جارٍ تحميل المباريات...</option>'; say(statusId, '');
     try {
@@ -927,55 +926,6 @@
       say('stream-message', e ? `تعذّر حذف المشغّل: ${e.message}` : 'تم حذف المشغّل.'); if (!e) await loadStreams();
     }));
   }
-
-
-  /* ======================== إدارة المشاهدة (match_sources) ======================== */
-  let wsFid = 0; let wsRows = [];
-  const wsKind = { live: 'بث مباشر', highlight: 'ملخص' }; const wsType = { embed: 'Embed', mp4: 'MP4', hls: 'HLS' };
-  const guessType = (u) => { const p = (() => { try { return new URL(u).pathname.toLowerCase(); } catch { return ''; } })(); return /\.m3u8$/.test(p) ? 'hls' : /\.(mp4|webm|mov)$/.test(p) ? 'mp4' : 'embed'; };
-  function resetWsForm() { $('ws-form').reset(); $('ws-edit-id').value = ''; $('ws-active').checked = true; $('ws-save').textContent = 'إضافة المصدر'; $('ws-cancel').hidden = true; }
-  async function loadWs(fid) {
-    wsFid = Number(fid) || 0; $('ws-box').hidden = !wsFid; resetWsForm();
-    if (!wsFid) return;
-    const host = $('ws-list'); host.textContent = 'جارٍ التحميل…';
-    const { data, error } = await client.from('match_sources').select('*').eq('fixture_id', wsFid).order('kind').order('sort_order').order('created_at');
-    if (error) { host.textContent = `تعذّر التحميل: ${error.message}. شغّل ملف supabase-watch.sql أولًا.`; return; }
-    wsRows = data || [];
-    host.innerHTML = wsRows.map((s) => `<article class="admin-list-item"><div><strong>${esc(wsKind[s.kind])} · ${esc(wsType[s.src_type])}${s.is_default ? ' · افتراضي' : ''}${s.active ? '' : ' · معطّل'}</strong><small>${esc(s.channel || 'بدون اسم قناة')} — ${esc(s.url.length > 70 ? s.url.slice(0, 70) + '…' : s.url)}</small></div>
-      <div class="row"><button type="button" class="btn outline" data-ws-toggle="${esc(s.id)}">${s.active ? 'تعطيل' : 'تفعيل'}</button><button type="button" class="btn outline" data-ws-edit="${esc(s.id)}">تعديل</button><button type="button" class="btn outline" data-ws-del="${esc(s.id)}">حذف</button></div></article>`).join('') || '<p class="note">لا توجد مصادر لهذه المباراة — مفيش زر مشاهدة هيظهر.</p>';
-    host.querySelectorAll('[data-ws-edit]').forEach((b) => b.addEventListener('click', () => {
-      const s = wsRows.find((x) => x.id === b.dataset.wsEdit); if (!s) return;
-      $('ws-edit-id').value = s.id; $('ws-kind').value = s.kind; $('ws-url').value = s.url; $('ws-type').value = s.src_type; $('ws-channel').value = s.channel; $('ws-preview').value = s.preview_url;
-      $('ws-active').checked = s.active; $('ws-default').checked = s.is_default; $('ws-save').textContent = 'حفظ التعديلات'; $('ws-cancel').hidden = false; $('ws-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }));
-    host.querySelectorAll('[data-ws-toggle]').forEach((b) => b.addEventListener('click', async () => {
-      const s = wsRows.find((x) => x.id === b.dataset.wsToggle); if (!s) return;
-      const r = await client.from('match_sources').update({ active: !s.active }).eq('id', s.id);
-      say('ws-msg', r.error ? `تعذّر التحديث: ${r.error.message}` : (s.active ? 'تم تعطيل المصدر.' : 'تم تفعيل المصدر.')); loadWs(wsFid);
-    }));
-    host.querySelectorAll('[data-ws-del]').forEach((b) => b.addEventListener('click', async () => {
-      if (!window.confirm('حذف المصدر ده؟ الزر المرتبط بيه هيختفي من صفحة المباراة.')) return;
-      const r = await client.from('match_sources').delete().eq('id', b.dataset.wsDel);
-      say('ws-msg', r.error ? `تعذّر الحذف: ${r.error.message}` : 'تم حذف المصدر.'); loadWs(wsFid);
-    }));
-  }
-  $('ws-day').addEventListener('change', () => loadApiFixtures('ws'));
-  $('ws-fixture').addEventListener('change', () => { $('ws-fid').value = ''; loadWs($('ws-fixture').value); });
-  $('ws-fid').addEventListener('change', () => { const v = Number($('ws-fid').value); if (Number.isSafeInteger(v) && v > 0) { $('ws-fixture').value = ''; loadWs(v); } });
-  $('ws-cancel').addEventListener('click', resetWsForm);
-  $('ws-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    if (!currentUser || !wsFid) { say('ws-msg', 'اختر مباراة أولًا.'); return; }
-    const url = $('ws-url').value.trim(); const preview = $('ws-preview').value.trim();
-    if (!httpsOk(url)) { say('ws-msg', 'رابط الفيديو لازم يبدأ بـ https://'); return; }
-    if (preview && !httpsOk(preview)) { say('ws-msg', 'رابط الصورة لازم يبدأ بـ https://'); return; }
-    const type = $('ws-type').value === 'auto' ? guessType(url) : $('ws-type').value;
-    const row = { fixture_id: wsFid, kind: $('ws-kind').value, url, src_type: type, channel: $('ws-channel').value.trim(), preview_url: preview, active: $('ws-active').checked, is_default: $('ws-default').checked };
-    const id = $('ws-edit-id').value; say('ws-msg', 'جارٍ الحفظ…');
-    const r = id ? await client.from('match_sources').update(row).eq('id', id) : await client.from('match_sources').insert({ ...row, sort_order: wsRows.length });
-    if (r.error) { say('ws-msg', `تعذّر الحفظ: ${r.error.message}`); return; }
-    say('ws-msg', 'تم حفظ المصدر — صفحة المباراة اتحدّثت.'); loadWs(wsFid);
-  });
 
   /* ======================== المتجر ======================== */
   async function loadStoreSetting() {
