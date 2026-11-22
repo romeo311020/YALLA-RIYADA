@@ -42,6 +42,7 @@
     $('#wsc-react').addEventListener('click', async (e) => {
       const b = e.target.closest('[data-r]'); if (!b) return; const k = b.dataset.r;
       if (k === 'share') {
+        if (window.yrMatchShare) { window.yrMatchShare(); return; }
         const url = ctx.shareUrl || location.href; const data = { title: ctx.title, text: ctx.title, url };
         try { if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(url); toast('تم نسخ رابط المباراة'); } } catch (_) { /* إلغاء */ }
         return;

@@ -216,9 +216,11 @@
     const hooks = { sources: state.sources, index: i, pick: play, onState: (pl) => { const b = state.root.querySelector('[data-a="mtoggle"]'); if (b) b.innerHTML = pl ? I.pause : I.play; }, onQuality: () => setTimeout(() => { const q = state.root.querySelector('#ws-q'); if (q) q.textContent = 'الجودة: ' + qualityLabel(src, state.engine); }, 300) };
     const yt = src.src_type === 'embed' ? ytOf(src.url) : null;
     try {
-      if (yt) {
-        await loadYT(); const ctl = window.yrYT.mount(stage, yt, state.ctx.title, src.url);
-        state.engine = { el: stage, destroy: () => { ctl.destroy(); stage.replaceChildren(); }, toggle: ctl.toggle, playing: ctl.playing, info: () => ({ quality: 0, auto: true }) };
+      if (yt) { // يوتيوب: المشغّل الأصلي بتاع يوتيوب نفسه
+        const f = document.createElement('iframe'); f.src = 'https://www.youtube.com/embed/' + yt + '?rel=0&playsinline=1&modestbranding=1&autoplay=1'; f.title = state.ctx.title;
+        f.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen'; f.allowFullscreen = true; f.referrerPolicy = 'strict-origin-when-cross-origin';
+        f.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;background:#000'; stage.replaceChildren(f);
+        state.engine = { el: stage, destroy: () => { stage.replaceChildren(); }, info: () => ({ quality: 0, auto: true }) };
       } else if (src.src_type === 'embed') state.engine = iframeEngine(stage, src);
       else state.engine = videoEngine(stage, src, hooks);
     } catch (e) { console.error('watch engine:', e); stage.innerHTML = '<div class="wp-err"><p>تعذّر تحميل المشغّل</p></div>'; }
