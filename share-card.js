@@ -3,8 +3,10 @@
   'use strict';
   const SITE = 'يلا رياضة', SITE_EN = 'YALLA RIYADA';
   const FOOT = 210;
-  const FMT = { post: [1080, 1350], story: [1080, 1920] };
+  const FMT = { post: [1080, 1350], story: [1080, 1920], x: [1600, 900] };
+  const HANDLE = (typeof window !== 'undefined' && window.YR_HANDLE) || 'yalla_riyada'; // اسم حسابك على X/إنستجرام (اختياري): window.YR_HANDLE = 'اسم_الحساب'
   const THEMES = {
+    navy: { n: 'كحلي', a: '#ffc21a', on: '#1a1200', b1: '#18284f', b2: '#0a1230', foot: '#0a1230', t: '#ffffff', mute: 'rgba(255,255,255,.7)', sw: ['#0a1230', '#ffc21a'] },
     night: { n: 'ليلي', a: '#c6ff3d', on: '#04140b', b1: '#0b3d1f', b2: '#04140b', foot: '#04140b', t: '#ffffff', mute: 'rgba(255,255,255,.72)', sw: ['#0b3d1f', '#c6ff3d'] },
     neon: { n: 'نيون', a: '#ff4fd8', on: '#14001a', b1: '#3a0b66', b2: '#0a0120', foot: '#0a0120', t: '#ffffff', mute: 'rgba(255,255,255,.72)', sw: ['#3a0b66', '#ff4fd8'] },
     gold: { n: 'ذهبي', a: '#ffcf4a', on: '#1b1100', b1: '#4a3208', b2: '#120c00', foot: '#120c00', t: '#fff8e6', mute: 'rgba(255,248,230,.72)', sw: ['#4a3208', '#ffcf4a'] },
@@ -78,10 +80,109 @@
     c.textAlign = 'right'; c.direction = 'rtl'; lines.forEach((l, i) => c.fillText(l, W - 60, y0 + i * lh)); return { top: y0 - fs, h: lines.length * lh };
   }
 
+  /* ===== الستايل الاحترافي: صورة بتدوب في خلفية داكنة + عنوان عريض + فوتر سوشيال (مقاس بوست/ستوري/X) ===== */
+  const P_X = new Path2D('M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.41l-5.8-7.58-6.64 7.58H.47l8.6-9.83L0 1.15h7.59l5.24 6.93zm-1.29 19.5h2.04L6.49 3.24H4.3z');
+  const P_FB = new Path2D('M24 12.07C24 5.45 18.63.07 12 .07S0 5.45 0 12.07c0 5.99 4.39 10.95 10.13 11.85v-8.39H7.08v-3.47h3.05V9.43c0-3.01 1.79-4.67 4.53-4.67 1.31 0 2.69.23 2.69.23v2.95h-1.52c-1.49 0-1.96.93-1.96 1.87v2.25h3.33l-.53 3.47h-2.8v8.39C19.61 23.03 24 18.06 24 12.07z');
+  function socialRow(c, cx, cy, th, s) {
+    const ic = 34 * s; const gap = 26 * s; const label = HANDLE ? '@' + HANDLE : SITE; c.font = font(800, 32 * s); c.direction = 'rtl'; const tw = c.measureText(label).width;
+    const total = ic * 3 + gap * 3 + tw; let x = cx - total / 2; c.fillStyle = th.mute;
+    const draw24 = (p, x0) => { c.save(); c.translate(x0, cy - ic / 2); c.scale(ic / 24, ic / 24); c.fill(p); c.restore(); };
+    draw24(P_FB, x); x += ic + gap; draw24(P_X, x); x += ic + gap;
+    c.save(); c.strokeStyle = th.mute; c.lineWidth = 2.4 * s; rr(c, x + 1.5 * s, cy - ic / 2 + 1.5 * s, ic - 3 * s, ic - 3 * s, 9 * s); c.stroke(); c.beginPath(); c.arc(x + ic / 2, cy, ic * 0.22, 0, 7); c.stroke(); c.beginPath(); c.arc(x + ic * 0.76, cy - ic * 0.25, 2.2 * s, 0, 7); c.fillStyle = th.mute; c.fill(); c.restore();
+    x += ic + gap; c.fillStyle = th.t; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(label, x, cy + 2 * s); c.textBaseline = 'alphabetic';
+  }
+  async function brandTop(c, W, th, s, tag) {
+    const logo = await getImg('icon-192.png'); const ls = 74 * s, x = 46 * s, y = 46 * s;
+    c.save(); c.fillStyle = 'rgba(0,0,0,.38)'; rr(c, x - 12 * s, y - 12 * s, 330 * s, ls + 24 * s, (ls + 24 * s) / 2); c.fill(); c.restore();
+    if (logo) { c.save(); rr(c, x, y, ls, ls, 20 * s); c.clip(); c.drawImage(logo, x, y, ls, ls); c.restore(); }
+    c.textAlign = 'left'; c.direction = 'rtl'; c.fillStyle = '#fff'; c.font = font(900, 38 * s); c.fillText(SITE, x + ls + 16 * s, y + 38 * s);
+    c.fillStyle = th.a; c.font = '800 20px "Segoe UI", Arial'; c.font = `800 ${21 * s}px "Segoe UI", Arial, sans-serif`; c.direction = 'ltr'; c.fillText(SITE_EN, x + ls + 16 * s, y + 66 * s); c.direction = 'rtl';
+    if (tag) pill(c, tag, W - 46 * s, y + 6 * s, th, th.a, th.on, 28 * s);
+  }
+  async function qrBox(c, url, x, y, S, s) {
+    const q = await getQR(); if (!q) return;
+    try { const qr = q(0, 'M'); qr.addData(url); qr.make(); const n = qr.getModuleCount(); const pad = 9 * s; c.fillStyle = '#fff'; rr(c, x - pad, y - pad, S + pad * 2, S + pad * 2, 16 * s); c.fill(); c.fillStyle = '#06101f'; const m = S / n; for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (qr.isDark(r, k)) c.fillRect(x + k * m, y + r * m, Math.ceil(m), Math.ceil(m)); } catch { /* بدون QR */ }
+  }
+  function sideTabs(c, W, y, h, th) { c.fillStyle = th.a; rr(c, -26, y, 44, h, 22); c.fill(); rr(c, W - 18, y, 44, h, 22); c.fill(); }
+  function fade(c, W, H, th, from) {
+    const g = c.createLinearGradient(0, H * from, 0, H); g.addColorStop(0, th.b2 + '00'); g.addColorStop(0.45, th.b2 + 'd9'); g.addColorStop(0.7, th.b2); g.addColorStop(1, th.b2); c.fillStyle = g; c.fillRect(0, H * from, W, H * (1 - from));
+  }
+  async function footerPro(c, W, H, th, d, s, withQr) {
+    const wide = W > H; c.direction = 'rtl'; c.textAlign = 'right';
+    c.fillStyle = th.a; c.beginPath(); c.arc(W - 60 * s - 4 * s, H - 148 * s, 8 * s, 0, 7); c.fill();
+    c.font = font(800, 30 * s); c.fillStyle = th.mute; c.fillText(SITE, W - 60 * s - 26 * s, H - 137 * s);
+    socialRow(c, W / 2, H - 62 * s, th, s);
+    if (withQr && d.url && !wide) await qrBox(c, d.url, 62 * s, H - 262 * s, 124 * s, s);
+  }
+  async function drawPro(c, W, H, d, o, th) {
+    const wide = W > H; const s = wide ? H / 1350 * 1.0 : W / 1080;
+    c.fillStyle = th.b2; c.fillRect(0, 0, W, H);
+    if (d.type === 'match') {
+      // خلفية: لمعة + شعارات الفريقين ضخمة وشفافة + خطوط ملعب خفيفة
+      const gl = c.createRadialGradient(W / 2, H * 0.42, 40, W / 2, H * 0.42, Math.max(W, H) * 0.75); gl.addColorStop(0, th.b1); gl.addColorStop(1, th.b2); c.fillStyle = gl; c.fillRect(0, 0, W, H);
+      const [hi, ai] = await Promise.all([getImg(d.home && d.home.logo), getImg(d.away && d.away.logo)]);
+      c.save(); c.globalAlpha = 0.10; const big = Math.min(W, H) * 0.95; if (hi) contain(c, hi, W * 0.62, H * 0.04, big * 0.75, big * 0.75); if (ai) contain(c, ai, -W * 0.08, H * 0.04, big * 0.75, big * 0.75); c.restore();
+      c.save(); c.strokeStyle = '#fff'; c.globalAlpha = 0.06; c.lineWidth = 5 * s; c.beginPath(); c.arc(W / 2, H * 0.46, 250 * s, 0, 7); c.stroke(); c.beginPath(); c.moveTo(0, H * 0.46); c.lineTo(W, H * 0.46); c.stroke(); c.restore();
+      await brandTop(c, W, th, s, d.league);
+      const cy = wide ? H * 0.5 : H * (o.fmt === 'story' ? 0.46 : 0.5);
+      const st = d.live ? 'مباشر الآن' + (d.minute ? ' · ' + nAr(d.minute) + "'" : '') : d.finished ? 'نهاية المباراة' : 'موعد المباراة';
+      c.textAlign = 'center'; c.direction = 'rtl'; c.font = font(900, 76 * s); c.fillStyle = d.live ? '#ff4d5e' : '#fff'; c.fillText(st, W / 2, cy - 150 * s);
+      const bh = 230 * s, bw = 190 * s, tw = 250 * s, gap = 10 * s; const parts = String(d.score || '').split('-').map((x) => x.trim());
+      const hasScore = parts.length === 2 && parts[0] !== '' && parts[1] !== '';
+      const boxes = hasScore ? [parts[0], parts[1]] : [d.time || 'VS'];
+      const totalW = tw * 2 + (hasScore ? bw * 2 + gap : bw * 2.1) + gap * 2; let x = (W - totalW) / 2; const y = cy - bh / 2;
+      const tab = (img, name, xx, left) => { c.save(); c.shadowColor = 'rgba(0,0,0,.4)'; c.shadowBlur = 30 * s; c.fillStyle = '#fff'; rr(c, xx, y, tw, bh, 34 * s); c.fill(); c.restore(); if (img) contain(c, img, xx + 36 * s, y + 30 * s, tw - 72 * s, bh - 60 * s); else { c.fillStyle = th.b1; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = font(900, 110 * s); c.fillText(String(name || '?').trim().charAt(0), xx + tw / 2, y + bh / 2 + 6 * s); c.textBaseline = 'alphabetic'; } };
+      tab(ai, d.away && d.away.name, x, true); x += tw + gap;
+      c.direction = 'ltr';
+      const box = (txt, w, xx, fs) => { c.save(); c.shadowColor = 'rgba(0,0,0,.4)'; c.shadowBlur = 30 * s; c.fillStyle = '#fff'; rr(c, xx, y, w, bh, 34 * s); c.fill(); c.restore(); c.fillStyle = '#0b1330'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = `900 ${fs * s}px "Segoe UI", Cairo, Arial, sans-serif`; c.fillText(txt, xx + w / 2, y + bh / 2 + 8 * s); c.textBaseline = 'alphabetic'; };
+      if (hasScore) { box(parts[0], bw, x, 190); x += bw + gap; box(parts[1], bw, x, 190); x += bw + gap; } else { box(boxes[0], bw * 2.1, x, 84); x += bw * 2.1 + gap; }
+      c.direction = 'rtl'; tab(hi, d.home && d.home.name, x, false);
+      // أسماء الفرق
+      c.fillStyle = '#fff'; c.textAlign = 'center'; c.font = font(900, 44 * s);
+      const awayX = (W - totalW) / 2 + tw / 2, homeX = (W + totalW) / 2 - tw / 2;
+      wrap(c, d.away && d.away.name, tw + 70 * s, 2).forEach((l, i) => c.fillText(l, awayX, y + bh + 70 * s + i * 54 * s));
+      wrap(c, d.home && d.home.name, tw + 70 * s, 2).forEach((l, i) => c.fillText(l, homeX, y + bh + 70 * s + i * 54 * s));
+      c.font = font(700, 34 * s); c.fillStyle = th.mute; const info = [d.league, !d.finished && !d.live ? d.when : (d.when || '')].filter(Boolean).join(' • ');
+      if (info) c.fillText(info, W / 2, y + bh + 70 * s + 54 * s * 2 + 56 * s);
+      sideTabs(c, W, H * 0.66, 210 * s, th);
+      await footerPro(c, W, H, th, d, s, !wide); return;
+    }
+    // خبر / لاعب / منتج: صورة تملا الشاشة وتدوب في الأسفل
+    const img = await getImg(d.image);
+    if (img) { const ph = wide ? H : H * 0.72; cover(c, img, 0, 0, W, ph); }
+    else { const gl = c.createRadialGradient(W * 0.5, H * 0.3, 20, W * 0.5, H * 0.3, W * 0.9); gl.addColorStop(0, th.b1); gl.addColorStop(1, th.b2); c.fillStyle = gl; c.fillRect(0, 0, W, H); c.fillStyle = th.a; c.globalAlpha = 0.14; c.font = font(900, 520 * s); c.textAlign = 'center'; c.fillText(d.emoji || '⚽', W / 2, H * 0.38); c.globalAlpha = 1; }
+    fade(c, W, H, th, wide ? 0.18 : 0.36);
+    if (wide) { const g = c.createLinearGradient(W, 0, W * 0.2, 0); g.addColorStop(0, th.b2 + 'f2'); g.addColorStop(1, th.b2 + '00'); c.fillStyle = g; c.fillRect(0, 0, W, H); }
+    const gt = c.createLinearGradient(0, 0, 0, 240 * s); gt.addColorStop(0, 'rgba(0,0,0,.5)'); gt.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = gt; c.fillRect(0, 0, W, 240 * s);
+    await brandTop(c, W, th, s, d.tag);
+    const R = W - 62 * s; const maxW = wide ? Math.min(W * 0.62, 1000) : W - 124 * s;
+    const bottomLimit = H - (wide ? 190 : 300) * s;
+    // العنوان
+    let fs = (wide ? 70 : 66) * s, lines; c.direction = 'rtl'; c.textAlign = 'right';
+    for (; fs >= 40 * s; fs -= 3 * s) { c.font = font(900, fs); lines = wrap(c, d.title, maxW, 8); if (lines.length <= (wide ? 4 : 5)) break; }
+    c.font = font(900, fs); lines = wrap(c, d.title, maxW, wide ? 4 : 5); const lh = fs * 1.5; const textH = lines.length * lh;
+    const ty = bottomLimit - textH + fs * 0.9; c.fillStyle = th.t; c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = 10 * s; lines.forEach((l, i) => c.fillText(l, R, ty + i * lh)); c.shadowBlur = 0;
+    // شارة المصدر/التصنيف (مربع أصفر بعلامة اقتباس) + السطر الفرعي
+    const by = ty - fs * 0.9 - 72 * s; const bs = 92 * s;
+    c.fillStyle = th.a; rr(c, R - bs, by - bs / 2, bs, bs, 26 * s); c.fill(); c.fillStyle = th.on; c.font = font(900, 120 * s); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('”', R - bs / 2, by + 34 * s); c.textBaseline = 'alphabetic';
+    c.textAlign = 'right'; c.fillStyle = th.a; c.font = font(900, 50 * s); const head = d.sub || d.tag || SITE; c.fillText(head, R - bs - 20 * s, by + 4 * s);
+    if (d.sub && d.tag) { c.font = font(700, 28 * s); c.fillStyle = th.mute; c.fillText(d.tag, R - bs - 20 * s, by + 42 * s); }
+    if (d.price) { c.font = font(900, 54 * s); const pw = c.measureText(d.price).width + 64 * s; c.fillStyle = th.a; rr(c, 60 * s, by - 46 * s, pw, 92 * s, 46 * s); c.fill(); c.fillStyle = th.on; c.textAlign = 'center'; c.fillText(d.price, 60 * s + pw / 2, by + 18 * s); c.textAlign = 'right'; }
+    if (d.move) {
+      const [f, t] = await Promise.all([getImg(d.move.from && d.move.from.logo), getImg(d.move.to && d.move.to.logo)]); const r2 = 46 * s, pw = 400 * s, px = 60 * s, cy2 = by;
+      c.fillStyle = 'rgba(0,0,0,.5)'; rr(c, px, cy2 - r2 - 18 * s, pw, r2 * 2 + 36 * s, r2 + 18 * s); c.fill();
+      crest(c, f, d.move.from && d.move.from.name, px + pw - r2 - 20 * s, cy2, r2, th); crest(c, t, d.move.to && d.move.to.name, px + r2 + 20 * s, cy2, r2, th);
+      c.fillStyle = th.a; c.font = font(900, 56 * s); c.textAlign = 'center'; c.fillText('⟵', px + pw / 2, cy2 + 20 * s); c.textAlign = 'right';
+    }
+    sideTabs(c, W, by - 70 * s, 200 * s, th);
+    await footerPro(c, W, H, th, d, s, !wide);
+  }
+
   async function draw(cv, d, o) {
     const [W, H] = FMT[o.fmt] || FMT.post; cv.width = W; cv.height = H; const th = THEMES[o.theme] || THEMES.night;
     const c = cv.getContext('2d'); c.direction = 'rtl'; c.textAlign = 'right';
     try { await document.fonts.load('900 60px Cairo'); await document.fonts.load('700 30px Cairo'); } catch { /* خط النظام */ }
+    if (o.style !== 'classic') { await drawPro(c, W, H, d, o, th); return; }
     bgFor(c, W, H, th); const PH = H - FOOT;
     if (d.type === 'match') {
       pitch(c, W, H, th);
@@ -162,14 +263,15 @@
   window.yrShareStudio = async function (d) {
     d = { type: 'news', url: location.href.split('#')[0], ...d }; injectCss();
     document.getElementById('ss')?.remove();
-    const p = pref(); const o = { fmt: p.fmt || 'post', layout: p.layout || 'full', theme: p.theme || 'night' };
+    const p = pref(); const o = { fmt: p.fmt || 'post', layout: p.layout || 'full', theme: THEMES[p.theme] ? p.theme : 'navy', style: p.style || 'pro' };
     if (d.type === 'match') o.layout = 'full';
     const w = document.createElement('div'); w.id = 'ss'; w.className = 'ss-back'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'مشاركة كصورة');
     const seg = (k, items) => `<div class="ss-seg" data-k="${k}">${items.map(([v, l]) => `<button type="button" data-v="${v}">${l}</button>`).join('')}</div>`;
     w.innerHTML = `<div class="ss-sheet"><div class="ss-head"><b>${window.yrIco('image')} كارت المشاركة</b><button type="button" class="ss-x" aria-label="إغلاق">✕</button></div>
       <div class="ss-stage busy" id="ss-stage"><canvas class="ss-prev" id="ss-cv"></canvas></div>
-      <div class="ss-ctl"><div class="ss-row"><span>المقاس</span>${seg('fmt', [['post', 'بوست'], ['story', 'ستوري']])}</div>
-      ${d.type === 'match' ? '' : `<div class="ss-row"><span>الشكل</span>${seg('layout', [['full', 'صورة كاملة'], ['card', 'كارت']])}</div>`}
+      <div class="ss-ctl"><div class="ss-row"><span>المقاس</span>${seg('fmt', [['post', 'بوست'], ['x', 'X / تويتر'], ['story', 'ستوري']])}</div>
+      <div class="ss-row"><span>الستايل</span>${seg('style', [['pro', 'احترافي'], ['classic', 'كلاسيك']])}</div>
+      ${d.type === 'match' ? '' : `<div class="ss-row" id="ss-lay"><span>الشكل</span>${seg('layout', [['full', 'صورة كاملة'], ['card', 'كارت']])}</div>`}
       <div class="ss-row"><span>اللون</span><div class="ss-sw" data-k="theme">${Object.entries(THEMES).map(([k, t]) => `<button type="button" data-v="${k}" aria-label="${t.n}" style="background:linear-gradient(135deg,${t.sw[0]} 50%,${t.sw[1]} 50%)"></button>`).join('')}</div></div></div>
       <div class="ss-act"><button type="button" class="main" id="ss-share">${window.yrIco('send')} شارك الصورة مع البوست</button><button type="button" id="ss-save">${window.yrIco('download')} حفظ الصورة</button><button type="button" id="ss-copy">${window.yrIco('copy')} نسخ البوست</button></div>
       <p class="ss-note">الصورة فيها QR يفتح الصفحة، والبوست فيه الرابط.</p></div>`;
@@ -195,6 +297,7 @@
       if (b) { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = fname; document.body.append(a); a.click(); a.remove(); }
       window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
     });
+    const lay = () => { const r = w.querySelector('#ss-lay'); if (r) r.hidden = o.style !== 'classic'; }; w.addEventListener('click', () => setTimeout(lay, 0)); lay();
     mark(); render();
   };
   window.yrShareCard = window.yrShareStudio;
