@@ -785,7 +785,7 @@
           root.innerHTML = `<section class="tp-hero"><span class="tp-av">${logo ? `<img src="${escapeHtml(logo)}" alt="">` : '⚽'}</span>
               <div class="tp-hi"><small>${t.national ? 'منتخب' : 'نادي'}${t.country ? ' · ' + escapeHtml(countryAr(t.country)) : ''}</small><h1>${escapeHtml(tn(t.name))}</h1>
               <div class="tp-acts"><button type="button" class="tp-btn" onclick="window.yrTeamShare&&window.yrTeamShare()">مشاركة</button><a class="tp-btn ghost" href="notification-preferences.html?follow=team:${id}&n=${encodeURIComponent(t.name || '')}">🔔 متابعة الفريق</a></div></div></section>
-            <nav class="tp-tabs" role="tablist"><button class="tp-tab active" data-t="ov" role="tab" aria-selected="true">نظرة عامة</button><button class="tp-tab" data-t="mt" role="tab" aria-selected="false">المباريات</button><button class="tp-tab" data-t="pl" role="tab" aria-selected="false">اللاعبين</button></nav>
+            <nav class="tp-tabs" role="tablist"><button class="tp-tab active" data-t="ov" role="tab" aria-selected="true">نظرة عامة</button><button class="tp-tab" data-t="mt" role="tab" aria-selected="false">المباريات</button><button class="tp-tab" data-t="st" role="tab" aria-selected="false">الترتيب</button><button class="tp-tab" data-t="pl" role="tab" aria-selected="false">اللاعبين</button></nav>
             <div class="tp-pane" id="pane-ov">
               <section class="tp-card"><h2>معلومات الفريق</h2><div class="tp-tiles">${[['سنة التأسيس', t.founded], ['الملعب', v.name ? tn(v.name) : ''], ['المدينة', v.city], ['السعة', v.capacity ? nAr(v.capacity) : ''], ['المدرب', c && c.name ? pn(c.name) : '']].filter((x) => x[1]).map(([k, x]) => tile('', String(x), k)).join('')}</div></section>
               <section class="tp-card" id="tp-last5"><h2>آخر النتائج</h2><p class="note">جارٍ التحميل…</p></section>
@@ -793,7 +793,32 @@
               <button type="button" class="tp-more" data-go="mt">جميع مباريات الفريق</button>
             </div>
             <div class="tp-pane" id="pane-mt" hidden><section class="tp-card" id="tp-nextall"><h2>القادمة</h2></section><section class="tp-card" id="tp-lastall"><h2>آخر المباريات</h2></section></div>
+            <div class="tp-pane" id="pane-st" hidden><section class="tp-card" id="tp-stc"><h2>ترتيب البطولات</h2><p class="note">جارٍ التحميل…</p></section></div>
             <div class="tp-pane" id="pane-pl" hidden>${squad.length ? groups.map(([k, label]) => { const list = squad.filter((p) => p.position === k); return list.length ? `<section class="tp-card"><h2>${label}</h2><div class="tp-pls">${list.map((p) => `<a class="tp-p" href="footballer.html?id=${p.id}"><span class="tp-ph">${photoImg(p.id)}</span><b>${escapeHtml(pn(p.name))}</b><small>${p.number ? '#' + escapeHtml(p.number) : ''}${p.number && p.age ? ' · ' : ''}${p.age ? escapeHtml(p.age) + ' سنة' : ''}</small></a>`).join('')}</div></section>` : ''; }).join('') : '<p class="note tp-note">قائمة اللاعبين غير متاحة حاليًا.</p>'}</div>`;
+          const LGN = { 39: 'الدوري الإنجليزي', 140: 'الدوري الإسباني', 135: 'الدوري الإيطالي', 78: 'الدوري الألماني', 61: 'الدوري الفرنسي', 2: 'دوري أبطال أوروبا', 3: 'الدوري الأوروبي', 848: 'دوري المؤتمر', 233: 'الدوري المصري', 307: 'الدوري السعودي', 12: 'دوري أبطال أفريقيا', 1: 'كأس العالم' };
+          const normT = (v) => String(v || '').toLowerCase().replace(/\b(fc|cf|afc|sc|club|de|cd)\b/g, '').replace(/[^a-z0-9؀-ۿ]/g, '');
+          const isMe = (x) => (x.team.id && Number(x.team.id) === id) || (normT(x.team.name) && normT(t.name) && (normT(x.team.name).includes(normT(t.name)) || normT(t.name).includes(normT(x.team.name))));
+          let stSel = 0; let stDone = false;
+          const drawStandings = async () => {
+            const box = $('tp-stc'); const lgs = window.yrTeamLeagues || [];
+            if (!box) return;
+            if (!lgs.length) { box.innerHTML = '<h2>ترتيب البطولات</h2><p class="note">لا يوجد ترتيب متاح لبطولات الفريق حاليًا.</p>'; return; }
+            const chips = lgs.length > 1 ? `<div class="tp-chips">${lgs.map((l, i) => `<button type="button" class="tp-chip${i === stSel ? ' on' : ''}" data-i="${i}">${escapeHtml(LGN[l.id] || l.name || 'بطولة')}</button>`).join('')}</div>` : '';
+            box.innerHTML = `<h2>ترتيب البطولات</h2>${chips}<div id="tp-stb"><p class="note">جارٍ التحميل…</p></div>`;
+            box.querySelectorAll('.tp-chip').forEach((b) => b.addEventListener('click', () => { stSel = Number(b.dataset.i); drawStandings(); }));
+            const body = $('tp-stb');
+            try {
+              const d = await request({ action: 'standings', sport: 'football', leagueId: lgs[stSel].id });
+              const lg = (d.league && d.league.logo && safeUrl(d.league.logo)) ? `<img src="${escapeHtml(safeUrl(d.league.logo))}" alt="" referrerpolicy="no-referrer">` : '';
+              const groups = d.groups || [];
+              const table = (rows, title) => `${title ? `<h3 class="tp-grp">${escapeHtml(title)}</h3>` : ''}<div class="tp-lt"><div class="tp-lr th"><b>#</b><span class="tn">الفريق</span><span>لعب</span><span>ف</span><span>ت</span><span>خ</span><span class="gd">+/-</span><span>نقاط</span></div>${rows.map((x) => `<${x.team.id ? `a href="team.html?id=${x.team.id}"` : 'div'} class="tp-lr${isMe(x) ? ' me' : ''}"><b>${nAr(x.rank)}</b><span class="tn">${safeUrl(x.team.logo) ? `<img src="${escapeHtml(safeUrl(x.team.logo))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}<em>${escapeHtml(tn(x.team.name))}</em></span><span>${nAr(x.played)}</span><span>${nAr(x.win)}</span><span>${nAr(x.draw)}</span><span>${nAr(x.lose)}</span><span class="gd" dir="ltr">${x.gd > 0 ? '+' : ''}${x.gd}</span><span class="pt">${nAr(x.points)}</span></${x.team.id ? 'a' : 'div'}>`).join('')}</div>`;
+              body.innerHTML = `<p class="tp-lgn">${lg}<b>${escapeHtml(LGN[lgs[stSel].id] || (d.league && d.league.name) || '')}</b>${d.league && d.league.season ? `<small>موسم ${escapeHtml(String(d.league.season))}/${escapeHtml(String(Number(d.league.season) + 1).slice(2))}</small>` : ''}</p>` + (groups.length ? groups.map((g) => table(g, groups.length > 1 ? (g[0] && g[0].group) || '' : '')).join('') : '<p class="note">الترتيب غير متاح حاليًا.</p>');
+              stDone = true;
+            } catch (e) { body.innerHTML = `<p class="note">${escapeHtml(e && e.message ? e.message : 'تعذّر تحميل الترتيب.')}</p>`; }
+          };
+          window.yrTeamStandings = () => { if (!stDone) drawStandings(); };
+          window.yrStWanted = false; window.yrTeamLeaguesReady = false;
+          root.querySelector('.tp-tab[data-t="st"]').addEventListener('click', () => { window.yrStWanted = true; if (window.yrTeamLeaguesReady) window.yrTeamStandings(); });
           bindTabs();
           root.querySelector('[data-go="mt"]').addEventListener('click', () => root.querySelector('.tp-tab[data-t="mt"]').click());
           (async () => {
@@ -801,6 +826,8 @@
             try {
               const f = await request({ action: 'form', sport: 'football', teamId: id });
               const list = f.matches || []; const up = f.upcoming || [];
+              window.yrTeamLeagues = f.leagues || [];
+              window.yrTeamLeaguesReady = true; if (window.yrStWanted) window.yrTeamStandings();
               const L5 = list.slice(0, 5);
               const w = list.filter((x) => x.result === 'W').length; const d = list.filter((x) => x.result === 'D').length;
               const clear = (sel) => { const b = $(sel); b && b.querySelectorAll('.note').forEach((n) => n.remove()); };
