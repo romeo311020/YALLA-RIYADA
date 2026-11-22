@@ -706,34 +706,16 @@
           renderDetails(m, res, manual, manualInfo);
         }
 
-        // المشغّل: لكرة القدم فقط حاليًا (جدول fixture_streams مفتاحه رقم المباراة)، ولا يظهر إلا لو يوجد رابط
-        if (sport === 'football' && player && frameBox) {
+        // بطاقة المشاهدة: بتظهر فقط لو المسؤول أضاف رابط (بث/ملخص) لهذه المباراة. مفيش روابط = مفيش بطاقة ولا زر
+        if (sport === 'football' && player && frameBox && window.yrWatch) {
           const { data: sess } = await db.auth.getSession();
-          const signedIn = Boolean(sess?.session?.user);
-          let url = '';
-          if (signedIn) {
-            const { data: stream, error } = await db.from('fixture_streams').select('embed_url').eq('fixture_id', Number(fixtureId)).maybeSingle();
-            if (error) { console.error('stream lookup:', error); return; }
-            url = safeUrl(stream?.embed_url);
-            if (!url) return;
-          } else {
-            // زائر غير مسجّل: نعرف فقط إن كان في مشغّل، ونعرض قفل الدخول بدل الرابط
-            const r = await db.rpc('stream_fixture_ids', { p_ids: [Number(fixtureId)] });
-            if (r.error || !(r.data || []).map(Number).includes(Number(fixtureId))) return;
-          }
-          if (!signedIn) {
-            frameBox.innerHTML = window.yrLockBox ? window.yrLockBox('المشغّل للأعضاء فقط', 'سجّل دخولك بحسابك لمشاهدة هذه المباراة.') : '';
-            player.hidden = false; window.yrPlayerReady && window.yrPlayerReady();
-          } else {
-          window.yrMountPlayer(url, `مشغّل مباراة ${H} ضد ${A}`);
-          mdChan(url, m);
-          }
-          if (note && !$('watch-btn')) {
-            const btn = document.createElement('button');
-            btn.type = 'button'; btn.id = 'watch-btn'; btn.className = 'btn primary watch-btn'; btn.textContent = '▶ شاهد المباراة';
-            btn.addEventListener('click', () => { if (window.yrSelectTab && window.matchMedia('(max-width:1099px)').matches) window.yrSelectTab('player'); player.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-            note.after(btn);
-          }
+          const user = sess?.session?.user || null;
+          player.classList.add('wc-host');
+          const shown = await window.yrWatch.mount({
+            host: frameBox, db, fixtureId, status: m.status, title: `${H} ضد ${A}`, league: m.league_label || m.league || '',
+            signedIn: Boolean(user), userId: user?.id || null, shareUrl: location.href, autoOpen: /[?&]watch=1/.test(location.search),
+          });
+          if (shown) { player.hidden = false; window.yrPlayerReady && window.yrPlayerReady(); }
         }
       } catch (error) {
         console.error('match details:', error);

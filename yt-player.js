@@ -115,7 +115,7 @@
         },
       });
     }).catch(() => { clearTimeout(failT); fallback(); });
-    return { destroy: () => { clearTimeout(failT); destroy(); } };
+    return { destroy: () => { clearTimeout(failT); destroy(); }, toggle: () => toggle(), playing: () => root.classList.contains('playing') };
   }
 
   window.yrYT = { parse: (u) => (String(u || '').match(ID_RE) || [])[1] || null, mount };
