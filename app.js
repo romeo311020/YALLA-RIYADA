@@ -217,7 +217,6 @@ window.yrPlayerReady = function () {
   const grid = document.querySelector('.watch-grid'); if (grid) grid.classList.add('has-player');
   window.yrPlayerTitle();
   /* من كارت فيه بث: افتح تبويب «المشغّل» مباشرة (بدون أي سكرول للأسفل) */
-  if (/[?&]watch=1/.test(location.search) && window.yrSelectTab && window.matchMedia('(max-width:1099px)').matches) window.yrSelectTab('player');
 };
 
 /* هيرو المباراة: شارة الحالة + عدّاد تنازلي للمباريات القادمة */
