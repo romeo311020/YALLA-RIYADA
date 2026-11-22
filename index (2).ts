@@ -69,7 +69,16 @@ Deno.serve(async (req) => {
       }
       const { data: subs, error: se } = await q.limit(5000);
       if (se) throw se;
-      const list: Any[] = subs ?? [];
+      let list: Any[] = subs ?? [];
+      // نوع الإشعار: اللي قفل النوع ده من صفحة الإشعارات ما بيوصلوش (الافتراضي: الكل مفعّل)
+      const KINDS = ['match_start', 'goals', 'team_news', 'player_news', 'transfers'];
+      const kind = KINDS.includes(String(body.kind ?? '')) ? String(body.kind) : '';
+      let skipped = 0;
+      if (kind && action === 'send') {
+        const { data: off } = await admin.from('push_prefs').select('user_id').eq('kinds->>' + kind, 'false').limit(50000);
+        const offSet = new Set((off ?? []).map((x: Any) => x.user_id));
+        if (offSet.size) { const before = list.length; list = list.filter((x) => !offSet.has(x.user_id)); skipped = before - list.length; }
+      }
       const payload = JSON.stringify({ title, body: text, url: link, tag: String(body.tag ?? 'yr-' + Date.now()).slice(0, 60) });
       let sent = 0; let failed = 0; const dead: string[] = [];
       for (let i = 0; i < list.length; i += 25) {
@@ -81,7 +90,7 @@ Deno.serve(async (req) => {
       }
       if (dead.length) await admin.from('push_subscriptions').delete().in('id', dead);
       try { await admin.from('admin_audit').insert({ actor: me.id, actor_email: me.email ?? null, action: action === 'test' ? 'push_test' : 'push_send', target: audience, detail: { title, sent, failed } }); } catch (_e) { /* السجل اختياري */ }
-      return json({ sent, failed, removed: dead.length, total: list.length });
+      return json({ sent, failed, removed: dead.length, total: list.length, skipped });
     }
     return json({ error: 'عملية غير معروفة.' }, 400);
   } catch (e) {
