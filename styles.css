@@ -1607,3 +1607,6 @@ body.page-match,body.tp-page{background:var(--bg)!important;color:var(--text)}
 .follow-chip:active{transform:scale(.96)}
 .follow-dot svg{width:20px;height:20px}
 :root[data-theme="light"] .follow-dot[style*="#e7e9ea"]{color:#0f1419}
+
+/* v91: مشغّل يوتيوب الأصلي — بدون شريط الهوية الزجاجي فوقه */
+.md-glass{display:none!important}

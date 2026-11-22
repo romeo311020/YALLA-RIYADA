@@ -130,10 +130,14 @@ window.yrMountPlayer = function (url, title) {
   const ytId = window.yrYT ? window.yrYT.parse(url) : (String(url).match(/(?:embed\/|watch\?v=|youtu\.be\/)([\w-]{11})/) || [])[1];
   let ytCtl = null;
   const buildYT = () => {
-    // فيديو يوتيوب: مشغّل يلا رياضة الخاص (شعار + أزرار + شريط تحميل). أي رابط تاني بيفضل في الإطار العادي.
-    const go = () => { if (ytCtl) ytCtl.destroy(); ytCtl = window.yrYT.mount(box, ytId, title || '', url); };
-    if (window.yrYT) { go(); return; }
-    const sc = document.createElement('script'); sc.src = 'yt-player.js'; sc.onload = go; sc.onerror = () => { box.replaceChildren(); const f = document.createElement('iframe'); f.src = url; f.allowFullscreen = true; f.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0'; box.appendChild(f); }; document.head.appendChild(sc);
+    // فيديو يوتيوب: مشغّل يوتيوب الأصلي نفسه (بأزراره وشكله الرسمي) داخل الإطار
+    const f = document.createElement('iframe');
+    f.src = 'https://www.youtube.com/embed/' + ytId + '?rel=0&playsinline=1&modestbranding=1';
+    f.title = title || 'مشغّل المباراة';
+    f.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen';
+    f.allowFullscreen = true; f.referrerPolicy = 'strict-origin-when-cross-origin';
+    f.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;background:#000';
+    box.replaceChildren(f);
   };
   const build = () => {
     if (ytId && /(^|\.)youtube(-nocookie)?\.com|youtu\.be/.test((() => { try { return new URL(url).hostname; } catch (e) { return ''; } })())) { buildYT(); return null; }
