@@ -318,6 +318,41 @@ async function takeSharedBudget(sport: Sport): Promise<'ok' | 'day' | 'minute'> 
 }
 
 
+// ---------- أرشيف مباريات الفرق المهمة (جدول team_matches) ----------
+// الفرق المهمة = الفرق اللي ليها api_id في push_targets. أي مباراة ليهم بتتحفظ، فآخر النتائج والقادمة تفضل متاحة حتى لو حصة الـ API خلصت.
+const STANDINGS_LEAGUES = new Set([39, 140, 135, 78, 61, 2, 3, 848, 233, 307, 305, 301, 200, 202, 186, 12, 1, 4, 5, 9, 15, 29, 32, 34]);
+let archiveIds: { ids: Set<number>; exp: number } | null = null;
+async function importantTeamIds(): Promise<Set<number>> {
+  if (archiveIds && archiveIds.exp > Date.now()) return archiveIds.ids;
+  const res = await sb('push_targets?kind=eq.team&active=eq.true&api_id=not.is.null&select=api_id');
+  const rows = res ? await res.json().catch(() => null) : null;
+  const ids = new Set<number>((Array.isArray(rows) ? rows : []).map((r: { api_id: number }) => Number(r.api_id)).filter((n: number) => n > 0));
+  archiveIds = { ids, exp: Date.now() + 30 * MIN };
+  return ids;
+}
+// deno-lint-ignore no-explicit-any
+async function archiveFixtures(rows: any[]) {
+  try {
+    const ids = await importantTeamIds();
+    if (!ids.size) return;
+    const keep = rows.filter((r) => ids.has(r.teams?.home?.id) || ids.has(r.teams?.away?.id)).map((r) => ({
+      fixture_id: r.fixture?.id, date: r.fixture?.date, status: r.fixture?.status?.short ?? '',
+      league_id: r.league?.id ?? null, league: r.league?.name ?? '',
+      home_id: r.teams?.home?.id ?? null, away_id: r.teams?.away?.id ?? null,
+      home: r.teams?.home?.name ?? '', away: r.teams?.away?.name ?? '', home_logo: r.teams?.home?.logo ?? null, away_logo: r.teams?.away?.logo ?? null,
+      home_goals: r.goals?.home ?? null, away_goals: r.goals?.away ?? null, updated_at: new Date().toISOString(),
+    })).filter((x) => x.fixture_id && x.date);
+    if (!keep.length) return;
+    await sb('team_matches?on_conflict=fixture_id', { method: 'POST', headers: { prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(keep) });
+  } catch (e) { console.error('archive failed:', e); }
+}
+async function archivedFor(teamId: number) {
+  const res = await sb(`team_matches?or=(home_id.eq.${teamId},away_id.eq.${teamId})&order=date.desc&limit=80&select=*`);
+  const rows = res ? await res.json().catch(() => null) : null;
+  return Array.isArray(rows) ? rows : [];
+}
+
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (request.method !== 'POST') return jsonResponse({ error: 'طريقة الطلب غير مدعومة.' }, 405);
@@ -338,7 +373,7 @@ Deno.serve(async (request) => {
 
   // ---------- ترتيب الدوري والهدافين (كاش مشترك: الترتيب 3 ساعات، الهدافين 6 ساعات) ----------
   if (body.action === 'standings' || body.action === 'scorers') {
-    const LEAGUES = new Set([39, 140, 135, 78, 61, 2, 3, 848, 233, 307, 305, 301, 200, 202, 186, 12, 1, 4, 5, 9, 15, 29, 32, 34]);
+    const LEAGUES = STANDINGS_LEAGUES;
     const lid = Number(body.leagueId);
     if (!LEAGUES.has(lid)) return jsonResponse({ error: 'البطولة غير مدعومة.' }, 400);
     const key = `football:${body.action}:${lid}`;
@@ -486,7 +521,15 @@ Deno.serve(async (request) => {
           const c = cairoDate(); const yy = Number(c.slice(0, 4)); const mm = Number(c.slice(5, 7));
           try { rows = await call('fixtures', { team: String(id), season: String(mm >= 8 ? yy : yy - 1), timezone: 'Africa/Cairo' }); failed = null; } catch (e) { failed = e; }
         }
-        if (!rows.length && failed) throw failed; // لا نخزّن قائمة فاضية بسبب خطأ مؤقت
+        // أرشيف السيرفر: بيكمّل أي نقص (أو بيعوّض لو الـ API رفضت)
+        const arch = await archivedFor(id);
+        if (!rows.length && failed && !arch.length) throw failed; // لا نخزّن قائمة فاضية بسبب خطأ مؤقت
+        // deno-lint-ignore no-explicit-any
+        const have = new Set(rows.map((r: any) => r.fixture?.id));
+        for (const a of arch) {
+          if (have.has(a.fixture_id)) continue;
+          rows.push({ fixture: { id: a.fixture_id, date: a.date, status: { short: a.status } }, league: { id: a.league_id, name: a.league }, teams: { home: { id: a.home_id, name: a.home, logo: a.home_logo }, away: { id: a.away_id, name: a.away, logo: a.away_logo } }, goals: { home: a.home_goals, away: a.away_goals } });
+        }
         const done = new Set(['FT', 'AET', 'PEN']);
         const matches = rows
           .filter((r) => done.has(r.fixture?.status?.short) && r.goals?.home != null && r.goals?.away != null)
@@ -496,7 +539,7 @@ Deno.serve(async (request) => {
             const isHome = r.teams?.home?.id === id;
             const gf = isHome ? r.goals.home : r.goals.away; const ga = isHome ? r.goals.away : r.goals.home;
             return {
-              fixture_id: r.fixture.id, date: r.fixture.date, league: r.league?.name ?? '',
+              fixture_id: r.fixture.id, date: r.fixture.date, league: r.league?.name ?? '', league_id: r.league?.id ?? null,
               home: r.teams?.home?.name ?? '', away: r.teams?.away?.name ?? '', home_logo: r.teams?.home?.logo ?? null, away_logo: r.teams?.away?.logo ?? null,
               home_goals: r.goals.home, away_goals: r.goals.away, is_home: isHome,
               result: gf > ga ? 'W' : gf < ga ? 'L' : 'D',
@@ -506,16 +549,28 @@ Deno.serve(async (request) => {
         // deno-lint-ignore no-explicit-any
         let upRows: any[] = [];
         try { upRows = await call('fixtures', { team: String(id), next: '8', timezone: 'Africa/Cairo' }); } catch { /* الخطة قد لا تدعم next */ }
+        const upSeen = new Set(upRows.map((r) => r.fixture?.id));
+        for (const r of rows) if (!upSeen.has(r.fixture?.id) && new Date(r.fixture?.date).getTime() > Date.now() - 2 * 60 * MIN) upRows.push(r);
         const upcoming = upRows
-          .filter((r) => ['NS', 'TBD', 'PST'].includes(r.fixture?.status?.short))
+          .filter((r) => ['NS', 'TBD', 'PST'].includes(r.fixture?.status?.short) && new Date(r.fixture?.date).getTime() > Date.now() - 2 * 60 * MIN)
           .sort((a, b) => new Date(a.fixture.date).getTime() - new Date(b.fixture.date).getTime())
           .slice(0, 8)
           .map((r) => ({
-            fixture_id: r.fixture.id, date: r.fixture.date, league: r.league?.name ?? '',
+            fixture_id: r.fixture.id, date: r.fixture.date, league: r.league?.name ?? '', league_id: r.league?.id ?? null,
             home: r.teams?.home?.name ?? '', away: r.teams?.away?.name ?? '', home_logo: r.teams?.home?.logo ?? null, away_logo: r.teams?.away?.logo ?? null,
             is_home: r.teams?.home?.id === id,
           }));
-        out = { matches, upcoming };
+        // بطولات الفريق (لتبويب الترتيب): من المباريات المعروفة، وإلا من المزوّد
+        // deno-lint-ignore no-explicit-any
+        let lids: number[] = [...new Set<number>(rows.map((r: any) => Number(r.league?.id)).filter((n: number) => STANDINGS_LEAGUES.has(n)))];
+        if (!lids.length) {
+          try {
+            // deno-lint-ignore no-explicit-any
+            const lr = await call('leagues', { team: String(id), current: 'true' }); lids = lr.map((x: any) => Number(x.league?.id)).filter((n: number) => STANDINGS_LEAGUES.has(n));
+          } catch { /* اختياري */ }
+        }
+        const leagues = lids.map((lid) => ({ id: lid, name: (rows.find((r: { league?: { id?: number } }) => r.league?.id === lid)?.league?.name) ?? '' }));
+        out = { matches, upcoming, leagues };
       } else if (body.action === 'team') {
         const [t, squad, coach] = [
           await call('teams', { id: String(id) }),
@@ -572,7 +627,7 @@ Deno.serve(async (request) => {
         };
       }
       // كاش طويل لتوفير الحصة: الفريق أسبوع، اللاعب 3 أيام، آخر المباريات 6 ساعات
-      const exp = Date.now() + (body.action === 'form' ? 6 * 60 : body.action === 'team' ? 7 * 24 * 60 : 3 * 24 * 60) * MIN;
+      const exp = Date.now() + (body.action === 'form' ? 60 : body.action === 'team' ? 7 * 24 * 60 : 3 * 24 * 60) * MIN;
       cache.set(key, { payload: out, expires: exp });
       await dbSet(key, out, exp);
       return jsonResponse(out);
@@ -605,6 +660,22 @@ Deno.serve(async (request) => {
       } catch (e) { console.error('settle failed', id, e); }
     }
     return jsonResponse({ settled: done, checked: ids.length });
+  }
+
+  // ---------- حفظ مباريات الفرق المهمة: بيُستدعى من cron كل كام ساعة (أمس/النهارده/بكرة/بعده) ----------
+  if (body.action === 'archive') {
+    const last = cache.get('archive:last');
+    if (last && last.expires > Date.now()) return jsonResponse({ skipped: true });
+    cache.set('archive:last', { payload: {}, expires: Date.now() + 20 * MIN });
+    let ok = 0;
+    for (const off of [-1, 0, 1, 2]) {
+      try {
+        const h = new Headers(request.headers); h.delete('content-length');
+        const r = await fetch(request.url, { method: 'POST', headers: h, body: JSON.stringify({ action: 'fixtures', sport: 'football', date: cairoDate(off) }) });
+        if (r.ok) ok += 1;
+      } catch (e) { console.error('archive day failed', off, e); }
+    }
+    return jsonResponse({ days: ok });
   }
 
   const sport: Sport = body.sport === 'basketball' ? 'basketball' : 'football';
@@ -660,6 +731,7 @@ Deno.serve(async (request) => {
 
         const normalize = sport === 'football' ? normalizeFootball : normalizeBasketball;
         const rows = Array.isArray(payload.response) ? payload.response : [];
+        if (sport === 'football' && body.action === 'fixtures') await archiveFixtures(rows);
         let out: Record<string, unknown>;
         let ttl: number;
         if (body.action === 'fixture') {

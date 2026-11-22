@@ -96,3 +96,13 @@ body.tp-page{background:var(--bg);color:var(--text);font-size:14px}
 .tp-lr .tn{display:flex;align-items:center;gap:7px;min-width:0;text-align:start}.tp-lr .tn img{width:18px;height:18px;object-fit:contain;flex:none}.tp-lr .tn em{font-style:normal;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tp-lr.me{background:var(--soft);box-shadow:inset 3px 0 0 var(--acc)}.tp-lr.me .tn em{color:var(--acc)}
 a.tp-lr:active{background:var(--line)}
+/* المباريات بنفس شكل صفحة المباريات */
+.tp-mxs{display:grid;grid-template-columns:1fr;gap:8px;padding-bottom:8px}
+@media(min-width:760px){.tp-mxs{grid-template-columns:1fr 1fr}}
+.tp-page .mx-fav{display:none}
+.tp-page .tp-card .match.mx{background:var(--panel2)}
+.tp-page .tp-m{display:none}
+.tp-page #team-root{max-width:900px}
+/* قوائم المباريات من غير إطار خارجي (الكروت نفسها فيها الإطار) */
+#tp-last5,#tp-next3,#tp-nextall,#tp-lastall{background:none;border:0;padding:0}
+#tp-last5>h2,#tp-next3>h2,#tp-nextall>h2,#tp-lastall>h2{margin:4px 2px 10px}

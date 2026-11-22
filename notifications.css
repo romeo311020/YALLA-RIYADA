@@ -113,3 +113,20 @@
 .pf-sum{flex:1;min-width:0;font-size:13px;font-weight:700;color:var(--muted,#64748b);white-space:nowrap}.pf-sum b{color:#16a34a;font-size:17px}
 .sv-bar .np-save{width:auto;flex:none;padding:13px 24px;font-size:14.5px}
 @media(min-width:900px){.sv-bar{bottom:20px}}
+
+/* v86: الألوان بتتبع الثيم (الداكن ما كانش بيشتغل لأن --card مش معرّف) */
+:root{--card:var(--panel)}
+.np-status,.np-card,.pf-tab,.pf-row,.np-search,.sv-bar,.pf-back{background:var(--panel)}
+.np-card,.np-status,.sv-bar{border-color:var(--line);box-shadow:0 14px 30px -22px rgba(0,0,0,.6)}
+.pf-row{border-color:var(--line)}
+.pf-row .nm b,.pf-tab b,.np-st-t b{color:var(--text)}
+.pf-row .ck{border-color:var(--muted)}
+.pf-row:has(input:checked){background:var(--soft);border-color:var(--acc)}
+.pf-row:has(input:checked) .ck{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
+.pf-tab.on{border-color:var(--acc);background:var(--soft)}
+.pf-tab.on .pf-ti{background:var(--acc);color:var(--on-acc)}.pf-tab.on small{color:var(--acc)}
+.pf-sum b{color:var(--acc)}
+.pf-ti,.np-ico{background:var(--panel2);color:var(--muted)}
+.np-add{border-color:var(--acc);color:var(--acc)}
+.np-form input{background:var(--panel2);color:var(--text);border-color:var(--line)}
+.np-search input{color:var(--text)}

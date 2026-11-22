@@ -761,14 +761,9 @@
         root.querySelectorAll('.tp-pane').forEach((p) => { p.hidden = p.id !== 'pane-' + b.dataset.t; });
       }));
     };
-    const mRow = (x, mine) => {
-      const done = x.result;
-      const mid = done ? `<span class="tp-sc" dir="ltr">${x.home_goals} - ${x.away_goals}</span>` : `<span class="tp-tm">${escapeHtml(fmtTime(x.date))}</span>`;
-      const chip = done ? `<i class="fm fm-${x.result}">${x.result === 'W' ? 'ف' : x.result === 'D' ? 'ت' : 'خ'}</i>` : '';
-      const lg = (u) => (safeUrl(u) ? `<img src="${escapeHtml(safeUrl(u))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '');
-      return `<a class="tp-m" href="match.html?fixture=${encodeURIComponent(x.fixture_id)}&sport=football"><small class="tp-d">${escapeHtml(fmtDay(x.date))}<br>${escapeHtml(x.league)}</small>
-        <span class="tp-tn">${lg(x.home_logo)}<b>${escapeHtml(tn(x.home))}</b></span>${mid}<span class="tp-tn">${lg(x.away_logo)}<b>${escapeHtml(tn(x.away))}</b></span>${chip}</a>`;
-    };
+    const toM = (x) => ({ sport: 'football', fixture_id: x.fixture_id, status: x.result ? 'finished' : 'scheduled', home_team: x.home, away_team: x.away, home_logo: x.home_logo, away_logo: x.away_logo, home_score: x.home_goals ?? null, away_score: x.away_goals ?? null, kickoff: x.date, league_label: x.league, round: fmtDay(x.date) });
+    const mRow = (x) => mxCard(toM(x), `match.html?fixture=${encodeURIComponent(x.fixture_id)}&sport=football`, false);
+    const mList = (arr) => `<div class="tp-mxs">${arr.map(mRow).join('')}</div>`;
     const err = (m) => { root.removeAttribute('aria-busy'); root.innerHTML = `<p class="note tp-note">${m} <a href="matches.html">العودة للمباريات</a></p>`; };
     (async () => {
       if (!db || !Number.isSafeInteger(id) || id < 1) { err(isTeam ? 'الفريق غير موجود.' : 'اللاعب غير موجود.'); return; }
@@ -833,12 +828,12 @@
               const clear = (sel) => { const b = $(sel); b && b.querySelectorAll('.note').forEach((n) => n.remove()); };
               ['tp-last5', 'tp-next3'].forEach(clear);
               if (L5.length) {
-                $('tp-last5').insertAdjacentHTML('beforeend', `<div class="tp-strip" dir="rtl">${list.map((x) => `<i class="fm fm-${x.result}">${x.result === 'W' ? 'ف' : x.result === 'D' ? 'ت' : 'خ'}</i>`).join('')}</div><p class="tp-sum"><b>${nAr(w)}</b> فوز · <b>${nAr(d)}</b> تعادل · <b>${nAr(list.length - w - d)}</b> خسارة</p>${L5.map((x) => mRow(x)).join('')}`);
-                $('tp-lastall').insertAdjacentHTML('beforeend', list.map((x) => mRow(x)).join(''));
+                $('tp-last5').insertAdjacentHTML('beforeend', `<div class="tp-strip" dir="rtl">${list.map((x) => `<i class="fm fm-${x.result}">${x.result === 'W' ? 'ف' : x.result === 'D' ? 'ت' : 'خ'}</i>`).join('')}</div><p class="tp-sum"><b>${nAr(w)}</b> فوز · <b>${nAr(d)}</b> تعادل · <b>${nAr(list.length - w - d)}</b> خسارة</p>${mList(L5)}`);
+                $('tp-lastall').insertAdjacentHTML('beforeend', mList(list));
               } else { empty('tp-last5', 'لا توجد نتائج متاحة حاليًا.'); empty('tp-lastall', 'لا توجد نتائج متاحة حاليًا.'); }
               if (up.length) {
-                $('tp-next3').insertAdjacentHTML('beforeend', up.slice(0, 3).map((x) => mRow(x)).join(''));
-                $('tp-nextall').insertAdjacentHTML('beforeend', up.map((x) => mRow(x)).join(''));
+                $('tp-next3').insertAdjacentHTML('beforeend', mList(up.slice(0, 3)));
+                $('tp-nextall').insertAdjacentHTML('beforeend', mList(up));
               } else { empty('tp-next3', 'لا توجد مباريات قادمة معروفة حاليًا.'); empty('tp-nextall', 'لا توجد مباريات قادمة معروفة حاليًا.'); }
             } catch (e) {
               console.error('team form:', e);
