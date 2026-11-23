@@ -1389,14 +1389,50 @@
     if (dl && window.confirm('حذف الهدف ده؟ هيتشال من متابعات كل المستخدمين.')) { const { error } = await client.from('push_targets').delete().eq('id', dl.dataset.ptDel); say('pt-msg', error ? error.message : 'تم الحذف.'); loadPushTargets(); }
   });
 
-  /* ---------- مصدر SportSRC (تشغيل/إيقاف + اختبار) ---------- */
+  /* ---------- مشغّل تجربة صغير + مصدر SportSRC ---------- */
   (() => {
+    const esc2 = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    const httpsOk = (u) => { try { return new URL(u).protocol === 'https:'; } catch { return false; } };
+    let hlsP = null;
+    const loadHls = () => hlsP || (hlsP = new Promise((ok, no) => { if (window.Hls) return ok(window.Hls); const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js'; s.onload = () => ok(window.Hls); s.onerror = () => { hlsP = null; no(new Error('hls')); }; document.head.appendChild(s); }));
+    // يعرض الرابط في مشغّل صغير (16:9) جوه الصندوق المحدد
+    const pvShow = async (box, url, type) => {
+      box.hidden = false; box.innerHTML = '<div class="pv-top"><span>تجربة الرابط</span><button type="button" class="pv-x" aria-label="إغلاق">✕</button></div><div class="pv-st"></div><p class="pv-msg"></p>';
+      const st = box.querySelector('.pv-st'); const msg = box.querySelector('.pv-msg');
+      box.querySelector('.pv-x').addEventListener('click', () => { box.hidden = true; box.innerHTML = ''; });
+      if (!httpsOk(url)) { msg.textContent = 'الرابط لازم يبدأ بـ https://'; return; }
+      let t = type && type !== 'auto' ? type : guessType(url);
+      const yt = (String(url).match(/(?:youtube\.com\/(?:embed\/|watch\?v=)|youtu\.be\/)([\w-]{11})/) || [])[1];
+      if (yt) { st.innerHTML = `<iframe src="https://www.youtube.com/embed/${yt}?rel=0&playsinline=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`; msg.textContent = 'مشغّل يوتيوب'; return; }
+      if (t === 'mp4' || t === 'hls') {
+        st.innerHTML = '<video controls playsinline></video>'; const v = st.firstChild;
+        v.addEventListener('error', () => { msg.textContent = 'تعذّر تشغيل الرابط (قد يمنعه السيرفر أو الرابط غير مباشر).'; });
+        v.addEventListener('playing', () => { msg.textContent = '✓ الرابط شغّال'; });
+        if (t === 'hls' && !v.canPlayType('application/vnd.apple.mpegurl')) { try { const H = await loadHls(); if (!H.isSupported()) throw 0; const h = new H(); h.on(H.Events.ERROR, (_e, d) => { if (d.fatal) msg.textContent = 'تعذّر تشغيل البث (HLS).'; }); h.loadSource(url); h.attachMedia(v); } catch { msg.textContent = 'المتصفح لا يدعم HLS.'; } } else v.src = url;
+        return;
+      }
+      st.innerHTML = `<iframe src="${esc2(url)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"></iframe>`;
+      msg.textContent = 'لو ظهرت صفحة فاضية، ممكن الموقع المصدر يمنع التضمين.';
+    };
+    const tryBtn = $('ws-try');
+    if (tryBtn) tryBtn.addEventListener('click', () => pvShow($('pv-ws'), $('ws-url').value.trim(), $('ws-type').value));
     const on = $('src-on'); if (!on) return;
-    const st = $('src-status'); const out = $('src-out');
+    const st = $('src-status'); const out = $('src-out'); const list = $('src-srcs');
     const call = (b) => callFn('sportsrc', b);
-    const load = async () => { try { const r = await call({ action: 'status' }); on.checked = Boolean(r.enabled); st.textContent = r.hasKey ? (r.enabled ? 'مفعّل ✓' : 'مقفول — المفتاح موجود') : 'السر SPORTSRC_KEY غير مضاف في Supabase بعد.'; } catch (e) { st.textContent = 'الدالة sportsrc غير منشورة بعد: ' + (e.message || ''); } };
+    const load = async () => { try { const r = await call({ action: 'status' }); on.checked = Boolean(r.enabled); st.textContent = r.hasKey ? (r.enabled ? 'مفعّل ✓' : 'مقفول') : 'السر SPORTSRC_KEY غير مضاف في Supabase بعد.'; } catch (e) { st.textContent = 'الدالة sportsrc غير منشورة بعد: ' + (e.message || ''); } };
     on.addEventListener('change', async () => { on.disabled = true; try { const r = await call({ action: 'set', on: on.checked }); on.checked = Boolean(r.enabled); st.textContent = r.enabled ? 'مفعّل ✓' : 'مقفول'; toast(r.enabled ? 'تم تفعيل SportSRC' : 'تم إيقاف SportSRC'); } catch (e) { on.checked = !on.checked; st.textContent = e.message || 'تعذّر الحفظ'; } on.disabled = false; });
-    const test = async (b) => { out.hidden = false; out.textContent = '…'; try { const r = await call({ action: 'test', ...b, ...(b.action ? { action: b.action } : {}) }); out.textContent = `HTTP ${r.status} • المتبقي اليوم: ${r.remaining ?? '—'} / ${r.limit ?? '—'}\n\n` + r.body; } catch (e) { out.textContent = e.message || 'فشل'; } };
+    const test = async (b) => {
+      out.hidden = false; out.textContent = '…'; list.innerHTML = '';
+      try {
+        const r = await call({ action: 'test', ...b });
+        out.textContent = `HTTP ${r.status} • المتبقي اليوم: ${r.remaining ?? '—'} / ${r.limit ?? '—'}\n\n` + r.body;
+        if (b.action === 'test_detail') {
+          try { const d = JSON.parse(String(r.body).replace(/^\/\/.*\n/, '')); const s = (d && d.data && d.data.sources) || [];
+            list.innerHTML = s.map((x, i) => `<button type="button" class="btn ghost" data-u="${esc2(x.embedUrl)}">▶ بث ${esc2(x.streamNo ?? i + 1)} · ${esc2(x.source || '')}${x.hd ? ' HD' : ''}</button>`).join('') || '<p class="note">المباراة دي ملهاش مصادر بث.</p>'; } catch { /* */ }
+        }
+      } catch (e) { out.textContent = e.message || 'فشل'; }
+    };
+    list.addEventListener('click', (e) => { const b = e.target.closest('[data-u]'); if (b) pvShow($('pv-src'), b.dataset.u, 'embed'); });
     $('src-test-m').addEventListener('click', () => test({ type: 'matches', sport: 'football', date: new Date().toISOString().slice(0, 10) }));
     $('src-test-a').addEventListener('click', () => test({ type: 'account' }));
     $('src-test-d').addEventListener('click', () => test({ action: 'test_detail' }));

@@ -260,7 +260,7 @@
           if (u) { const p = (() => { try { return new URL(u).pathname.toLowerCase(); } catch { return ''; } })(); sources = [{ id: 'legacy', fixture_id: Number(fixtureId), kind: o.status === 'finished' ? 'highlight' : 'live', url: u, src_type: /\.m3u8$/.test(p) ? 'hls' : /\.(mp4|webm)$/.test(p) ? 'mp4' : 'embed', channel: '', preview_url: '', active: true, is_default: true }]; }
         }
         // مصدر SportSRC (لو الأدمن مفعّله): بيزوّد روابط بث للمباريات غير المنتهية. روابطك الخاصة بتيجي الأول
-        if (o.src && o.status !== 'finished' && db.functions) {
+        if (o.src && o.status !== 'finished' && db.functions) { // (بس للمباريات غير المنتهية)
           try {
             const r = await db.functions.invoke('sportsrc', { body: { action: 'streams', home: o.src.home, away: o.src.away, date: o.src.date } });
             const list = (r && r.data && r.data.sources) || [];
@@ -275,17 +275,35 @@
         if (r.data.legacy) has[o.status === 'finished' ? 'highlight' : 'live'] = true;
       }
     } catch (e) { console.error('watch sources:', e); return; }
-    const kind = pickKind(o.status, has);
+    const finished = o.status === 'finished';
+    const ko = Date.parse(o.kickoff) || 0;
+    const phaseNow = () => (finished ? 'finished' : (o.status === 'live' || (ko && Date.now() >= ko - 10 * 60000)) ? 'live' : 'soon');
+    // المنتهية: ملخص (أو رابط أضافه الأدمن كإعادة). الجارية/القادمة: روابط البث فقط
+    const kind = finished ? (has.highlight ? 'highlight' : has.live ? 'live' : null) : (has.live ? 'live' : null);
     host.replaceChildren();
     if (!kind) return; // مفيش روابط → مفيش بطاقة ولا زر
     const first = sources.find((x) => x.kind === kind && x.preview_url);
-    const live = kind === 'live';
-    host.innerHTML = `<article class="wc ${live ? 'wc-live' : 'wc-hl'}"><div class="wc-bg"${first ? ` style="background-image:url('${esc(first.preview_url)}')"` : ''}></div><div class="wc-in">
-      <span class="wc-tag">${live ? '<i></i>بث مباشر الآن' : 'ملخص المباراة'}</span>
-      <h3>${live ? 'تابع المباراة لحظة بلحظة' : 'أهم لحظات المباراة'}</h3><p>${live ? 'استمتع بمشاهدة المباراة بجودة عالية' : 'شاهد أهم لحظات المباراة'}</p>
-      <button type="button" class="wc-btn">${live ? 'شاهد المباراة بث مباشر الآن' : 'شاهد ملخص المباراة'}${I.play}</button></div></article>`;
-    host.querySelector('.wc-btn').addEventListener('click', () => launch({ db, fixtureId: Number(fixtureId), title: o.title, league: o.league, status: o.status, signedIn: o.signedIn, userId: o.userId, shareUrl: o.shareUrl }, sources, kind));
-    if (o.autoOpen) host.querySelector('.wc-btn').click();
+    const ctx = () => ({ db, fixtureId: Number(fixtureId), title: o.title, league: o.league, status: phaseNow() === 'finished' ? 'finished' : phaseNow() === 'live' ? 'live' : 'soon', signedIn: o.signedIn, userId: o.userId, shareUrl: o.shareUrl });
+    const hms = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return [h, m, x].map((n) => String(n).padStart(2, '0')).join(':'); };
+    const paint = () => {
+      const ph = phaseNow(); const left = ko - 10 * 60000 - Date.now();
+      const tag = ph === 'live' ? '<span class="wc-tag"><i></i>بث مباشر الآن</span>' : ph === 'finished' ? '<span class="wc-tag">انتهت المباراة</span>' : '<span class="wc-tag">قريبًا</span>';
+      const line = ph === 'soon' ? (ko ? `<small>يفتح البث قبل البداية بـ 10 دقائق — <b dir="ltr" class="wc-cd">${hms(left)}</b></small>` : '<small>سيتوفر البث قبل بداية المباراة</small>') : ph === 'live' ? '<small>المباراة شغّالة الآن</small>' : '<small>أهم لحظات المباراة</small>';
+      const label = ph === 'finished' ? 'شاهد ملخص المباراة' : 'شاهد المباراة';
+      host.innerHTML = `<article class="wc wc-${ph}"${first ? ` style="--wc-img:url('${esc(first.preview_url)}')"` : ''}><span class="wc-ic">${ph === 'finished' ? I.play : I.tv}</span><div class="wc-tx">${tag}<b>${ph === 'soon' ? 'تبدأ المباراة قريبًا' : esc(o.title)}</b>${line}</div>
+        <button type="button" class="wc-btn" ${ph === 'soon' ? 'disabled' : ''}>${label}${ph === 'soon' ? '' : I.play}</button></article>`;
+      host.querySelector('.wc-btn').addEventListener('click', () => launch(ctx(), sources, kind));
+      return ph;
+    };
+    let ph0 = paint();
+    if (ph0 === 'soon') {
+      const t = setInterval(() => {
+        if (!document.body.contains(host)) { clearInterval(t); return; }
+        if (phaseNow() !== 'soon') { clearInterval(t); paint(); return; }
+        const cd = host.querySelector('.wc-cd'); if (cd) cd.textContent = hms(ko - 10 * 60000 - Date.now());
+      }, 1000);
+    }
+    if (o.autoOpen && ph0 !== 'soon') host.querySelector('.wc-btn').click();
     return true;
   }
   window.yrWatch = { mount, minimize, expand, close };

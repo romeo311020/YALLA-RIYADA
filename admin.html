@@ -364,22 +364,10 @@
       </section>
       <!-- المشغّلات -->
       <section class="admin-pane" id="pane-streams" role="tabpanel" hidden>
-        <div class="panel admin-section" id="src-admin">
-          <div class="admin-section-heading">
-            <div><span class="tag">مصدر خارجي</span><h2>مصدر SportSRC (تجريبي)</h2></div>
-            <p class="note">لما تفعّله، المباريات اللي ليها رابط بث من SportSRC بيظهر لها زر المشاهدة. روابطك الخاصة من «إدارة المشاهدة» بتاخد الأولوية دايمًا. مقفول افتراضيًا. مسؤولية حقوق الروابط عليك.</p>
-          </div>
-          <div class="form-stack admin-form">
-            <label class="check"><input type="checkbox" id="src-on"> تفعيل مصدر SportSRC</label>
-            <p class="note" id="src-status">جارٍ التحقق…</p>
-            <div class="row-actions"><button class="btn ghost" type="button" id="src-test-m">اختبار الاتصال (مباريات اليوم)</button><button class="btn ghost" type="button" id="src-test-a">حالة الحساب والحد اليومي</button><button class="btn ghost" type="button" id="src-test-d">اختبار تفاصيل مباراة (روابط البث)</button></div>
-            <pre id="src-out" dir="ltr" style="max-height:260px;overflow:auto;white-space:pre-wrap;font-size:12px;background:var(--panel2);padding:10px;border-radius:12px" hidden></pre>
-          </div>
-        </div>
         <div class="panel admin-section" id="ws-admin">
           <div class="admin-section-heading">
-            <div><span class="tag">المشاهدة</span><h2>إدارة المشاهدة</h2></div>
-            <p class="note">اختر مباراة وأضف بث مباشر و/أو ملخص. صفحة المباراة بتعرض زر واحد حسب اللي هنا، ولو مفيش روابط مفيش زر خالص.</p>
+            <div><span class="tag">المصدر 1</span><h2>روابطك أنت (الأولوية)</h2></div>
+            <p class="note">1) اختار المباراة 2) أضف رابط بث أو ملخص 3) جرّب الرابط في المشغّل الصغير. الزر بيتغير لوحده: «شاهد المباراة» لما تبدأ، و«شاهد ملخص المباراة» لما تخلص.</p>
           </div>
           <div class="form-stack admin-form">
             <label>اليوم<select id="ws-day"><option value="yesterday">أمس</option><option value="today" selected>اليوم</option><option value="tomorrow">غدًا</option></select></label>
@@ -394,19 +382,38 @@
               <input id="ws-edit-id" type="hidden">
               <label>النوع<select id="ws-kind"><option value="live">بث مباشر</option><option value="highlight">ملخص المباراة</option></select></label>
               <label>رابط الفيديو (https)<input id="ws-url" type="url" inputmode="url" placeholder="https://..." required></label>
-              <label>نوع الرابط<select id="ws-type"><option value="auto">تلقائي (حسب الرابط)</option><option value="embed">Embed / يوتيوب</option><option value="mp4">MP4</option><option value="hls">HLS (m3u8)</option></select></label>
               <label>اسم القناة / المصدر (اختياري)<input id="ws-channel" maxlength="80" placeholder="مثال: beIN Sports HD"></label>
+              <details class="adv"><summary>خيارات متقدمة</summary>
+              <label>نوع الرابط<select id="ws-type"><option value="auto">تلقائي (حسب الرابط)</option><option value="embed">Embed / يوتيوب</option><option value="mp4">MP4</option><option value="hls">HLS (m3u8)</option></select></label>
               <label>صورة Preview للمشغّل (اختياري، https)<input id="ws-preview" type="url" inputmode="url" placeholder="https://..."></label>
               <label class="check"><input id="ws-active" type="checkbox" checked> مفعّل</label>
               <label class="check"><input id="ws-default" type="checkbox"> مصدر افتراضي لهذا النوع</label>
+              </details>
+              <div class="row"><button class="btn ghost" type="button" id="ws-try">▶ جرّب الرابط</button></div>
+              <div class="pv" id="pv-ws" hidden></div>
               <div class="row"><button class="btn primary" id="ws-save" type="submit">إضافة المصدر</button><button class="btn outline" id="ws-cancel" type="button" hidden>إلغاء التعديل</button></div>
             </form>
           </div>
           <p id="ws-msg" class="note" role="status" aria-live="polite"></p>
         </div>
-        <div class="panel admin-section">
+        <div class="panel admin-section" id="src-admin">
           <div class="admin-section-heading">
-            <div><span class="tag">المشغّل</span><h2>ربط مشغّل بمباراة (رابط واحد — النظام القديم)</h2></div>
+            <div><span class="tag">المصدر 2</span><h2>SportSRC — بث تلقائي</h2></div>
+            <p class="note">لما تفعّله، أي مباراة ليها بث عند SportSRC بيظهر لها زر المشاهدة تلقائيًا (للمباريات اللي لسه ما خلصتش). روابطك من المصدر الأول بتيجي دايمًا قبله.</p>
+          </div>
+          <div class="form-stack admin-form">
+            <label class="switch-row"><span><strong>تفعيل SportSRC</strong><small id="src-status">جارٍ التحقق…</small></span><input type="checkbox" id="src-on" role="switch"><i class="switch" aria-hidden="true"></i></label>
+            <details class="adv"><summary>أدوات الاختبار</summary>
+              <div class="row-actions"><button class="btn ghost" type="button" id="src-test-a">حالة الحساب والحد اليومي</button><button class="btn ghost" type="button" id="src-test-m">مباريات اليوم</button><button class="btn ghost" type="button" id="src-test-d">جرّب بث مباراة</button></div>
+              <div id="src-srcs" class="pv-list"></div>
+              <div class="pv" id="pv-src" hidden></div>
+              <pre id="src-out" dir="ltr" hidden></pre>
+            </details>
+          </div>
+        </div>
+        <details class="panel admin-section legacy"><summary><b>النظام القديم</b> — رابط واحد لكل مباراة (للتوافق فقط)</summary>
+          <div class="admin-section-heading">
+            <div><span class="tag">قديم</span><h2>ربط مشغّل بمباراة</h2></div>
             <p class="note">عند حفظ رابط، تظهر علامة «شاهد» على المباراة ومربع المشغّل في صفحتها.</p>
           </div>
           <form id="stream-form" class="form-stack admin-form">
@@ -423,7 +430,7 @@
           <p id="stream-message" class="note" role="status" aria-live="polite"></p>
           <h3 class="admin-list-title">المشغّلات المضافة</h3>
           <div id="admin-streams"></div>
-        </div>
+        </details>
       </section>
 
       <!-- المتجر -->
