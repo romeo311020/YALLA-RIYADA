@@ -1610,3 +1610,7 @@ body.page-match,body.tp-page{background:var(--bg)!important;color:var(--text)}
 
 /* v91: مشغّل يوتيوب الأصلي — بدون شريط الهوية الزجاجي فوقه */
 .md-glass{display:none!important}
+/* v92: صفحة المباراة على الكمبيوتر بدون مشغّل — عمود واحد متوسّط بدل ما الهيرو ينكمش في الركن */
+@media(min-width:1100px){.m-split:not(:has(.match-player:not([hidden]))){align-items:stretch;max-width:800px;margin-inline:auto}.m-split:not(:has(.match-player:not([hidden]))) .md-promo,.m-split:not(:has(.match-player:not([hidden]))) .md-more{max-width:none}}
+@media(min-width:1100px){.page-match .md-promo,.page-match .md-more{margin-inline:auto}body:has(.m-split:not(:has(.match-player:not([hidden])))) .md-promo{max-width:800px}}
+@media(min-width:1100px){.page-match .md-promo{max-width:800px}}
