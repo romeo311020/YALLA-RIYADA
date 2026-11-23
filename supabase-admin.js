@@ -89,7 +89,7 @@
     important: () => loadImportant(),
     lineups: () => luSrcChange(),
     names: () => { loadUnknownNames(); return loadSavedNames(); },
-    streams: () => Promise.all([loadStreams(), loadApiFixtures('stream'), loadApiFixtures('ws')]),
+    streams: () => Promise.all([loadStreams(), loadApiFixtures('stream'), loadApiFixtures('ws'), window.__srcLoad ? window.__srcLoad() : null]),
     store: () => Promise.all([loadStoreSetting(), loadProducts(), loadCategories()]),
     orders: () => loadOrders(),
     news: () => loadNews(),
@@ -1388,4 +1388,17 @@
     if (tg) { const { error } = await client.from('push_targets').update({ active: tg.dataset.on !== '1' }).eq('id', tg.dataset.ptToggle); say('pt-msg', error ? error.message : 'تم.'); loadPushTargets(); }
     if (dl && window.confirm('حذف الهدف ده؟ هيتشال من متابعات كل المستخدمين.')) { const { error } = await client.from('push_targets').delete().eq('id', dl.dataset.ptDel); say('pt-msg', error ? error.message : 'تم الحذف.'); loadPushTargets(); }
   });
+
+  /* ---------- مصدر SportSRC (تشغيل/إيقاف + اختبار) ---------- */
+  (() => {
+    const on = $('src-on'); if (!on) return;
+    const st = $('src-status'); const out = $('src-out');
+    const call = (b) => callFn('sportsrc', b);
+    const load = async () => { try { const r = await call({ action: 'status' }); on.checked = Boolean(r.enabled); st.textContent = r.hasKey ? (r.enabled ? 'مفعّل ✓' : 'مقفول — المفتاح موجود') : 'السر SPORTSRC_KEY غير مضاف في Supabase بعد.'; } catch (e) { st.textContent = 'الدالة sportsrc غير منشورة بعد: ' + (e.message || ''); } };
+    on.addEventListener('change', async () => { on.disabled = true; try { const r = await call({ action: 'set', on: on.checked }); on.checked = Boolean(r.enabled); st.textContent = r.enabled ? 'مفعّل ✓' : 'مقفول'; toast(r.enabled ? 'تم تفعيل SportSRC' : 'تم إيقاف SportSRC'); } catch (e) { on.checked = !on.checked; st.textContent = e.message || 'تعذّر الحفظ'; } on.disabled = false; });
+    const test = async (b) => { out.hidden = false; out.textContent = '…'; try { const r = await call({ action: 'test', ...b }); out.textContent = `HTTP ${r.status} • المتبقي اليوم: ${r.remaining ?? '—'} / ${r.limit ?? '—'}\n\n` + r.body; } catch (e) { out.textContent = e.message || 'فشل'; } };
+    $('src-test-m').addEventListener('click', () => test({ type: 'matches', sport: 'football', date: new Date().toISOString().slice(0, 10) }));
+    $('src-test-a').addEventListener('click', () => test({ type: 'account' }));
+    window.__srcLoad = load;
+  })();
 })();
