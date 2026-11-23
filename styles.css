@@ -1581,3 +1581,32 @@ body.page-match,body.tp-page{background:var(--bg)!important;color:var(--text)}
 .bench{padding:9px 10px;border-radius:14px}.bench h3{font-size:13px}.bench li{font-size:12px;padding:3px 0;gap:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bench .sq-img.sm{width:26px;height:26px}.bench .pl-no.sm{width:19px;height:19px;font-size:10px}
 .benches{gap:8px}
+
+/* ===== v87: أزرار الكارت (التفاصيل + المشاهدة) متساوية ومرتبة ===== */
+.mx-foot{display:flex!important;gap:10px;align-items:stretch}
+.mx-foot .mx-more,.mx-foot .mx-watch{flex:1 1 0;justify-content:center;min-height:42px;padding:0 14px;font-size:13.5px;font-weight:800;border-radius:14px;box-shadow:none}
+.mx-foot .mx-watch{gap:9px;color:#fff;border:0;background:linear-gradient(180deg,#22c55e,#15803d);box-shadow:0 8px 18px -10px rgba(21,128,61,.9)}
+.mx-foot .mx-watch .mx-pl{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.22)}
+.mx-foot .mx-watch .mx-pl svg{width:14px;height:14px;fill:#fff;margin-inline-start:1px}
+.is-live .mx-foot .mx-watch{background:linear-gradient(180deg,#ef4444,#c81e1e);box-shadow:0 8px 18px -10px rgba(220,38,38,.9);color:#fff;border:0}
+:root[data-theme="dark"] .mx-foot .mx-watch{color:#fff;background:linear-gradient(180deg,#1faa55,#13693a)}
+:root[data-theme="dark"] .is-live .mx-foot .mx-watch{background:linear-gradient(180deg,#e23b3b,#b01818)}
+/* زر المشاركة في هيرو المباراة: دائرة زجاجية بحلقة نيون */
+.page-match .mh .mh-share{width:40px;height:40px;min-height:0;padding:0;font-size:0;gap:0;border-radius:50%;background:rgba(255,255,255,.14);border:1px solid rgba(184,255,59,.55);color:#fff;box-shadow:0 6px 16px -8px rgba(0,0,0,.7),0 0 0 3px rgba(184,255,59,.08)}
+.page-match .mh .mh-share svg{width:19px;height:19px;stroke:#fff}.page-match .mh .mh-share:active{transform:scale(.94)}.page-match .mh .mh-share:hover{background:rgba(184,255,59,.25)}
+
+/* ===== v90: التواصل — أزرار صغيرة جنب بعض ===== */
+.follow-box{margin:16px 0 4px;padding:14px 16px;border-radius:18px}
+.follow-head h3{margin:0 0 10px;font-size:15px;font-weight:800}
+.follow-row{display:flex;flex-wrap:wrap;gap:8px}
+.follow-chip{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px 0 12px;border-radius:99px;border:1px solid color-mix(in srgb,var(--c) 35%,var(--line));background:color-mix(in srgb,var(--c) 9%,var(--panel));color:var(--text);font-size:13px;transition:transform .18s,background .18s,border-color .18s}
+.follow-chip b{font-weight:800}
+.follow-chip .fc-ico{display:grid;place-items:center;width:22px;height:22px;color:var(--c)}.follow-chip .fc-ico svg{width:20px;height:20px}
+:root[data-theme="light"] .follow-chip[style*="#e7e9ea"] .fc-ico{color:#0f1419}
+.follow-chip:hover{transform:translateY(-2px);border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,var(--panel))}
+.follow-chip:active{transform:scale(.96)}
+.follow-dot svg{width:20px;height:20px}
+:root[data-theme="light"] .follow-dot[style*="#e7e9ea"]{color:#0f1419}
+
+/* v91: مشغّل يوتيوب الأصلي — بدون شريط الهوية الزجاجي فوقه */
+.md-glass{display:none!important}

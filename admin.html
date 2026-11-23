@@ -364,9 +364,37 @@
       </section>
       <!-- المشغّلات -->
       <section class="admin-pane" id="pane-streams" role="tabpanel" hidden>
+        <div class="panel admin-section" id="ws-admin">
+          <div class="admin-section-heading">
+            <div><span class="tag">المشاهدة</span><h2>إدارة المشاهدة</h2></div>
+            <p class="note">اختر مباراة وأضف بث مباشر و/أو ملخص. صفحة المباراة بتعرض زر واحد حسب اللي هنا، ولو مفيش روابط مفيش زر خالص.</p>
+          </div>
+          <div class="form-stack admin-form">
+            <label>اليوم<select id="ws-day"><option value="yesterday">أمس</option><option value="today" selected>اليوم</option><option value="tomorrow">غدًا</option></select></label>
+            <label>المباراة<select id="ws-fixture"><option value="">جارٍ تحميل المباريات...</option></select></label>
+            <label>أو رقم المباراة يدويًا<input id="ws-fid" type="number" inputmode="numeric" min="1" placeholder="مثال: 1234567"></label>
+            <p id="ws-fixture-status" class="note" role="status" aria-live="polite"></p>
+          </div>
+          <div id="ws-box" hidden>
+            <h3 class="admin-list-title">مصادر المشاهدة لهذه المباراة</h3>
+            <div id="ws-list"></div>
+            <form id="ws-form" class="form-stack admin-form">
+              <input id="ws-edit-id" type="hidden">
+              <label>النوع<select id="ws-kind"><option value="live">بث مباشر</option><option value="highlight">ملخص المباراة</option></select></label>
+              <label>رابط الفيديو (https)<input id="ws-url" type="url" inputmode="url" placeholder="https://..." required></label>
+              <label>نوع الرابط<select id="ws-type"><option value="auto">تلقائي (حسب الرابط)</option><option value="embed">Embed / يوتيوب</option><option value="mp4">MP4</option><option value="hls">HLS (m3u8)</option></select></label>
+              <label>اسم القناة / المصدر (اختياري)<input id="ws-channel" maxlength="80" placeholder="مثال: beIN Sports HD"></label>
+              <label>صورة Preview للمشغّل (اختياري، https)<input id="ws-preview" type="url" inputmode="url" placeholder="https://..."></label>
+              <label class="check"><input id="ws-active" type="checkbox" checked> مفعّل</label>
+              <label class="check"><input id="ws-default" type="checkbox"> مصدر افتراضي لهذا النوع</label>
+              <div class="row"><button class="btn primary" id="ws-save" type="submit">إضافة المصدر</button><button class="btn outline" id="ws-cancel" type="button" hidden>إلغاء التعديل</button></div>
+            </form>
+          </div>
+          <p id="ws-msg" class="note" role="status" aria-live="polite"></p>
+        </div>
         <div class="panel admin-section">
           <div class="admin-section-heading">
-            <div><span class="tag">المشغّل</span><h2>ربط مشغّل بمباراة</h2></div>
+            <div><span class="tag">المشغّل</span><h2>ربط مشغّل بمباراة (رابط واحد — النظام القديم)</h2></div>
             <p class="note">عند حفظ رابط، تظهر علامة «شاهد» على المباراة ومربع المشغّل في صفحتها.</p>
           </div>
           <form id="stream-form" class="form-stack admin-form">

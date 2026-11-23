@@ -102,9 +102,9 @@
   const mxCard = (m, href, watch) => { const k = favKey(m); const on = favSet.has(k); return `<article class="match mx${m.status === 'live' ? ' is-live' : ''}" data-fk="${escapeHtml(k)}">
       <div class="mx-head"><button type="button" class="mx-fav${on ? ' on' : ''}" data-fav="${escapeHtml(k)}" aria-pressed="${on}" aria-label="${on ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}">${STAR}</button><span class="mx-lg">${escapeHtml(m.league_label || m.league || '')}${m.round ? ` • ${escapeHtml(m.round)}` : ''}</span>${pill(m)}</div>
       <a class="mx-link" href="${href}"><div class="teams">${teamMarkup(m.home_team, m.home_logo, m.sport)}<div class="mx-mid">${centerMarkup(m)}${stLine(m)}</div>${teamMarkup(m.away_team, m.away_logo, m.sport)}</div>
-      <div class="mx-foot"><span class="mx-more">التفاصيل <i aria-hidden="true"></i></span>${watch ? `<b class="mx-watch"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>${m.status === 'finished' ? 'الملخص' : 'شاهد'}</b>` : '<span></span>'}<span></span></div></a>
+      <div class="mx-foot"><span class="mx-more">التفاصيل <i aria-hidden="true"></i></span>${watch ? `<b class="mx-watch"><i class="mx-pl" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6.5v11l9-5.5z"/></svg></i>${m.status === 'live' ? 'شاهد البث' : m.status === 'finished' ? 'شاهد الملخص' : 'شاهد'}</b>` : ''}</div></a>
     </article>`; };
-  const fixtureCard = (m, ctx) => mxCard(m, `match.html?fixture=${encodeURIComponent(m.fixture_id)}&sport=${encodeURIComponent(m.sport || 'football')}&day=${encodeURIComponent(ctx.day)}${m.has_stream ? '&watch=1' : ''}`, m.has_stream);
+  const fixtureCard = (m, ctx) => mxCard(m, `match.html?fixture=${encodeURIComponent(m.fixture_id)}&sport=${encodeURIComponent(m.sport || 'football')}&day=${encodeURIComponent(ctx.day)}`, m.has_stream);
   const manualCard = (m) => mxCard(m, `match.html?id=${encodeURIComponent(m.id)}`, m.has_embed);
 
 
@@ -706,34 +706,16 @@
           renderDetails(m, res, manual, manualInfo);
         }
 
-        // المشغّل: لكرة القدم فقط حاليًا (جدول fixture_streams مفتاحه رقم المباراة)، ولا يظهر إلا لو يوجد رابط
-        if (sport === 'football' && player && frameBox) {
+        // بطاقة المشاهدة: بتظهر فقط لو المسؤول أضاف رابط (بث/ملخص) لهذه المباراة. مفيش روابط = مفيش بطاقة ولا زر
+        if (sport === 'football' && player && frameBox && window.yrWatch) {
           const { data: sess } = await db.auth.getSession();
-          const signedIn = Boolean(sess?.session?.user);
-          let url = '';
-          if (signedIn) {
-            const { data: stream, error } = await db.from('fixture_streams').select('embed_url').eq('fixture_id', Number(fixtureId)).maybeSingle();
-            if (error) { console.error('stream lookup:', error); return; }
-            url = safeUrl(stream?.embed_url);
-            if (!url) return;
-          } else {
-            // زائر غير مسجّل: نعرف فقط إن كان في مشغّل، ونعرض قفل الدخول بدل الرابط
-            const r = await db.rpc('stream_fixture_ids', { p_ids: [Number(fixtureId)] });
-            if (r.error || !(r.data || []).map(Number).includes(Number(fixtureId))) return;
-          }
-          if (!signedIn) {
-            frameBox.innerHTML = window.yrLockBox ? window.yrLockBox('المشغّل للأعضاء فقط', 'سجّل دخولك بحسابك لمشاهدة هذه المباراة.') : '';
-            player.hidden = false; window.yrPlayerReady && window.yrPlayerReady();
-          } else {
-          window.yrMountPlayer(url, `مشغّل مباراة ${H} ضد ${A}`);
-          mdChan(url, m);
-          }
-          if (note && !$('watch-btn')) {
-            const btn = document.createElement('button');
-            btn.type = 'button'; btn.id = 'watch-btn'; btn.className = 'btn primary watch-btn'; btn.textContent = '▶ شاهد المباراة';
-            btn.addEventListener('click', () => { if (window.yrSelectTab && window.matchMedia('(max-width:1099px)').matches) window.yrSelectTab('player'); player.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-            note.after(btn);
-          }
+          const user = sess?.session?.user || null;
+          player.classList.add('wc-host');
+          const shown = await window.yrWatch.mount({
+            host: frameBox, db, fixtureId, status: m.status, title: `${H} ضد ${A}`, league: m.league_label || m.league || '',
+            signedIn: Boolean(user), userId: user?.id || null, shareUrl: location.href, autoOpen: false,
+          });
+          if (shown) { player.hidden = false; window.yrPlayerReady && window.yrPlayerReady(); }
         }
       } catch (error) {
         console.error('match details:', error);
