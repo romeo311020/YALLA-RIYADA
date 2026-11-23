@@ -1436,6 +1436,17 @@
     $('src-test-m').addEventListener('click', () => test({ type: 'matches', sport: 'football', date: new Date().toISOString().slice(0, 10) }));
     $('src-test-a').addEventListener('click', () => test({ type: 'account' }));
     $('src-test-d').addEventListener('click', () => test({ action: 'test_detail' }));
+    const tx = $('src-test-x');
+    if (tx) { const td = $('src-td'); if (td) td.value = new Date().toISOString().slice(0, 10);
+      tx.addEventListener('click', async () => {
+        out.hidden = false; out.textContent = '…'; list.innerHTML = '';
+        try {
+          const r = await call({ action: 'streams', home: $('src-th').value.trim(), away: $('src-ta').value.trim(), date: $('src-td').value });
+          const n = (r.sources || []).length;
+          out.textContent = r.enabled === false ? 'SportSRC مقفول (فعّل الزر فوق) أو السر مش مضاف.' : r.error ? 'خطأ: ' + r.error : !r.matched ? 'مالقيتش المباراة دي في SportSRC — جرّب اسم الفريق بشكل تاني أو تاريخ تاني.' : `لقيت المباراة: ${r.matched_title || ''}\nعدد روابط البث: ${n}${r.has_stream === false ? ' (المصدر بيقول مفيش بث لها)' : ''}`;
+          list.innerHTML = (r.sources || []).map((x) => `<button type="button" class="btn ghost" data-u="${esc2(x.url)}">▶ ${esc2(x.title || 'بث')}</button>`).join('');
+        } catch (e) { out.textContent = e.message || 'فشل'; }
+      }); }
     window.__srcLoad = load;
   })();
 })();

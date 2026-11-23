@@ -145,7 +145,8 @@
       const live = (res?.fixtures || []).filter((x) => x.status === 'live' && String(x.fixture_id) !== String(cur.fixture_id)).slice(0, 12);
       if (!live.length) return;
       const crest = (n, l) => { const u = safeUrl(l); return `<span class="mc-c">${u ? `<img src="${escapeHtml(u)}" alt="" loading="lazy" decoding="async">` : `<b>${escapeHtml(String(tn(n)).charAt(0))}</b>`}</span>`; };
-      track.innerHTML = live.map((x) => `<a class="md-card" href="match.html?fixture=${encodeURIComponent(x.fixture_id)}&sport=${encodeURIComponent(sport)}&day=${encodeURIComponent(day)}"><div class="mc-t">${crest(x.home_team, x.home_logo)}<em>VS</em>${crest(x.away_team, x.away_logo)}</div><div class="mc-n"><span>${escapeHtml(tn(x.home_team))}</span><span>${escapeHtml(tn(x.away_team))}</span></div>${x.home_score != null ? `<div class="mc-s">${escapeHtml(String(x.home_score))} - ${escapeHtml(String(x.away_score))}</div>` : ''}<span class="mc-l">مباشر الآن <i></i></span></a>`).join('');
+      const tm = (n, l) => `<div class="mc-tm">${crest(n, l)}<span class="mc-nm">${escapeHtml(tn(n))}</span></div>`;
+      track.innerHTML = live.map((x) => `<a class="md-card" href="match.html?fixture=${encodeURIComponent(x.fixture_id)}&sport=${encodeURIComponent(sport)}&day=${encodeURIComponent(day)}"><div class="mc-row">${tm(x.home_team, x.home_logo)}<div class="mc-mid">${x.home_score != null ? `<b class="mc-s">${escapeHtml(String(x.home_score))} - ${escapeHtml(String(x.away_score))}</b>` : '<em>VS</em>'}</div>${tm(x.away_team, x.away_logo)}</div><span class="mc-l"><i></i>مباشر الآن</span></a>`).join('');
       sec.hidden = false;
       const step = () => Math.max(160, track.clientWidth * 0.8);
       $('md-prev')?.addEventListener('click', () => track.scrollBy({ left: step(), behavior: 'smooth' }));
@@ -716,7 +717,7 @@
             signedIn: Boolean(user), userId: user?.id || null, shareUrl: location.href, autoOpen: false, kickoff: m.kickoff,
             src: { home: m.home_team, away: m.away_team, date: String(m.kickoff || '').slice(0, 10) },
           });
-          if (shown) { player.hidden = false; window.yrPlayerReady && window.yrPlayerReady(); }
+          if (shown) { player.hidden = false; window.yrPlayerReady && window.yrPlayerReady(); window.yrSelectTab && window.yrSelectTab('player'); }
         }
       } catch (error) {
         console.error('match details:', error);

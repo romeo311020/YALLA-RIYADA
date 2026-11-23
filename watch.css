@@ -132,3 +132,5 @@ html.ws-lock,html.ws-lock body{overflow:hidden}
 @media(min-width:1000px){.ws-spacer,.ws-vid{max-height:min(56vh,calc(var(--pw)*9/16))}}
 @media(prefers-reduced-motion:reduce){.ws-panel,.ws-vid,.ws-back{transition:none}}
 @media(max-width:700px){.ws.open.ws--mini .ws-vid,.ws--mini .ws-mini-ctl{bottom:84px;left:12px}}
+/* v99: مشغّل أكبر على الموبايل (طولي) */
+@media(max-width:700px) and (orientation:portrait){.ws-spacer,.ws-vid{aspect-ratio:4/3;max-height:58vh}}
