@@ -714,6 +714,7 @@
           const shown = await window.yrWatch.mount({
             host: frameBox, db, fixtureId, status: m.status, title: `${H} ضد ${A}`, league: m.league_label || m.league || '',
             signedIn: Boolean(user), userId: user?.id || null, shareUrl: location.href, autoOpen: false,
+            src: { home: m.home_team, away: m.away_team, date: String(m.kickoff || '').slice(0, 10) },
           });
           if (shown) { player.hidden = false; window.yrPlayerReady && window.yrPlayerReady(); }
         }

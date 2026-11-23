@@ -259,6 +259,14 @@
           const u = safe(l.data && l.data.embed_url);
           if (u) { const p = (() => { try { return new URL(u).pathname.toLowerCase(); } catch { return ''; } })(); sources = [{ id: 'legacy', fixture_id: Number(fixtureId), kind: o.status === 'finished' ? 'highlight' : 'live', url: u, src_type: /\.m3u8$/.test(p) ? 'hls' : /\.(mp4|webm)$/.test(p) ? 'mp4' : 'embed', channel: '', preview_url: '', active: true, is_default: true }]; }
         }
+        // مصدر SportSRC (لو الأدمن مفعّله): بيزوّد روابط بث للمباريات غير المنتهية. روابطك الخاصة بتيجي الأول
+        if (o.src && o.status !== 'finished' && db.functions) {
+          try {
+            const r = await db.functions.invoke('sportsrc', { body: { action: 'streams', home: o.src.home, away: o.src.away, date: o.src.date } });
+            const list = (r && r.data && r.data.sources) || [];
+            list.forEach((x, i) => { const u = safe(x.url); if (u) { const p = (() => { try { return new URL(u).pathname.toLowerCase(); } catch { return ''; } })(); sources.push({ id: 'sr' + i, fixture_id: Number(fixtureId), kind: 'live', url: u, src_type: /\.m3u8$/.test(p) ? 'hls' : /\.(mp4|webm)$/.test(p) ? 'mp4' : 'embed', channel: x.title ? 'SportSRC · ' + x.title : 'SportSRC', preview_url: '', active: true, is_default: false, ext: true }); } });
+          } catch (e) { /* مصدر اختياري: لو فشل نكمّل بدونه */ }
+        }
         has = { live: sources.some((x) => x.kind === 'live'), highlight: sources.some((x) => x.kind === 'highlight') };
       } else {
         const r = await db.rpc('watch_info', { p_fixture: Number(fixtureId) });
