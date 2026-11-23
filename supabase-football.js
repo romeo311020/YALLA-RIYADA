@@ -670,15 +670,22 @@
     if (!db) { if (note) note.textContent = 'بيانات Supabase غير مكتملة، تعذّر تحميل تفاصيل المباراة.'; return; }
     (async () => {
       try {
-        const res = await request({ action: 'fixture', sport, fixtureId: Number(fixtureId) });
-        let m = res?.fixture;
+        let res = null; let m = null; let degraded = false;
+        try { res = await request({ action: 'fixture', sport, fixtureId: Number(fixtureId) }); m = res?.fixture; } catch (e) { console.error('fixture:', e); }
+        if (!m) { // الـ API واقف/خلص: نجيب بيانات المباراة الأساسية من قائمة اليوم (الكاش) عشان الصفحة والمشغّل يفضلوا شغّالين
+          const days = [...new Set([Number(day), 0, -1, 1])];
+          for (const d of days) {
+            try { const r = await request({ action: 'fixtures', sport, date: localDate(d) }); const f = (r?.fixtures || []).find((x) => String(x.fixture_id) === String(fixtureId)); if (f) { m = f; break; } } catch { /* جرّب اليوم التالي */ }
+          }
+          if (m) { res = {}; degraded = true; }
+        }
         if (!m) { if (note) note.textContent = 'المباراة غير متاحة حاليًا.'; return; }
         if (sport === 'football') { const [mm] = await applyOverrides([m]); m = mm; }
         const H = tn(m.home_team); const A = tn(m.away_team);
         title.textContent = `${H} × ${A}`;
         document.title = `${H} × ${A} | يلا رياضة`;
         score.innerHTML = `${teamMarkup(m.home_team, m.home_logo, sport, m.home_id)}${centerMarkup(m)}${teamMarkup(m.away_team, m.away_logo, sport, m.away_id)}`;
-        if (note) note.textContent = formatDate(m.kickoff);
+        if (note) note.textContent = formatDate(m.kickoff) + (degraded ? ' — تفاصيل الأحداث مؤقتًا غير متاحة' : '');
         { const hero0 = $('match-hero'); if (hero0 && !hero0.querySelector('.mh-when')) {
           const d = new Date(m.kickoff); const ok = !Number.isNaN(d.getTime());
           const iso = ok ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '';
