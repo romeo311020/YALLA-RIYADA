@@ -40,6 +40,16 @@
     return data;
   }
 
+  // قائمة المباريات: API-Football أولًا، ولو وقف أو رجّع فاضي نجيب من SportSRC (لو مفعّل)
+  async function fxList(date) {
+    let first = null; let err = null;
+    try { first = await callFn('football-matches', { action: 'fixtures', sport: 'football', date }); } catch (e) { err = e; }
+    if (first && Array.isArray(first.fixtures) && first.fixtures.length) return first;
+    try { const r = await callFn('sportsrc', { action: 'fixtures', date }); if (r && Array.isArray(r.fixtures) && r.fixtures.length) return r; } catch { /* نكمل */ }
+    if (err) throw err;
+    return first || { fixtures: [], leagues: [] };
+  }
+
   /* ======================== الدخول والتبويبات ======================== */
   async function checkSession() {
     try {
@@ -377,7 +387,7 @@
     const offsets = { yesterday: -1, today: 0, tomorrow: 1 };
     select.innerHTML = '<option value="">جارٍ تحميل المباريات...</option>'; say(statusId, '');
     try {
-      const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(offsets[dayEl.value] ?? 0) });
+      const data = await fxList(cairoDate(offsets[dayEl.value] ?? 0));
       const fixtures = Array.isArray(data?.fixtures) ? data.fixtures : [];
       fixtures.forEach((f) => fixtureCache.set(String(f.fixture_id), f));
       select.innerHTML = '<option value="">اختر مباراة</option>' + fixtures.map((f) => `<option value="${esc(f.fixture_id)}">${esc(`${ar(f.home_team)} × ${ar(f.away_team)} · ${f.league_label || f.league} · #${f.fixture_id}`)}</option>`).join('');
@@ -391,7 +401,7 @@
   $('match-import-load').addEventListener('click', async () => {
     const sel = $('match-import'); sel.innerHTML = '<option value="">جارٍ التحميل...</option>'; say('match-import-status', '');
     try {
-      const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate({ yesterday: -1, today: 0, tomorrow: 1 }[$('match-import-day').value] ?? 0) });
+      const data = await fxList(cairoDate({ yesterday: -1, today: 0, tomorrow: 1 }[$('match-import-day').value] ?? 0));
       const fx = Array.isArray(data?.fixtures) ? data.fixtures : []; fx.forEach((f) => fixtureCache.set(String(f.fixture_id), f));
       sel.innerHTML = '<option value="">— اختر مباراة —</option>' + fx.map((f) => `<option value="${esc(f.fixture_id)}">${esc(`${ar(f.home_team)} × ${ar(f.away_team)} · ${f.league_label || f.league}`)}</option>`).join('');
       if (!fx.length) say('match-import-status', 'لا توجد مباريات لهذا اليوم.');
@@ -406,7 +416,7 @@
     $('lg-pick').innerHTML = '<option value="">— أضف بطولة من القائمة —</option>' + lgAvail.filter((a) => !lgList.some((c) => c.l === a.label)).map((a) => `<option value="${esc(a.key)}">${esc(a.label)}</option>`).join('');
   };
   async function loadLeagueOrderAdmin() {
-    try { const d = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(0) }); lgAvail = Array.isArray(d?.leagues) ? d.leagues : []; } catch { lgAvail = []; }
+    try { const d = await fxList(cairoDate(0)); lgAvail = Array.isArray(d?.leagues) ? d.leagues : []; } catch { lgAvail = []; }
     const { data } = await client.from('site_settings').select('value').eq('key', 'league_order').maybeSingle();
     lgList = Array.isArray(data?.value) && data.value.length ? data.value.map((c) => ({ k: c.k, l: c.l })) : lgAvail.slice(0, 12).map((a) => ({ k: a.key, l: a.label }));
     lgRender();
@@ -449,7 +459,7 @@
     const sel = $('ov-fixture'); sel.innerHTML = '<option value="">جارٍ التحميل...</option>'; say('ov-msg', '');
     try {
       const iso = cairoDate(Number($('ov-day').value) || 0); let api = []; let apiErr = '';
-      try { const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: iso }); api = Array.isArray(data?.fixtures) ? data.fixtures : []; } catch (e) { apiErr = e.message; }
+      try { const data = await fxList(iso); api = Array.isArray(data?.fixtures) ? data.fixtures : []; } catch (e) { apiErr = e.message; }
       const fx = mergeFx(api, await snapForDay(iso)); if (!fx.length && apiErr) throw new Error(apiErr); fx.forEach((f) => { fixtureCache.set(String(f.fixture_id), f); ovFx.set(String(f.fixture_id), f); });
       sel.innerHTML = '<option value="">— اختر مباراة —</option>' + fx.map((f) => `<option value="${esc(f.fixture_id)}">${esc(`${ar(f.home_team)} × ${ar(f.away_team)} · ${f.league_label || f.league}`)}</option>`).join('');
       if (!fx.length) say('ov-msg', 'لا توجد مباريات لهذا اليوم.');
@@ -515,7 +525,7 @@
       for (let i = 0; i < n; i++) {
         const d = new Date(`${start}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + i); const iso = d.toISOString().slice(0, 10);
         say('imp-msg', `جارٍ تحميل ${impDayLabel(iso)} (${i + 1} من ${n})…`);
-        let api = []; try { const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: iso }); api = (data?.fixtures || []).filter((f) => f.fixture_id && !f.manual); } catch { fails++; }
+        let api = []; try { const data = await fxList(iso); api = (data?.fixtures || []).filter((f) => f.fixture_id && !f.manual); } catch { fails++; }
         const fx = mergeFx(api, await snapForDay(iso)); fx.forEach((f) => impFx.set(Number(f.fixture_id), f)); days.push([iso, fx]);
       }
       $('imp-list').innerHTML = days.map(([iso, fx]) => `<h4>${esc(impDayLabel(iso))} <small>(${fx.length})</small></h4>` + (fx.length ? fx.map((f) => {
@@ -567,7 +577,7 @@
     const sel = $('lu-match'); sel.innerHTML = '<option value="">جارٍ التحميل…</option>'; luRows.clear();
     try {
       const iso = cairoDate(Number($('lu-day').value) || 0); let api = []; let apiErr = '';
-      try { const data = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: iso }); api = data?.fixtures || []; } catch (e) { apiErr = e.message; }
+      try { const data = await fxList(iso); api = data?.fixtures || []; } catch (e) { apiErr = e.message; }
       const fx = mergeFx(api, await snapForDay(iso)).filter((f) => f.fixture_id && !f.manual); if (!fx.length && apiErr) throw new Error(apiErr); fx.forEach((f) => luRows.set(String(f.fixture_id), f));
       sel.innerHTML = '<option value="">— اختر مباراة —</option>' + fx.map((f) => `<option value="${esc(f.fixture_id)}">${esc(`${ar(f.home_team)} × ${ar(f.away_team)} · ${f.league_label || f.league}`)}</option>`).join('');
       say('lu-msg', fx.length ? '' : 'لا توجد مباريات لهذا اليوم.');
@@ -623,7 +633,7 @@
     $('tm-pick').innerHTML = '<option value="">— اختر فريق من مباريات اليوم —</option>' + [...tmSeen].filter(([en]) => !taken.has(en.toLowerCase())).sort((a, b) => a[1].localeCompare(b[1])).map(([en, a]) => `<option value="${esc(en)}">${esc(a)} — ${esc(en)}</option>`).join('');
   };
   async function loadTopTeamsAdmin() {
-    try { const d = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(0) }); (d?.fixtures || []).forEach((f) => { [f.home_team, f.away_team].forEach((n) => n && tmSeen.set(n, ar(n))); }); } catch { /* اختياري */ }
+    try { const d = await fxList(cairoDate(0)); (d?.fixtures || []).forEach((f) => { [f.home_team, f.away_team].forEach((n) => n && tmSeen.set(n, ar(n))); }); } catch { /* اختياري */ }
     const { data } = await client.from('site_settings').select('value').eq('key', 'top_teams').maybeSingle();
     tmList = Array.isArray(data?.value) && data.value.length ? data.value.map((t) => ({ en: t.en || '', ar: t.ar || '' })) : DEFAULT_TOP.map((t) => ({ ...t }));
     tmRender();
@@ -761,7 +771,7 @@
   $('nm-load').addEventListener('click', async () => {
     $('nm-list').innerHTML = '<p class="note">جارٍ التحميل…</p>';
     try {
-      const d = await callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(Number($('nm-day').value) || 0) });
+      const d = await fxList(cairoDate(Number($('nm-day').value) || 0));
       const set = new Set(); (d?.fixtures || []).forEach((f) => { [f.home_team, f.away_team].forEach((n) => n && set.add(n)); });
       (d?.fixtures || []).forEach((f) => { [f.home_team, f.away_team].forEach((n) => n && tmSeen.set(n, ar(n))); });
       $('nm-list').innerHTML = set.size ? nmRows([...set].sort()) : '<p class="note">لا توجد مباريات لهذا اليوم.</p>';
@@ -1436,6 +1446,15 @@
     $('src-test-m').addEventListener('click', () => test({ type: 'matches', sport: 'football', date: new Date().toISOString().slice(0, 10) }));
     $('src-test-a').addEventListener('click', () => test({ type: 'account' }));
     $('src-test-d').addEventListener('click', () => test({ action: 'test_detail' }));
+    const tf = $('src-test-f');
+    if (tf) tf.addEventListener('click', async () => {
+      out.hidden = false; out.textContent = '…'; list.innerHTML = '';
+      try {
+        const r = await call({ action: 'fixtures', date: new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' }) });
+        const n = (r.fixtures || []).length;
+        out.textContent = r.enabled === false ? 'SportSRC مقفول (فعّل الزر فوق) أو السر مش مضاف.' : r.error ? 'خطأ من SportSRC: ' + r.error : n ? `✓ المصدر الاحتياطي شغّال — لقيت ${n} مباراة النهارده.\n\n` + r.fixtures.slice(0, 12).map((f) => `${f.home_team} × ${f.away_team}  (${f.league_label})`).join('\n') : 'الرد فاضي — مفيش مباريات النهارده في SportSRC.';
+      } catch (e) { out.textContent = 'فشل: ' + (e.message || '') + '\n(لو الرسالة «إجراء غير معروف» يبقى لازم تنشر دالة sportsrc الجديدة).'; }
+    });
     const tx = $('src-test-x');
     if (tx) { const td = $('src-td'); if (td) td.value = new Date().toISOString().slice(0, 10);
       tx.addEventListener('click', async () => {

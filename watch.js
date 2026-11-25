@@ -262,7 +262,7 @@
         // مصدر SportSRC (لو الأدمن مفعّله): بيزوّد روابط بث للمباريات غير المنتهية. روابطك الخاصة بتيجي الأول
         if (o.src && o.status !== 'finished' && db.functions) { // (بس للمباريات غير المنتهية)
           try {
-            const r = await db.functions.invoke('sportsrc', { body: { action: 'streams', home: o.src.home, away: o.src.away, date: o.src.date } });
+            const r = await db.functions.invoke('sportsrc', { body: { action: 'streams', home: o.src.home, away: o.src.away, date: o.src.date, sr_id: o.src.sr_id || undefined } });
             const list = (r && r.data && r.data.sources) || [];
             list.forEach((x, i) => { const u = safe(x.url); if (u) { const p = (() => { try { return new URL(u).pathname.toLowerCase(); } catch { return ''; } })(); sources.push({ id: 'sr' + i, fixture_id: Number(fixtureId), kind: 'live', url: u, src_type: /\.m3u8$/.test(p) ? 'hls' : /\.(mp4|webm)$/.test(p) ? 'mp4' : 'embed', channel: x.title ? 'SportSRC · ' + x.title : 'SportSRC', preview_url: '', active: true, is_default: false, ext: true }); } });
           } catch (e) { /* مصدر اختياري: لو فشل نكمّل بدونه */ }

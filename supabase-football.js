@@ -43,17 +43,11 @@
       const { data, error } = await db.functions.invoke('football-matches', { body });
       if (error || data?.error) {
         if (hit) return hit.v; // خدمة مشغولة أو الحد اليومي خلص: نعرض آخر نسخة بدل الخطأ
-        if (body.action === 'fixtures' && body.sport === 'football') { // مصدر احتياطي: SportSRC (لو الأدمن مفعّله)
-          try { const r = await db.functions.invoke('sportsrc', { body: { action: 'fixtures', date: body.date } }); if (r.data?.fixtures?.length) { cacheWrite(key, r.data); return r.data; } } catch { /* نكمل للخطأ الأصلي */ }
-        }
         if (error) {
           if (/failed to send a request to the edge function/i.test(error.message || '')) { console.error('football-matches function unreachable:', error); throw new Error('الخدمة غير متاحة حاليًا. حاول لاحقًا.'); }
           throw error;
         }
         throw new Error(data.error);
-      }
-      if (body.action === 'fixtures' && body.sport === 'football' && !(data?.fixtures || []).length) { // API رجّع قائمة فاضية: نجرّب SportSRC
-        try { const r = await db.functions.invoke('sportsrc', { body: { action: 'fixtures', date: body.date } }); if (r.data?.fixtures?.length) { cacheWrite(key, r.data); try { await window.YR_NAMES?.ready; } catch { /* اختياري */ } return r.data; } } catch { /* نكمل بالقائمة الفاضية */ }
       }
       if (ttl) cacheWrite(key, data);
       try { await window.YR_NAMES?.ready; } catch { /* الأسماء الإضافية اختيارية */ }
@@ -63,6 +57,11 @@
     return job;
   };
 
+  /* مصدر احتياطي أخير للمباريات: SportSRC (لو الأدمن مفعّله) */
+  const srFixtures = async (date) => {
+    try { const r = await db.functions.invoke('sportsrc', { body: { action: 'fixtures', date } }); if (r.data?.fixtures?.length) { try { await window.YR_NAMES?.ready; } catch { /* اختياري */ } return r.data; } } catch { /* مش متاح */ }
+    return null;
+  };
   const initials = (n, sport) => { const w = String(n || '').trim().replace(/(^|\s)ال(?=\S)/g, '$1').split(/\s+/).filter(Boolean); return w.length ? (w.length > 1 ? w[0][0] + w[1][0] : w[0].slice(0, 2)) : (SPORT_ICON[sport] || '⚽'); };
   const teamMarkup = (name, logo, sport = 'football', id = null) => {
     const image = safeUrl(logo);
@@ -594,10 +593,11 @@
       if (my !== token) return; // وصل رد قديم بعد تغيير الاختيار
       let late = false; // تعديلات الأدمن وعلامة «شاهد» بتتحمّل بعد أول عرض عشان الصفحة تظهر أسرع
       if (api.status === 'fulfilled') { data.fixtures = api.value?.fixtures || []; data.leagues = api.value?.leagues || []; late = true; }
-      else { console.error('matches:', api.reason); data.error = `تعذّر تحميل المباريات: ${api.reason?.message || 'خطأ غير معروف'}`; }
+      else { console.error('matches:', api.reason); data.error = 'فيه عطل مؤقت في مصدر المباريات دلوقتي، ونعمل على إصلاحه. جرّب تاني بعد شوية.'; }
       if (state.sport === 'football' && (api.status !== 'fulfilled' || !data.fixtures.length)) {
         const saved = await loadSnapshots(localDate(dayOff(state.day))); if (my !== token) return;
         if (saved.length) { data.fixtures = saved; data.leagues = []; data.error = ''; data.fromSnapshot = true; late = true; }
+        else { const sr = await srFixtures(localDate(dayOff(state.day))); if (my !== token) return; if (sr) { data.fixtures = sr.fixtures; data.leagues = sr.leagues || []; data.error = ''; data.fromBackup = true; late = true; } }
       }
       await orderP; if (my !== token) return;
       if (manual.status === 'fulfilled') data.manual = manual.value;
@@ -678,14 +678,17 @@
       try {
         let res = null; let m = null; let degraded = false;
         if (Number(fixtureId) < 3e9) try { res = await request({ action: 'fixture', sport, fixtureId: Number(fixtureId) }); m = res?.fixture; } catch (e) { console.error('fixture:', e); }
+        if (!m) { // المباراة المهمة المحفوظة (من لوحة التحكم) تفتح حتى لو الـ API واقف
+          try { const q = await db.from('fixture_overrides').select('*').eq('fixture_id', Number(fixtureId)).not('snapshot', 'is', null).maybeSingle(); if (q.data?.snapshot) { m = mergeOverride({ ...q.data.snapshot, from_snapshot: true }, q.data); res = {}; degraded = true; } } catch { /* نكمل */ }
+        }
         if (!m) { // الـ API واقف/خلص: نجيب بيانات المباراة الأساسية من قائمة اليوم (الكاش) عشان الصفحة والمشغّل يفضلوا شغّالين
           const days = [...new Set([Number(day), 0, -1, 1])];
           for (const d of days) {
-            try { const r = await request({ action: 'fixtures', sport, date: localDate(d) }); const f = (r?.fixtures || []).find((x) => String(x.fixture_id) === String(fixtureId)); if (f) { m = f; break; } } catch { /* جرّب اليوم التالي */ }
+            let r = null; try { r = await request({ action: 'fixtures', sport, date: localDate(d) }); } catch { /* نجرّب المصدر الاحتياطي */ } let f = (r?.fixtures || []).find((x) => String(x.fixture_id) === String(fixtureId)); if (!f) { const sr = await srFixtures(localDate(d)); f = (sr?.fixtures || []).find((x) => String(x.fixture_id) === String(fixtureId)); } if (f) { m = f; break; }
           }
           if (m) { res = {}; degraded = true; }
         }
-        if (!m) { if (note) note.textContent = 'المباراة غير متاحة حاليًا.'; return; }
+        if (!m) { if (note) note.textContent = 'فيه عطل مؤقت في مصدر المباريات دلوقتي، ونعمل على إصلاحه. جرّب تاني بعد شوية.'; return; }
         if (sport === 'football') { const [mm] = await applyOverrides([m]); m = mm; }
         const H = tn(m.home_team); const A = tn(m.away_team);
         title.textContent = `${H} × ${A}`;
@@ -728,7 +731,7 @@
           const shown = await window.yrWatch.mount({
             host: frameBox, db, fixtureId, status: m.status, title: `${H} ضد ${A}`, league: m.league_label || m.league || '',
             signedIn: Boolean(user), userId: user?.id || null, shareUrl: location.href, autoOpen: false, kickoff: m.kickoff,
-            src: { home: m.home_team, away: m.away_team, date: String(m.kickoff || '').slice(0, 10) },
+            src: { home: m.home_team, away: m.away_team, date: String(m.kickoff || '').slice(0, 10), sr_id: m.sr_id || '' },
           });
           if (shown) { player.hidden = false; window.yrPlayerReady && window.yrPlayerReady(); window.yrSelectTab && window.yrSelectTab('player'); }
         }
