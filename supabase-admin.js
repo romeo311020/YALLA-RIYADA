@@ -97,6 +97,7 @@
     matches: () => loadMatches(),
     apimatches: () => ovRefreshList(),
     important: () => loadImportant(),
+    saved: () => loadSaved(),
     lineups: () => luSrcChange(),
     names: () => { loadUnknownNames(); return loadSavedNames(); },
     streams: () => Promise.all([loadStreams(), loadApiFixtures('stream'), loadApiFixtures('ws'), window.__srcLoad ? window.__srcLoad() : null]),
@@ -176,13 +177,14 @@
   const PAGE_META = {
     overview: ['نظرة عامة', 'ملخص سريع لحالة الموقع واختصارات للمهام اليومية.'],
     apimatches: ['تعديل مباراة API', 'تأجيل أو إلغاء أو تغيير النتيجة والموعد لأي مباراة قادمة من الـ API.'],
+    saved: ['تعديل المباريات المحفوظة', 'عدّل الاسم والنتيجة والموعد والحالة لأي مباراة محفوظة.'],
     matches: ['المباريات اليدوية', 'أضف مباراة بنفسك وعدّل بياناتها ومشغّلها.'],
     important: ['المباريات المهمة', 'اختار التاريخ وحمّل المباريات واحفظ المهم منها دفعة واحدة.'],
     lineups: ['التشكيلات والأحداث', 'تشكيلة الفريقين وملخص الأحداث لأي مباراة (يدوية أو API).'],
     names: ['أسماء الفرق', 'عدّل اسم أي فريق أو لاعب بالعربي.'],
     leagues: ['البطولات', 'رتّب البطولات اللي تظهر للزوار أولًا.'],
     teams: ['الفرق المهمة', 'الفرق اللي مبارياتها بتظهر الأول.'],
-    streams: ['المشغّلات', 'اربط روابط المشاهدة بالمباريات لتظهر للأعضاء.'],
+    streams: ['البث والمشغّلات', 'اربط روابط المشاهدة بالمباريات لتظهر للأعضاء.'],
     store: ['المتجر', 'المنتجات وإعدادات فتح المتجر.'],
     stats: ['الإحصائيات والتقارير', 'زيارات، مستخدمين، مبيعات، ومتابعين الفرق — كلها في مكان واحد.'],
     orders: ['الطلبات', 'متابعة طلبات العملاء وتغيير حالتها.'],
@@ -207,6 +209,71 @@
   }
   document.addEventListener('click', (e) => { const g = e.target.closest('[data-goto]'); if (g) { openTab(g.dataset.goto); window.scrollTo({ top: 0, behavior: 'smooth' }); } });
   document.querySelector('.admin-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-atab]'); if (b) openTab(b.dataset.atab); });
+
+
+  /* ======================== تعديل المباريات المحفوظة ======================== */
+  let svRows = []; let svCur = null;
+  const svCairo = (iso) => (iso ? new Date(iso).toLocaleString('sv-SE', { timeZone: 'Africa/Cairo' }).replace(' ', 'T').slice(0, 16) : '');
+  const svToIso = (local) => { // تحويل وقت القاهرة المكتوب لـ UTC
+    if (!local) return null; const base = Date.parse(`${local}:00Z`); let t = base;
+    for (let i = 0; i < 2; i++) { const c = Date.parse(new Date(t).toLocaleString('sv-SE', { timeZone: 'Africa/Cairo' }).replace(' ', 'T') + 'Z'); t = base - (c - t); }
+    return new Date(t).toISOString();
+  };
+  const SV_ST = { scheduled: 'لم تبدأ', live: 'مباشرة', finished: 'انتهت', postponed: 'مؤجلة', cancelled: 'ملغاة' };
+  async function loadSaved() {
+    let { data, error } = await client.from('fixture_overrides').select('*').not('snapshot', 'is', null).limit(500);
+    if (error) { $('sv-list').innerHTML = `<p class="note">${esc(/snapshot/.test(error.message) ? 'شغّل ملف supabase-snapshot.sql في Supabase الأول.' : error.message)}</p>`; return; }
+    svRows = (data || []).map((o) => ({ ...o, s: { ...(o.snapshot || {}), status: o.status || o.snapshot?.status, kickoff: o.kickoff || o.snapshot?.kickoff, home_score: o.home_score ?? o.snapshot?.home_score, away_score: o.away_score ?? o.snapshot?.away_score } }))
+      .sort((a, b) => String(b.s.kickoff || '').localeCompare(String(a.s.kickoff || '')));
+    svRender();
+  }
+  function svRender() {
+    const q = ($('sv-q').value || '').trim().toLowerCase(); const f = $('sv-f').value; const today = cairoDate(0); const now = Date.now();
+    const list = svRows.filter((o) => {
+      const s = o.s; const txt = `${s.home_team} ${s.away_team} ${ar(s.home_team)} ${ar(s.away_team)} ${s.league_label || s.league || ''}`.toLowerCase();
+      if (q && !txt.includes(q)) return false;
+      if (f === 'upcoming') return s.kickoff && Date.parse(s.kickoff) > now;
+      if (f === 'today') return s.kickoff && dayOf(s.kickoff) === today;
+      if (f === 'finished') return s.status === 'finished';
+      return true;
+    });
+    $('sv-count').textContent = `${list.length} من ${svRows.length}`;
+    $('sv-list').innerHTML = list.length ? list.map((o) => { const s = o.s; const sc = s.home_score != null && s.away_score != null ? `${s.home_score} - ${s.away_score}` : '—';
+      return `<article class="sv-item"><div class="sv-main"><strong>${esc(ar(s.home_team))} × ${esc(ar(s.away_team))}</strong><small>${esc(s.league_label || s.league || '')} · ${s.kickoff ? esc(new Date(s.kickoff).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) : 'بدون موعد'}</small></div><span class="sv-st sv-${esc(s.status || 'scheduled')}">${esc(SV_ST[s.status] || 'لم تبدأ')}</span><b class="sv-sc">${esc(sc)}</b><button type="button" class="btn outline" data-sv-edit="${esc(o.fixture_id)}">✏️ تعديل</button></article>`; }).join('') : '<p class="note">مفيش مباريات محفوظة بالشكل ده. احفظ مباريات من تاب «المباريات المهمة».</p>';
+  }
+  $('sv-q').addEventListener('input', svRender); $('sv-f').addEventListener('change', svRender);
+  $('sv-list').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-sv-edit]'); if (!b) return;
+    const o = svRows.find((r) => String(r.fixture_id) === b.dataset.svEdit); if (!o) return; svCur = o; const s = o.s;
+    $('sv-edit').hidden = false; $('sv-edit-title').textContent = `تعديل: ${ar(s.home_team)} × ${ar(s.away_team)}`;
+    $('sv-home').value = ar(s.home_team) || ''; $('sv-away').value = ar(s.away_team) || ''; $('sv-league').value = s.league_label || s.league || '';
+    $('sv-kick').value = svCairo(s.kickoff); $('sv-status').value = SV_ST[s.status] ? s.status : 'scheduled'; $('sv-min').value = s.minute ?? '';
+    $('sv-hs').value = s.home_score ?? ''; $('sv-as').value = s.away_score ?? ''; $('sv-hl').value = s.home_logo || ''; $('sv-al').value = s.away_logo || '';
+    $('sv-feat').checked = Boolean(o.featured); $('sv-open').href = `match.html?fixture=${encodeURIComponent(o.fixture_id)}&sport=football&day=0`; say('sv-msg', '');
+    $('sv-edit').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  const svNum = (id) => { const v = $(id).value.trim(); return v === '' ? null : Math.max(0, Math.floor(Number(v))); };
+  $('sv-save').addEventListener('click', async () => {
+    if (!svCur) return; const s = svCur.s; const id = Number(svCur.fixture_id);
+    const httpsOrNull = (v) => { v = v.trim(); return /^https:\/\//i.test(v) ? v : null; };
+    const snap = { ...(svCur.snapshot || {}), home_team: $('sv-home').value.trim() || s.home_team, away_team: $('sv-away').value.trim() || s.away_team, league: $('sv-league').value.trim() || s.league, league_label: $('sv-league').value.trim() || s.league_label,
+      kickoff: svToIso($('sv-kick').value) || s.kickoff, status: $('sv-status').value, minute: svNum('sv-min'), home_score: svNum('sv-hs'), away_score: svNum('sv-as'),
+      home_logo: httpsOrNull($('sv-hl').value) ?? svCur.snapshot?.home_logo ?? null, away_logo: httpsOrNull($('sv-al').value) ?? svCur.snapshot?.away_logo ?? null };
+    const row = { fixture_id: id, snapshot: snap, status: snap.status, kickoff: snap.kickoff, home_score: snap.home_score, away_score: snap.away_score, featured: $('sv-feat').checked, hide_important: false, title: `${snap.home_team} × ${snap.away_team}`, updated_at: new Date().toISOString() };
+    let { error } = await client.from('fixture_overrides').upsert(row, { onConflict: 'fixture_id' });
+    if (error && /hide_important/.test(error.message)) { delete row.hide_important; ({ error } = await client.from('fixture_overrides').upsert(row, { onConflict: 'fixture_id' })); }
+    if (error) { say('sv-msg', error.message); return; }
+    say('sv-msg', 'تم الحفظ ✓'); await loadSaved();
+  });
+  $('sv-del').addEventListener('click', async () => {
+    if (!svCur || !confirm('تشيل المباراة دي من المحفوظة؟')) return;
+    const { error } = await client.from('fixture_overrides').update({ snapshot: null, featured: false, hide_important: true }).eq('fixture_id', Number(svCur.fixture_id));
+    if (error) { say('sv-msg', error.message); return; }
+    $('sv-edit').hidden = true; svCur = null; await loadSaved(); toast('تمت الإزالة');
+  });
+  $('sv-cancel').addEventListener('click', () => { $('sv-edit').hidden = true; svCur = null; });
+  $('sv-lu').addEventListener('click', () => { if (svCur) { openTab('important'); setTimeout(() => document.querySelector(`[data-imp-lu="${svCur.fixture_id}"]`)?.click(), 400); } });
+  $('sv-str').addEventListener('click', () => { if (svCur) { openTab('streams'); } });
 
   /* ======================== نظرة عامة ======================== */
   async function count(table) {

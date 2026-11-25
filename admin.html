@@ -36,11 +36,13 @@
         <button type="button" class="atab active" role="tab" data-atab="overview" aria-selected="true"><i class="ti" aria-hidden="true">📊</i>نظرة عامة</button>
         <button type="button" class="atab" role="tab" data-atab="stats" aria-selected="false"><i class="ti" aria-hidden="true">📈</i>الإحصائيات والتقارير</button>
         <span class="nav-label">المباريات</span>
-        <button type="button" class="atab" role="tab" data-atab="apimatches" aria-selected="false"><i class="ti" aria-hidden="true">🛠️</i>تعديل مباراة API</button>
-        <button type="button" class="atab" role="tab" data-atab="matches" aria-selected="false"><i class="ti" aria-hidden="true">⚽</i>مباريات يدوية</button>
         <button type="button" class="atab" role="tab" data-atab="important" aria-selected="false"><i class="ti" aria-hidden="true">⭐</i>المباريات المهمة</button>
+        <button type="button" class="atab" role="tab" data-atab="saved" aria-selected="false"><i class="ti" aria-hidden="true">💾</i>تعديل المباريات المحفوظة</button>
+        <button type="button" class="atab" role="tab" data-atab="apimatches" aria-selected="false"><i class="ti" aria-hidden="true">🛠️</i>تعديل مباراة من الـ API</button>
+        <button type="button" class="atab" role="tab" data-atab="matches" aria-selected="false"><i class="ti" aria-hidden="true">⚽</i>مباريات يدوية</button>
         <button type="button" class="atab" role="tab" data-atab="lineups" aria-selected="false"><i class="ti" aria-hidden="true">📋</i>التشكيلات والأحداث</button>
-        <button type="button" class="atab" role="tab" data-atab="streams" aria-selected="false"><i class="ti" aria-hidden="true">📺</i>المشغّلات</button>
+        <span class="nav-label">البث والمشاهدة</span>
+        <button type="button" class="atab" role="tab" data-atab="streams" aria-selected="false"><i class="ti" aria-hidden="true">📺</i>البث والمشغّلات</button>
         <span class="nav-label">إعدادات الكرة</span>
         <button type="button" class="atab" role="tab" data-atab="leagues" aria-selected="false"><i class="ti" aria-hidden="true">🏆</i>ترتيب البطولات</button>
         <button type="button" class="atab" role="tab" data-atab="teams" aria-selected="false"><i class="ti" aria-hidden="true">👕</i>الفرق المهمة</button>
@@ -68,6 +70,7 @@
       <div class="adm-main">
       <header class="adm-top">
         <button type="button" class="adm-burger" id="adm-burger" aria-label="القائمة">☰</button>
+        <a class="adm-back" href="index.html" id="adm-back"><span aria-hidden="true">→</span> رجوع إلى الموقع</a>
         <div class="adm-pt"><h1 id="adm-title">نظرة عامة</h1><p id="adm-desc"></p></div>
         <div class="admin-search" role="search">
           <input id="admin-search" type="search" placeholder="ابحث في كل حاجة…  ( / )" autocomplete="off" aria-label="بحث">
@@ -81,6 +84,7 @@
       <section class="admin-pane" id="pane-overview" role="tabpanel">
         <div class="quick-actions" aria-label="اختصارات سريعة">
           <button type="button" class="qa" data-goto="apimatches"><i>🛠️</i><b>تعديل مباراة</b><small>إضافة أو تأجيل أو تمييز مهمة</small></button>
+          <button type="button" class="qa" data-goto="saved"><i>💾</i><b>المباريات المحفوظة</b><small>عدّل اسم ونتيجة وموعد</small></button>
           <button type="button" class="qa" data-goto="leagues"><i>🏆</i><b>ترتيب البطولات</b><small>اللي تظهر الأول</small></button>
           <button type="button" class="qa" data-goto="news"><i>📰</i><b>خبر جديد</b><small>حصري على يلا رياضة</small></button>
           <button type="button" class="qa" data-goto="streams"><i>📺</i><b>ربط مشغّل</b><small>زر شاهد للأعضاء</small></button>
@@ -225,6 +229,44 @@
         <div class="panel admin-section">
           <div class="admin-section-heading"><div><h2>المحفوظة حاليًا</h2></div><p class="note">دي المباريات اللي اتحفظت كمهمة. الحذف بيشيل ⭐ والنسخة الاحتياطية.</p></div>
           <div id="imp-saved"></div>
+        </div>
+      </section>
+
+      <!-- تعديل المباريات المحفوظة -->
+      <section class="admin-pane" id="pane-saved" role="tabpanel" hidden>
+        <div class="panel admin-section">
+          <div class="admin-section-heading"><div><h2>المباريات المحفوظة</h2></div><p class="note">دي المباريات اللي حفظتها كمهمة. بتفتح للزوار حتى لو الـ API واقف، وكل مباراة ليها صفحة. اضغط «تعديل» عشان تغيّر أي حاجة فيها.</p></div>
+          <div class="sv-bar">
+            <input id="sv-q" type="search" placeholder="ابحث باسم فريق أو بطولة…" autocomplete="off" aria-label="بحث في المحفوظة">
+            <select id="sv-f" aria-label="تصفية"><option value="all">كل المحفوظة</option><option value="upcoming">القادمة</option><option value="today">النهارده</option><option value="finished">المنتهية</option></select>
+            <span id="sv-count" class="note"></span>
+          </div>
+          <div id="sv-list" class="sv-list"></div>
+        </div>
+        <div class="panel admin-section" id="sv-edit" hidden>
+          <div class="admin-section-heading"><div><h2 id="sv-edit-title">تعديل مباراة</h2></div><p class="note">التعديلات دي بتتطبّق على صفحة المباراة والقوائم. الأسماء والشعارات بتظهر لما الـ API يكون واقف.</p></div>
+          <div class="sv-grid">
+            <label>الفريق الأول<input id="sv-home" autocomplete="off"></label>
+            <label>الفريق الثاني<input id="sv-away" autocomplete="off"></label>
+            <label>البطولة<input id="sv-league" autocomplete="off"></label>
+            <label>موعد المباراة (توقيت القاهرة)<input id="sv-kick" type="datetime-local"></label>
+            <label>الحالة<select id="sv-status"><option value="scheduled">لم تبدأ</option><option value="live">مباشرة</option><option value="finished">انتهت</option><option value="postponed">مؤجلة</option><option value="cancelled">ملغاة</option></select></label>
+            <label>الدقيقة (للمباشرة)<input id="sv-min" type="number" min="0" max="130" inputmode="numeric"></label>
+            <label>أهداف الفريق الأول<input id="sv-hs" type="number" min="0" inputmode="numeric"></label>
+            <label>أهداف الفريق الثاني<input id="sv-as" type="number" min="0" inputmode="numeric"></label>
+            <label>رابط شعار الأول (اختياري)<input id="sv-hl" type="url" dir="ltr" placeholder="https://…"></label>
+            <label>رابط شعار الثاني (اختياري)<input id="sv-al" type="url" dir="ltr" placeholder="https://…"></label>
+          </div>
+          <label class="sv-chk"><input id="sv-feat" type="checkbox"> تظهر في «المباريات المهمة» في أول القائمة</label>
+          <div class="row sv-actions">
+            <button type="button" class="btn primary" id="sv-save">💾 حفظ التعديل</button>
+            <a class="btn outline" id="sv-open" target="_blank" rel="noopener">فتح صفحة المباراة ↗</a>
+            <button type="button" class="btn outline" id="sv-lu">📋 التشكيلة والأحداث</button>
+            <button type="button" class="btn outline" id="sv-str">📺 البث</button>
+            <button type="button" class="btn danger" id="sv-del">إزالة من المحفوظة</button>
+            <button type="button" class="btn outline" id="sv-cancel">إغلاق</button>
+          </div>
+          <p class="note" id="sv-msg" role="status"></p>
         </div>
       </section>
 

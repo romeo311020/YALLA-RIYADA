@@ -271,3 +271,40 @@ body.adm .st-grid .panel{margin:0}
 
 body.adm .check-row{display:flex;align-items:center;gap:10px;font-weight:700}
 body.adm .check-row input{width:auto;min-height:0}
+
+/* ===== v103: شكل جديد + رجوع للموقع + المباريات المحفوظة ===== */
+body.adm{--r:16px}
+.adm-back{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 16px;border-radius:12px;background:linear-gradient(135deg,var(--acc),color-mix(in srgb,var(--acc) 60%,#22c55e));color:var(--on-acc);font-weight:800;font-size:14px;text-decoration:none;white-space:nowrap;box-shadow:0 6px 16px -8px var(--acc);flex:none}
+.adm-back:hover{filter:brightness(1.07)}
+.adm-back span{font-size:18px;line-height:1}
+body.adm .adm-top{border-bottom:1px solid var(--line);box-shadow:0 8px 24px -22px rgba(15,23,42,.5)}
+.adm-brand{background:linear-gradient(180deg,rgba(255,255,255,.05),transparent);border-radius:14px;padding:12px 10px;margin-bottom:10px;border-bottom:0}
+.nav-label{display:flex;align-items:center;gap:8px;margin-top:6px}
+.nav-label::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.08)}
+body.adm .atab{position:relative;transition:background .15s,color .15s}
+body.adm .atab.active{background:linear-gradient(90deg,var(--side2),transparent)}
+body.adm .panel,body.adm .admin-section{border-radius:var(--r);transition:box-shadow .2s}
+body.adm .panel:hover,body.adm .admin-section:hover{box-shadow:0 10px 30px -22px rgba(15,23,42,.45)}
+body.adm .admin-section-heading h2{display:flex;align-items:center;gap:8px}
+body.adm .admin-section-heading h2::before{content:"";width:5px;height:20px;border-radius:5px;background:var(--acc)}
+.quick-actions .qa{border-radius:var(--r);transition:transform .15s,box-shadow .15s}
+.quick-actions .qa:hover{transform:translateY(-2px);box-shadow:0 14px 28px -20px var(--acc)}
+.sv-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.sv-bar input{flex:1 1 220px}.sv-bar select{flex:0 0 auto}
+.sv-list{display:grid;gap:10px}
+.sv-item{display:grid;grid-template-columns:1fr auto auto auto;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
+.sv-main{min-width:0}.sv-main strong{display:block;font-size:15px}.sv-main small{color:var(--muted);font-size:12.5px}
+.sv-st{font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;background:var(--panel);border:1px solid var(--line);white-space:nowrap}
+.sv-st.sv-live{background:#fee2e2;color:#b91c1c;border-color:transparent}.sv-st.sv-finished{background:#dcfce7;color:#15803d;border-color:transparent}
+.sv-st.sv-postponed,.sv-st.sv-cancelled{background:#fef3c7;color:#b45309;border-color:transparent}
+.sv-sc{min-width:48px;text-align:center;direction:ltr;font-size:16px}
+.sv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.sv-grid label{display:grid;gap:6px}
+.sv-chk{display:flex!important;align-items:center;gap:10px;margin:14px 0}
+.sv-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.sv-actions .btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+@media(max-width:760px){
+  .adm-top{flex-wrap:wrap;gap:10px}
+  .adm-back{order:-1;flex:1 1 100%;justify-content:center}
+  .sv-item{grid-template-columns:1fr auto}.sv-item .sv-sc{grid-column:1}.sv-item .btn{grid-column:2;grid-row:1 / span 2}
+}
