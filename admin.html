@@ -91,6 +91,11 @@
           <button type="button" class="qa" data-goto="streams"><i>📺</i><b>ربط مشغّل</b><small>زر شاهد للأعضاء</small></button>
           <button type="button" class="qa" data-goto="orders"><i>📦</i><b>الطلبات</b><small>متابعة العملاء</small></button>
         </div>
+        <div class="panel admin-section hl-panel">
+          <div class="admin-section-heading"><div><h2>صحة المصادر</h2></div><button type="button" class="btn outline" id="hl-refresh">↻ فحص الآن</button></div>
+          <ul class="hl-list" id="hl-list"><li class="hl"><i></i><div><b>جارٍ الفحص…</b></div></li></ul>
+          <p class="note">الفحص بيحصل أول ما تفتح الصفحة. لو الـ API واقف، الموقع بيعرض المباريات المحفوظة ثم SportSRC تلقائيًا.</p>
+        </div>
         <div class="stat-cards" id="overview-cards"></div>
         <div class="panel">
           <h2>حالة الموقع</h2>
@@ -418,6 +423,16 @@
       <!-- المشغّلات -->
       <section class="admin-pane" id="pane-streams" role="tabpanel" hidden>
         <div class="pane-hint"><i aria-hidden="true">📺</i><p>فيه مصدرين للبث: <b>المصدر 1</b> روابطك إنت وليها الأولوية، و<b>المصدر 2</b> SportSRC بث تلقائي لو فعّلته. استخدم «جرّب الرابط» تتأكد إن الرابط شغّال قبل ما تحفظه.</p></div>
+        <div class="panel admin-section" id="ws-all-panel">
+          <div class="admin-section-heading"><div><h2>📋 كل البث الموجود</h2></div><p class="note">كل روابط البث والملخصات اللي أضفتها لكل المباريات في مكان واحد.</p></div>
+          <div class="sv-bar">
+            <input id="wa-q" type="search" placeholder="ابحث باسم مباراة أو قناة أو رابط…" autocomplete="off" aria-label="بحث في البث">
+            <select id="wa-f" aria-label="تصفية"><option value="all">الكل</option><option value="live">بث مباشر</option><option value="highlight">ملخصات</option><option value="active">المفعّل</option><option value="off">المعطّل</option></select>
+            <span id="wa-count" class="note"></span>
+          </div>
+          <div id="pv-all" class="pv" hidden></div>
+          <div id="wa-list" class="sv-list"><p class="note">جارٍ التحميل…</p></div>
+        </div>
         <div class="panel admin-section" id="ws-admin">
           <div class="admin-section-heading">
             <div><span class="tag">المصدر 1</span><h2>روابطك أنت (الأولوية)</h2></div>

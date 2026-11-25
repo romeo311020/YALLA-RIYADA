@@ -100,7 +100,7 @@
     saved: () => loadSaved(),
     lineups: () => luSrcChange(),
     names: () => { loadUnknownNames(); return loadSavedNames(); },
-    streams: () => Promise.all([loadStreams(), loadApiFixtures('stream'), loadApiFixtures('ws'), window.__srcLoad ? window.__srcLoad() : null]),
+    streams: () => Promise.all([loadAllWs(), loadStreams(), loadApiFixtures('stream'), loadApiFixtures('ws'), window.__srcLoad ? window.__srcLoad() : null]),
     store: () => Promise.all([loadStoreSetting(), loadProducts(), loadCategories()]),
     orders: () => loadOrders(),
     news: () => loadNews(),
@@ -280,9 +280,48 @@
     const { count: n, error } = await client.from(table).select('*', { count: 'exact', head: true });
     return error ? null : n;
   }
+
+  /* ======================== صحة المصادر ======================== */
+  const hlTimeout = (p, ms = 9000) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('انتهت المهلة — مفيش رد')), ms))]);
+  const hlRow = (lv, title, detail) => `<li class="hl hl-${lv}"><i aria-hidden="true"></i><div><b>${esc(title)}</b><small>${esc(detail)}</small></div></li>`;
+  const hlMsg = (e) => (/non-2xx|failed to send/i.test(e?.message || '') ? 'الدالة بترجّع خطأ (غالبًا الـ API واقف أو الحصة خلصت)' : (e?.message || 'خطأ غير معروف'));
+  async function loadHealth() {
+    const list = $('hl-list'); if (!list) return; list.innerHTML = hlRow('', 'جارٍ الفحص…', '');
+    const out = [];
+    const [api, sr, saved, srcs] = await Promise.allSettled([
+      hlTimeout(callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(0) })),
+      hlTimeout((async () => { const st = await callFn('sportsrc', { action: 'status' }); let acc = null; if (st.hasKey) { try { acc = await callFn('sportsrc', { action: 'test', type: 'account' }); } catch (e) { acc = { error: e.message }; } } return { st, acc }; })()),
+      client.from('fixture_overrides').select('fixture_id,snapshot').not('snapshot', 'is', null).limit(500),
+      client.from('match_sources').select('*', { count: 'exact', head: true }).eq('active', true),
+    ]);
+    // 1) مصدر المباريات الأساسي
+    if (api.status === 'fulfilled') { const n = (api.value?.fixtures || []).length; out.push(n ? hlRow('ok', 'مصدر المباريات (API-Football)', `شغّال — ${n} مباراة مهمة النهارده (ممكن تكون من الكاش).`) : hlRow('warn', 'مصدر المباريات (API-Football)', 'رد فاضي — مفيش مباريات مهمة النهارده، أو الحصة خلصت.')); }
+    else out.push(hlRow('bad', 'مصدر المباريات (API-Football)', hlMsg(api.reason)));
+    // 2) SportSRC
+    if (sr.status === 'fulfilled') {
+      const { st, acc } = sr.value;
+      if (!st.hasKey) out.push(hlRow('bad', 'SportSRC (البث والقائمة الاحتياطية)', 'السر SPORTSRC_KEY غير مضاف في Supabase.'));
+      else {
+        const rem = acc && acc.remaining != null ? `المتبقي النهارده ${acc.remaining}${acc.limit ? ' من ' + acc.limit : ''}` : (acc?.error ? 'تعذّر فحص الحساب: ' + acc.error : '');
+        const low = acc && acc.remaining != null && Number(acc.remaining) < 100;
+        out.push(st.enabled ? hlRow(low ? 'warn' : 'ok', 'SportSRC (البث والقائمة الاحتياطية)', `مفعّل. ${rem}`) : hlRow('warn', 'SportSRC (البث والقائمة الاحتياطية)', `مقفول — مش هيشتغل كبديل. ${rem}`));
+      }
+    } else out.push(hlRow('bad', 'SportSRC (البث والقائمة الاحتياطية)', /غير|الدالة|non-2xx|failed/i.test(sr.reason?.message || '') ? 'الدالة sportsrc غير منشورة أو بترجّع خطأ.' : hlMsg(sr.reason)));
+    // 3) المباريات المحفوظة
+    if (saved.status === 'fulfilled' && !saved.value.error) {
+      const rows = saved.value.data || []; const now = Date.now(); const up = rows.filter((o) => Date.parse(o.snapshot?.kickoff) > now).length;
+      out.push(rows.length ? hlRow('ok', 'المباريات المحفوظة (نسخة احتياطية)', `${rows.length} محفوظة، منها ${up} قادمة. بتظهر للزوار لو الـ API وقف.`) : hlRow('warn', 'المباريات المحفوظة (نسخة احتياطية)', 'مفيش مباريات محفوظة لسه — هتتحفظ تلقائيًا لما الـ API يشتغل، أو احفظها من «المباريات المهمة».'));
+    } else out.push(hlRow('warn', 'المباريات المحفوظة (نسخة احتياطية)', 'شغّل ملف supabase-snapshot.sql في Supabase.'));
+    // 4) روابط البث
+    if (srcs.status === 'fulfilled' && !srcs.value.error) out.push(hlRow(srcs.value.count ? 'ok' : 'warn', 'روابط البث (المصدر 1)', srcs.value.count ? `${srcs.value.count} رابط فعّال.` : 'مفيش روابط مضافة لسه.'));
+    list.innerHTML = out.join('');
+  }
+  document.addEventListener('click', (e) => { if (e.target.closest('#hl-refresh')) loadHealth(); });
+
   async function loadOverview() {
     const host = $('overview-cards');
     host.innerHTML = '<p class="note">جارٍ التحميل…</p>';
+    loadHealth();
     const [matches, streams, products, news, newOrders, storeRow, usersRes] = await Promise.all([
       count('matches'), count('fixture_streams'), count('products'), count('news'), client.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'new'),
       client.from('site_settings').select('value').eq('key', 'store_enabled').maybeSingle(),
@@ -1011,13 +1050,50 @@
   const wsKind = { live: 'بث مباشر', highlight: 'ملخص' }; const wsType = { embed: 'Embed', mp4: 'MP4', hls: 'HLS' };
   const guessType = (u) => { const p = (() => { try { return new URL(u).pathname.toLowerCase(); } catch { return ''; } })(); return /\.m3u8$/.test(p) ? 'hls' : /\.(mp4|webm|mov)$/.test(p) ? 'mp4' : 'embed'; };
   function resetWsForm() { $('ws-form').reset(); $('ws-edit-id').value = ''; $('ws-active').checked = true; $('ws-save').textContent = 'إضافة المصدر'; $('ws-cancel').hidden = true; }
+  /* ---------- كل البث الموجود (قائمة شاملة) ---------- */
+  let waRows = []; let waNames = new Map();
+  async function loadAllWs() {
+    const host = $('wa-list'); if (!host) return;
+    const { data, error } = await client.from('match_sources').select('*').order('created_at', { ascending: false }).limit(500);
+    if (error) { host.innerHTML = `<p class="note">تعذّر التحميل: ${esc(error.message)}. شغّل ملف supabase-watch.sql أولًا.</p>`; return; }
+    waRows = data || [];
+    const ids = [...new Set(waRows.map((s) => Number(s.fixture_id)))]; waNames = new Map();
+    if (ids.length) {
+      try { const r = await client.from('fixture_overrides').select('fixture_id,title,snapshot').in('fixture_id', ids); (r.data || []).forEach((o) => { const s = o.snapshot; waNames.set(Number(o.fixture_id), s ? { t: `${ar(s.home_team)} × ${ar(s.away_team)}`, k: s.kickoff } : (o.title ? { t: o.title } : null)); }); } catch { /* اختياري */ }
+      try { const r = await client.from('matches').select('fixture_id,home_team,away_team,kickoff').in('fixture_id', ids); (r.data || []).forEach((m) => { if (!waNames.get(Number(m.fixture_id))) waNames.set(Number(m.fixture_id), { t: `${m.home_team} × ${m.away_team}`, k: m.kickoff }); }); } catch { /* اختياري */ }
+    }
+    waRender();
+  }
+  function waRender() {
+    const host = $('wa-list'); const q = ($('wa-q').value || '').trim().toLowerCase(); const f = $('wa-f').value;
+    const list = waRows.filter((s) => {
+      const nm = (waNames.get(Number(s.fixture_id)) || {}).t || '';
+      if (q && !`${nm} ${s.channel} ${s.url} ${s.fixture_id}`.toLowerCase().includes(q)) return false;
+      if (f === 'live' || f === 'highlight') return s.kind === f;
+      if (f === 'active') return s.active; if (f === 'off') return !s.active; return true;
+    });
+    $('wa-count').textContent = `${list.length} من ${waRows.length}`;
+    host.innerHTML = list.length ? list.map((s) => { const n = waNames.get(Number(s.fixture_id)) || {};
+      const host2 = (() => { try { return new URL(s.url).hostname.replace(/^www\./, ''); } catch { return s.url; } })();
+      return `<article class="sv-item wa-item"><div class="sv-main"><strong>${esc(n.t || `مباراة رقم ${s.fixture_id}`)}</strong><small>${s.kind === 'live' ? '🔴 بث مباشر' : '🎬 ملخص'} · ${esc(wsType[s.src_type] || s.src_type)}${s.channel ? ' · ' + esc(s.channel) : ''}${s.is_default ? ' · افتراضي' : ''} · <span dir="ltr">${esc(host2)}</span>${n.k ? ' · ' + esc(new Date(n.k).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) : ''}</small></div><span class="sv-st ${s.active ? 'sv-finished' : 'sv-postponed'}">${s.active ? 'مفعّل' : 'معطّل'}</span><div class="wa-btns"><button type="button" class="btn outline" data-wa-play="${esc(s.id)}">▶ تجربة</button><button type="button" class="btn outline" data-wa-edit="${esc(s.id)}">✏️ تعديل</button><button type="button" class="btn outline" data-wa-toggle="${esc(s.id)}">${s.active ? 'تعطيل' : 'تفعيل'}</button><button type="button" class="btn danger" data-wa-del="${esc(s.id)}">حذف</button></div></article>`; }).join('') : '<p class="note">مفيش بث مضاف بالشكل ده.</p>';
+  }
+  $('wa-q').addEventListener('input', waRender); $('wa-f').addEventListener('change', waRender);
+  $('wa-list').addEventListener('click', async (e) => {
+    const g = (a) => { const b = e.target.closest(`[data-wa-${a}]`); return b ? waRows.find((x) => x.id === b.dataset[`wa${a[0].toUpperCase()}${a.slice(1)}`]) : null; };
+    let s;
+    if ((s = g('play'))) { window.__pvShow && window.__pvShow($('pv-all'), s.url, s.src_type); $('pv-all').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    if ((s = g('edit'))) { $('ws-fid').value = s.fixture_id; await loadWs(s.fixture_id); document.querySelector(`[data-ws-edit="${s.id}"]`)?.click(); return; }
+    if ((s = g('toggle'))) { const r = await client.from('match_sources').update({ active: !s.active }).eq('id', s.id); toast(r.error ? r.error.message : (s.active ? 'تم التعطيل' : 'تم التفعيل')); loadAllWs(); if (wsFid) loadWs(wsFid); return; }
+    if ((s = g('del'))) { if (!window.confirm('حذف البث ده؟ الزر المرتبط بيه هيختفي من صفحة المباراة.')) return; const r = await client.from('match_sources').delete().eq('id', s.id); toast(r.error ? r.error.message : 'تم الحذف'); loadAllWs(); if (wsFid) loadWs(wsFid); }
+  });
+
   async function loadWs(fid) {
     wsFid = Number(fid) || 0; $('ws-box').hidden = !wsFid; resetWsForm();
     if (!wsFid) return;
     const host = $('ws-list'); host.textContent = 'جارٍ التحميل…';
     const { data, error } = await client.from('match_sources').select('*').eq('fixture_id', wsFid).order('kind').order('sort_order').order('created_at');
     if (error) { host.textContent = `تعذّر التحميل: ${error.message}. شغّل ملف supabase-watch.sql أولًا.`; return; }
-    wsRows = data || [];
+    wsRows = data || []; loadAllWs();
     host.innerHTML = wsRows.map((s) => `<article class="admin-list-item"><div><strong>${esc(wsKind[s.kind])} · ${esc(wsType[s.src_type])}${s.is_default ? ' · افتراضي' : ''}${s.active ? '' : ' · معطّل'}</strong><small>${esc(s.channel || 'بدون اسم قناة')} — ${esc(s.url.length > 70 ? s.url.slice(0, 70) + '…' : s.url)}</small></div>
       <div class="row"><button type="button" class="btn outline" data-ws-toggle="${esc(s.id)}">${s.active ? 'تعطيل' : 'تفعيل'}</button><button type="button" class="btn outline" data-ws-edit="${esc(s.id)}">تعديل</button><button type="button" class="btn outline" data-ws-del="${esc(s.id)}">حذف</button></div></article>`).join('') || '<p class="note">لا توجد مصادر لهذه المباراة — مفيش زر مشاهدة هيظهر.</p>';
     host.querySelectorAll('[data-ws-edit]').forEach((b) => b.addEventListener('click', () => {
@@ -1491,6 +1567,7 @@
       st.innerHTML = `<iframe src="${esc2(url)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"></iframe>`;
       msg.textContent = 'لو ظهرت صفحة فاضية، ممكن الموقع المصدر يمنع التضمين.';
     };
+    window.__pvShow = pvShow;
     const tryBtn = $('ws-try');
     if (tryBtn) tryBtn.addEventListener('click', () => pvShow($('pv-ws'), $('ws-url').value.trim(), $('ws-type').value));
     const on = $('src-on'); if (!on) return;

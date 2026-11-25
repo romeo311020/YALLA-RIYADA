@@ -329,3 +329,17 @@ body.adm .stat-card b{font-size:26px}
 body.adm .switch-row{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--panel2)}
 body.adm .admin-checkbox{display:flex;align-items:center;gap:10px}
 @media(min-width:900px){#tr-form>.row,#tr-form>.note,#tr-form>details,#tr-form>.admin-checkbox,#tr-form>label:has(textarea),#match-form>.row,#match-form>.note,#match-form>details,#match-form>.admin-checkbox,#match-form>label:has(textarea),#ad-form>.row,#ad-form>.note,#ad-form>details,#ad-form>.admin-checkbox,#ad-form>label:has(textarea){grid-column:1/-1}}
+/* صحة المصادر */
+.hl-list{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:10px}
+.hl{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
+.hl i{flex:none;width:12px;height:12px;border-radius:50%;margin-top:6px;background:var(--muted)}
+.hl b{display:block;font-size:14.5px}.hl small{display:block;margin-top:2px;color:var(--muted);font-size:13px;line-height:1.6}
+.hl-ok i{background:#16a34a;box-shadow:0 0 0 4px rgba(22,163,74,.18)}
+.hl-warn i{background:#d97706;box-shadow:0 0 0 4px rgba(217,119,6,.18)}
+.hl-bad i{background:#dc2626;box-shadow:0 0 0 4px rgba(220,38,38,.18)}
+.hl-bad{border-color:color-mix(in srgb,#dc2626 40%,var(--line))}
+.wa-item{grid-template-columns:1fr auto}
+.wa-item .sv-st{justify-self:end;grid-column:2;grid-row:1}
+.wa-btns{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:8px}
+.wa-btns .btn{min-height:36px;padding:0 12px;font-size:13px}
+@media(min-width:900px){.wa-item{grid-template-columns:1fr auto auto}.wa-btns{grid-column:auto}.wa-item .sv-st{grid-column:auto;grid-row:auto}}
