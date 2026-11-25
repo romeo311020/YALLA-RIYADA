@@ -43,11 +43,17 @@
       const { data, error } = await db.functions.invoke('football-matches', { body });
       if (error || data?.error) {
         if (hit) return hit.v; // خدمة مشغولة أو الحد اليومي خلص: نعرض آخر نسخة بدل الخطأ
+        if (body.action === 'fixtures' && body.sport === 'football') { // مصدر احتياطي: SportSRC (لو الأدمن مفعّله)
+          try { const r = await db.functions.invoke('sportsrc', { body: { action: 'fixtures', date: body.date } }); if (r.data?.fixtures?.length) { cacheWrite(key, r.data); return r.data; } } catch { /* نكمل للخطأ الأصلي */ }
+        }
         if (error) {
           if (/failed to send a request to the edge function/i.test(error.message || '')) { console.error('football-matches function unreachable:', error); throw new Error('الخدمة غير متاحة حاليًا. حاول لاحقًا.'); }
           throw error;
         }
         throw new Error(data.error);
+      }
+      if (body.action === 'fixtures' && body.sport === 'football' && !(data?.fixtures || []).length) { // API رجّع قائمة فاضية: نجرّب SportSRC
+        try { const r = await db.functions.invoke('sportsrc', { body: { action: 'fixtures', date: body.date } }); if (r.data?.fixtures?.length) { cacheWrite(key, r.data); try { await window.YR_NAMES?.ready; } catch { /* اختياري */ } return r.data; } } catch { /* نكمل بالقائمة الفاضية */ }
       }
       if (ttl) cacheWrite(key, data);
       try { await window.YR_NAMES?.ready; } catch { /* الأسماء الإضافية اختيارية */ }
@@ -671,7 +677,7 @@
     (async () => {
       try {
         let res = null; let m = null; let degraded = false;
-        try { res = await request({ action: 'fixture', sport, fixtureId: Number(fixtureId) }); m = res?.fixture; } catch (e) { console.error('fixture:', e); }
+        if (Number(fixtureId) < 3e9) try { res = await request({ action: 'fixture', sport, fixtureId: Number(fixtureId) }); m = res?.fixture; } catch (e) { console.error('fixture:', e); }
         if (!m) { // الـ API واقف/خلص: نجيب بيانات المباراة الأساسية من قائمة اليوم (الكاش) عشان الصفحة والمشغّل يفضلوا شغّالين
           const days = [...new Set([Number(day), 0, -1, 1])];
           for (const d of days) {
