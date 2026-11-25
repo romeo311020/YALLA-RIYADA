@@ -308,3 +308,24 @@ body.adm .admin-section-heading h2::before{content:"";width:5px;height:20px;bord
   .adm-back{order:-1;flex:1 1 100%;justify-content:center}
   .sv-item{grid-template-columns:1fr auto}.sv-item .sv-sc{grid-column:1}.sv-item .btn{grid-column:2;grid-row:1 / span 2}
 }
+
+/* ===== v104: نفس الأسلوب لباقي التابات ===== */
+.pane-hint{display:flex;align-items:flex-start;gap:12px;margin:0 0 16px;padding:12px 16px;border:1px solid color-mix(in srgb,var(--acc) 30%,var(--line));border-radius:14px;background:color-mix(in srgb,var(--acc) 8%,var(--panel))}
+.pane-hint i{font-style:normal;font-size:20px;line-height:1.4}
+.pane-hint p{margin:0;font-size:13.5px;line-height:1.7;color:var(--text)}
+/* نماذج بعمودين على الشاشات الكبيرة */
+@media(min-width:900px){
+  #news-form,#push-form,#product-form,#tr-form,#match-form,#ad-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px;align-items:start}
+  #news-form>.ed,#news-form>.row,#news-form>.note,#news-form>.admin-checkbox,#news-form>details,#news-form>label:has(#news-excerpt),
+  #push-form>.row,#push-form>.note,#push-form>label:has(#push-body),#push-form>label:has(#push-news),
+  #product-form>.row,#product-form>details,#product-form>.admin-checkbox,#product-form>label:has(textarea),#product-form>label:has(#product-image){grid-column:1/-1}
+}
+body.adm .adv label{display:grid;gap:6px;margin-block:10px}
+body.adm .admin-list-item{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel2);margin-bottom:10px}
+body.adm .admin-list-item strong{display:block}
+body.adm .admin-list-item small{color:var(--muted)}
+body.adm .stat-card{border-radius:var(--r,16px);border:1px solid var(--line);background:var(--panel)}
+body.adm .stat-card b{font-size:26px}
+body.adm .switch-row{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--panel2)}
+body.adm .admin-checkbox{display:flex;align-items:center;gap:10px}
+@media(min-width:900px){#tr-form>.row,#tr-form>.note,#tr-form>details,#tr-form>.admin-checkbox,#tr-form>label:has(textarea),#match-form>.row,#match-form>.note,#match-form>details,#match-form>.admin-checkbox,#match-form>label:has(textarea),#ad-form>.row,#ad-form>.note,#ad-form>details,#ad-form>.admin-checkbox,#ad-form>label:has(textarea){grid-column:1/-1}}

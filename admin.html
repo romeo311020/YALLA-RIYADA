@@ -82,6 +82,7 @@
 
       <!-- نظرة عامة -->
       <section class="admin-pane" id="pane-overview" role="tabpanel">
+        <div class="pane-hint"><i aria-hidden="true">📊</i><p>هنا ملخص سريع لحالة الموقع، ومن الاختصارات تقدر تروح لأي مهمة يومية بضغطة واحدة.</p></div>
         <div class="quick-actions" aria-label="اختصارات سريعة">
           <button type="button" class="qa" data-goto="apimatches"><i>🛠️</i><b>تعديل مباراة</b><small>إضافة أو تأجيل أو تمييز مهمة</small></button>
           <button type="button" class="qa" data-goto="saved"><i>💾</i><b>المباريات المحفوظة</b><small>عدّل اسم ونتيجة وموعد</small></button>
@@ -99,6 +100,7 @@
 
       <!-- الإحصائيات والتقارير -->
       <section class="admin-pane" id="pane-stats" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">📈</i><p>أرقام الزيارات والمستخدمين الجدد والمبيعات. استخدمها تعرف إيه اللي الناس بتدخل عليه أكتر.</p></div>
         <div class="panel admin-section">
           <div class="admin-section-heading"><div><h2>الإحصائيات والتقارير</h2></div>
             <div class="row"><select id="st-range" aria-label="الفترة"><option value="7">آخر 7 أيام</option><option value="30" selected>آخر 30 يوم</option><option value="90">آخر 90 يوم</option></select><button type="button" class="btn outline" id="st-refresh">↻ تحديث</button></div></div>
@@ -117,6 +119,7 @@
 
       <!-- المباريات اليدوية -->
       <section class="admin-pane" id="pane-matches" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">⚽</i><p>هنا بتضيف مباراة بنفسك (مش جاية من الـ API) وتحدد نتيجتها ومشغّلها. الأفضل لمباريات الدوريات الصغيرة.</p></div>
         <div class="panel admin-section">
           <div class="admin-section-heading">
             <div><span class="tag">المباريات</span><h2>المباريات اليدوية</h2></div>
@@ -179,6 +182,7 @@
 
       <!-- مباريات الـ API -->
       <section class="admin-pane" id="pane-apimatches" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">🛠️</i><p>بتعدّل مباراة جاية من الـ API: تأجيل أو إلغاء أو تغيير النتيجة والموعد، أو تعلّمها «مهمة» عشان تتحفظ.</p></div>
         <div class="panel admin-section">
           <div class="admin-section-heading"><div><span class="tag">API</span><h2>تعديل مباراة من الـ API</h2></div><p class="note">تأجيل، إلغاء، تغيير النتيجة أو الموعد، وإضافة ملاحظة. اللي تسيبه فاضي بيفضل من الـ API.</p></div>
           <details class="acc" open><summary>🛠️ تعديل مباراة API — تأجيل / إلغاء / نتيجة / ⭐ مباراة مهمة</summary>
@@ -209,6 +213,7 @@
 
       <!-- المباريات المهمة -->
       <section class="admin-pane" id="pane-important" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">⭐</i><p>اختار التاريخ وحمّل المباريات وعلّم المهم منها واحفظ. المباريات المحفوظة بتفضل ظاهرة للزوار حتى لو الـ API وقف.</p></div>
         <div class="panel admin-section">
           <div class="admin-section-heading"><div><span class="tag">⭐</span><h2>إضافة المباريات المهمة حسب التاريخ</h2></div><p class="note">اختار تاريخ وعدد الأيام، حمّل المباريات، علّم اللي عايزه، واحفظها كلها مرة واحدة. بتفضل ظاهرة حتى لو الـ API خلص.</p></div>
           <div class="imp-bar">
@@ -272,6 +277,7 @@
 
       <!-- التشكيلات والأحداث -->
       <section class="admin-pane" id="pane-lineups" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">📋</i><p>اكتب تشكيلة وأحداث مباراة يدويًا لما بيانات الـ API مش متاحة أو محتاجة تصحيح.</p></div>
         <div class="panel admin-section">
           <div class="admin-section-heading"><div><span class="tag">التشكيلة</span><h2>التشكيلات والأحداث</h2></div><p class="note">اختار المباراة (يدوية أو من الـ API) وعدّل التشكيلة وملخص الأحداث. من غير الإحصائيات.</p></div>
           <div class="lu-pick">
@@ -314,6 +320,7 @@
 
       <!-- ترتيب البطولات -->
       <section class="admin-pane" id="pane-leagues" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">🏆</i><p>رتّب البطولات اللي تظهر للزوار الأول في صفحة المباريات. اسحب أو غيّر الترتيب واحفظ.</p></div>
         <div class="panel admin-section">
           <div class="admin-section-heading">
             <div><span class="tag">البطولات</span><h2>ترتيب البطولات في صفحة المباريات</h2></div>
@@ -333,6 +340,7 @@
 
       <!-- الفرق -->
       <section class="admin-pane" id="pane-teams" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">👕</i><p>الفرق اللي هنا مبارياتها بتظهر في أول القائمة وبتتعلّم كمهمة تلقائيًا.</p></div>
         <div class="panel admin-section">
           <div class="admin-section-heading">
             <div><span class="tag">الفرق</span><h2>الفرق الأكثر متابعة (بتظهر مبارياتها الأول)</h2></div>
@@ -355,6 +363,7 @@
 
       <!-- إرسال إشعار -->
       <section class="admin-pane" id="pane-push" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">🔔</i><p>ابعت إشعار لكل المشتركين أو لمتابعي فريق معيّن. جرّب «إرسال تجريبي» على جهازك الأول قبل الإرسال للكل.</p></div>
         <div class="stat-cards"><div class="stat-card"><span>أجهزة مشتركة</span><b id="push-devices">—</b></div><div class="stat-card"><span>فرق ولاعبين</span><b id="push-ntargets">—</b></div></div>
         <div class="panel admin-section">
           <div class="admin-section-heading"><div><span class="tag">🔔</span><h2>إرسال إشعار</h2></div><p class="note">بيوصل لأجهزة المستخدمين اللي فعّلوا الإشعارات.</p></div>
@@ -374,6 +383,7 @@
 
       <!-- فرق ولاعبين الإشعارات -->
       <section class="admin-pane" id="pane-pushtargets" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">🎯</i><p>تحكم في الفرق واللاعبين اللي المستخدم يقدر يتابعهم ويوصله إشعاراتهم، وراجع طلبات الإضافة.</p></div>
         <div class="panel admin-section">
           <div class="admin-section-heading"><div><span class="tag">🔔</span><h2>الفرق واللاعبين المتاحين للمتابعة</h2></div><p class="note">دول اللي بيظهروا للمستخدم في «حسابي ← الإشعارات».</p></div>
           <div id="ptr-box"></div>
@@ -390,6 +400,7 @@
       </section>
       <!-- أسماء الفرق -->
       <section class="admin-pane" id="pane-names" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">🔤</i><p>لو اسم فريق أو لاعب ظاهر بالإنجليزي أو غلط، اكتب اسمه العربي الصح هنا وهيتغيّر في كل الموقع.</p></div>
         <div class="panel admin-section">
           <div class="admin-section-heading">
             <div><span class="tag">الأسماء</span><h2>تعديل أسماء الفرق بالعربي</h2></div>
@@ -406,6 +417,7 @@
       </section>
       <!-- المشغّلات -->
       <section class="admin-pane" id="pane-streams" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">📺</i><p>فيه مصدرين للبث: <b>المصدر 1</b> روابطك إنت وليها الأولوية، و<b>المصدر 2</b> SportSRC بث تلقائي لو فعّلته. استخدم «جرّب الرابط» تتأكد إن الرابط شغّال قبل ما تحفظه.</p></div>
         <div class="panel admin-section" id="ws-admin">
           <div class="admin-section-heading">
             <div><span class="tag">المصدر 1</span><h2>روابطك أنت (الأولوية)</h2></div>
@@ -479,6 +491,7 @@
 
       <!-- المتجر -->
       <section class="admin-pane" id="pane-store" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">🛍️</i><p>تحكم في فتح المتجر للزوار، وأضف الفئات والمنتجات. الطلبات بتوصلك في تاب «الطلبات».</p></div>
         <div class="panel admin-section">
           <div class="admin-section-heading">
             <div><span class="tag">المتجر</span><h2>تشغيل المتجر</h2></div>
@@ -506,7 +519,7 @@
             <label>الوصف<textarea id="product-description" rows="3"></textarea></label>
             <label>السعر<input id="product-price" type="number" min="0" step="0.01"></label>
             <label>رابط صورة المنتج<input id="product-image" type="url" inputmode="url"></label>
-            <label>رابط خارجي (اختياري — لم يعد مستخدمًا، الطلب بيتم من الموقع)<input id="product-buy" type="url" inputmode="url"></label>
+            <details class="adv"><summary>خيارات إضافية</summary><label>رابط خارجي (اختياري — لم يعد مستخدمًا، الطلب بيتم من الموقع)<input id="product-buy" type="url" inputmode="url"></label></details>
             <label class="admin-checkbox"><input id="product-published" type="checkbox" checked> ظاهر للزوار</label>
             <div class="row">
               <button class="btn primary" id="product-save" type="submit">إضافة المنتج</button>
@@ -520,6 +533,7 @@
 
       <!-- الأخبار -->
       <section class="admin-pane" id="pane-orders" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">📦</i><p>متابعة طلبات العملاء وتغيير حالة كل طلب (جديد، قيد التنفيذ، تم التسليم).</p></div>
         <div class="panel admin-section">
           <div class="admin-section-heading"><div><span class="tag">الطلبات</span><h2>طلبات العملاء</h2></div>
             <p class="note">كل طلب من صفحة المنتج بيوصل هنا. غيّر الحالة بعد التواصل مع العميل.</p></div>
@@ -534,6 +548,7 @@
       </section>
       <!-- الانتقالات -->
       <section class="admin-pane" id="pane-transfers" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">🔄</i><p>أضف صفقات الانتقالات اللي تظهر في صفحة سوق الانتقالات. بيانات اللاعب والأندية اختيارية.</p></div>
         <div class="panel admin-section">
           <div class="admin-section-heading"><div><span class="tag">الانتقالات</span><h2>إضافة / تعديل انتقال</h2></div>
             <p class="note">اللي بتضيفه بيظهر فورًا في صفحة «الانتقالات» للزوار. تقدر تحوّل أي انتقال لإشعار بضغطة.</p></div>
@@ -578,6 +593,7 @@
       </section>
       <!-- الإعلانات -->
       <section class="admin-pane" id="pane-ads" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">📣</i><p>إعلان منبثق بصورة أو فيديو، ومعاه عدّاد مشاهدات ونقرات عشان تعرف شغّال ولا لأ.</p></div>
         <div class="panel admin-section">
           <div class="admin-section-heading"><div><span class="tag">الإعلانات</span><h2>إعلان منبثق (صورة أو فيديو)</h2></div>
             <p class="note">بيظهر للزائر في نافذة زجاجية بعد ثواني من فتح الصفحة، ومرة واحدة كل فترة بتحددها. الروابط لازم https.</p></div>
@@ -606,6 +622,7 @@
         </div>
       </section>
       <section class="admin-pane" id="pane-news" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">📰</i><p>اكتب أخبارك بنفسك وتظهر في أول صفحة الأخبار. اللصق التلقائي: حط رابط منشور X أو يوتيوب في سطر لوحده.</p></div>
         <div class="panel admin-section">
           <div class="admin-section-heading">
             <div><span class="tag">الأخبار</span><h2>أخبار تكتبها بنفسك</h2></div>
@@ -638,8 +655,8 @@
               <p class="note">للتضمين: الصق رابط منشور <b>X</b> أو <b>إنستجرام</b> أو <b>تيك توك</b> أو <b>يوتيوب</b> أو <b>فيسبوك</b> في سطر لوحده وهيتحوّل لمنشور مدمج في صفحة الخبر.</p>
             </div>
             <p class="note">تنسيق اختياري: <code>## عنوان</code> · <code>### عنوان فرعي</code> · <code>&gt; اقتباس</code> · <code>- نقطة</code> · <code>**غامق**</code> · <code>![وصف](https://رابط-صورة)</code> سطر لوحده · <code>[نص](https://رابط)</code>. سطر فاضي بين الفقرات.</p>
-            <label>رابط صورة (اختياري)<input id="news-image" type="url" inputmode="url"></label>
-            <label>رابط المصدر (اختياري)<input id="news-source" type="url" inputmode="url"></label>
+            <details class="adv"><summary>خيارات إضافية (صورة الخبر ورابط المصدر)</summary><label>رابط صورة (اختياري)<input id="news-image" type="url" inputmode="url"></label>
+            <label>رابط المصدر (اختياري)<input id="news-source" type="url" inputmode="url"></label></details>
             <label class="admin-checkbox"><input id="news-published" type="checkbox" checked> منشور</label>
             <label class="admin-checkbox"><input id="news-autopush" type="checkbox" checked> 🔔 ابعت إشعار لكل المشتركين أول ما الخبر يتنشر (للخبر الجديد بس)</label>
             <div class="row">
@@ -654,6 +671,7 @@
 
       <!-- المستخدمون -->
       <section class="admin-pane" id="pane-users" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">👥</i><p>إدارة الحسابات: الصلاحيات والحظر. كن حذر في تغيير صلاحية «مسؤول».</p></div>
         <div class="panel admin-section">
           <div class="admin-section-heading">
             <div><span class="tag">المستخدمون</span><h2>إدارة الحسابات</h2></div>
@@ -673,6 +691,7 @@
 
       <!-- السجل -->
       <section class="admin-pane" id="pane-audit" role="tabpanel" hidden>
+        <div class="pane-hint"><i aria-hidden="true">🧾</i><p>سجل بآخر العمليات اللي عملها المسؤولين، علشان تتابع مين غيّر إيه.</p></div>
         <div class="panel admin-section">
           <div class="admin-section-heading">
             <div><span class="tag">السجل</span><h2>آخر عمليات المسؤولين</h2></div>
