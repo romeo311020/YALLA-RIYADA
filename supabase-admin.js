@@ -256,7 +256,7 @@
   $('sv-save').addEventListener('click', async () => {
     if (!svCur) return; const s = svCur.s; const id = Number(svCur.fixture_id);
     const httpsOrNull = (v) => { v = v.trim(); return /^https:\/\//i.test(v) ? v : null; };
-    const snap = { ...(svCur.snapshot || {}), home_team: $('sv-home').value.trim() || s.home_team, away_team: $('sv-away').value.trim() || s.away_team, league: $('sv-league').value.trim() || s.league, league_label: $('sv-league').value.trim() || s.league_label,
+    const snap = { ...(svCur.snapshot || {}), _edited: true, home_team: $('sv-home').value.trim() || s.home_team, away_team: $('sv-away').value.trim() || s.away_team, league: $('sv-league').value.trim() || s.league, league_label: $('sv-league').value.trim() || s.league_label,
       kickoff: svToIso($('sv-kick').value) || s.kickoff, status: $('sv-status').value, minute: svNum('sv-min'), home_score: svNum('sv-hs'), away_score: svNum('sv-as'),
       home_logo: httpsOrNull($('sv-hl').value) ?? svCur.snapshot?.home_logo ?? null, away_logo: httpsOrNull($('sv-al').value) ?? svCur.snapshot?.away_logo ?? null };
     const row = { fixture_id: id, snapshot: snap, status: snap.status, kickoff: snap.kickoff, home_score: snap.home_score, away_score: snap.away_score, featured: $('sv-feat').checked, hide_important: false, title: `${snap.home_team} × ${snap.away_team}`, updated_at: new Date().toISOString() };
