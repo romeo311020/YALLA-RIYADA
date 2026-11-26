@@ -89,16 +89,14 @@
           <div class="ac-stats" aria-label="ملخص نشاطك">
             <div class="ac-stat"><b id="st-teams">–</b><span>فرق بتتابعها</span></div>
             <div class="ac-stat"><b id="st-players">–</b><span>لاعبين بتتابعهم</span></div>
-            <div class="ac-stat"><b id="st-orders">–</b><span>طلباتك</span></div>
           </div>
 
           <div class="ac-notify" id="ac-notify" aria-live="polite"></div>
 
           <nav class="ac-menu" id="acc-tiles" aria-label="أقسام حسابي">
+            <button class="ac-row" type="button" data-pane="profile"><i aria-hidden="true">👤</i><span><b>البيانات</b><small>الاسم والبريد وكلمة المرور</small></span></button>
+            <button class="ac-row" type="button" data-pane="teams"><i aria-hidden="true">⚽</i><span><b>تابع فريقك</b><small>أضف فرقك أو الغِ متابعتها</small></span></button>
             <a class="ac-row" href="notifications.html"><i aria-hidden="true">🔔</i><span><b>الإشعارات</b><small>اختار فرقك ولاعبينك</small></span></a>
-            <button class="ac-row" type="button" data-pane="orders"><i aria-hidden="true">📦</i><span><b>طلباتي</b><small>تابع طلبات المتجر</small></span></button>
-            <button class="ac-row" type="button" data-pane="profile"><i aria-hidden="true">👤</i><span><b>بياناتي</b><small>الاسم والبريد</small></span></button>
-            <button class="ac-row" type="button" data-pane="security" id="tile-security"><i aria-hidden="true">🔐</i><span><b>الأمان</b><small>كلمة المرور</small></span></button>
             <a class="ac-row ac-admin" id="admin-link" href="admin.html" hidden><i aria-hidden="true">🛠️</i><span><b>لوحة التحكم</b><small>إدارة الموقع</small></span></a>
           </nav>
 
@@ -111,7 +109,7 @@
         </div>
 
         <div class="ac-pane" data-pane-body="profile" hidden>
-          <div class="ac-pane-bar"><button class="ac-back" type="button" data-back aria-label="رجوع">→</button><h3>بياناتي</h3></div>
+          <div class="ac-pane-bar"><button class="ac-back" type="button" data-back aria-label="رجوع">→</button><h3>البيانات</h3></div>
           <div class="profile-actions" id="profile-actions">
             <button class="btn primary" id="edit-profile" type="button">تعديل البيانات</button>
           </div>
@@ -129,10 +127,7 @@
             </div>
           </form>
           <p class="account-message note" id="profile-message" role="status" aria-live="polite"></p>
-        </div>
-
-        <div class="ac-pane" data-pane-body="security" hidden>
-          <div class="ac-pane-bar"><button class="ac-back" type="button" data-back aria-label="رجوع">→</button><h3>الأمان</h3></div>
+          <h4 class="mt-h">كلمة المرور</h4>
           <div id="password-block">
             <form id="password-form" class="form-stack">
               <label class="account-field" for="new-password">كلمة المرور الجديدة
@@ -148,9 +143,15 @@
           <p class="note" id="google-note" hidden>تسجّل الدخول عبر Google، لذلك لا توجد كلمة مرور لهذا الحساب.</p>
         </div>
 
-        <div class="ac-pane" data-pane-body="orders" hidden>
-          <div class="ac-pane-bar"><button class="ac-back" type="button" data-back aria-label="رجوع">→</button><h3>طلباتي</h3></div>
-          <div id="my-orders"></div>
+        <div class="ac-pane" data-pane-body="teams" hidden>
+          <div class="ac-pane-bar"><button class="ac-back" type="button" data-back aria-label="رجوع">→</button><h3>تابع فريقك</h3></div>
+          <p class="note">المباريات في الموقع بتظهرلك للفرق اللي بتتابعها بس.</p>
+          <h4 class="mt-h">فرقك</h4>
+          <div id="mt-mine" class="mt-list" aria-live="polite"><p class="note">جارٍ التحميل…</p></div>
+          <h4 class="mt-h">أضف فريق</h4>
+          <input id="mt-q" class="mt-q" type="search" placeholder="ابحث باسم الفريق…" autocomplete="off" aria-label="ابحث عن فريق">
+          <div id="mt-res" class="mt-list" aria-live="polite"></div>
+          <p class="account-message note" id="mt-msg" role="status" aria-live="polite"></p>
         </div>
       </section>
     </div>
@@ -162,6 +163,8 @@
   <script src="supabase-client.js"></script>
   <script src="supabase-account.js"></script>
   <script src="notify-prompt.js" defer></script>
+  <script src="follow.js"></script>
+  <script src="my-teams.js" defer></script>
   <script src="account-ui.js" defer></script>
 <script src="install.js" defer></script></body>
 </html>

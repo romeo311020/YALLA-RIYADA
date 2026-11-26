@@ -99,7 +99,8 @@
   let followed = new Set();
   const hero0f = (m) => Number(m.home_id) > 0 && Number(m.away_id) > 0;
   const isFollowed = (m) => followed.size > 0 && (followed.has(Number(m.home_id)) || followed.has(Number(m.away_id)));
-  const loadFollows = async () => { try { const { data: s } = await db.auth.getSession(); if (!s?.session) return false; const r = await db.from('push_follows').select('push_targets(api_id,kind)'); followed = new Set((r.data || []).map((x) => x.push_targets).filter((t) => t && t.kind === 'team' && t.api_id).map((t) => Number(t.api_id))); return followed.size > 0; } catch { return false; } };
+  let followReady = false, followSigned = false, followErr = false;
+  const loadFollows = async () => { try { const { data: s } = await db.auth.getSession(); followSigned = !!s?.session; if (!followSigned) return false; const r = await db.from('push_follows').select('push_targets(api_id,kind)'); if (r.error) { followErr = true; return false; } followed = new Set((r.data || []).map((x) => x.push_targets).filter((t) => t && t.kind === 'team' && t.api_id).map((t) => Number(t.api_id))); return followed.size > 0; } catch { followErr = true; return false; } finally { followReady = true; } };
   const saveFav = () => { try { localStorage.setItem('yr-fav-m', JSON.stringify([...favSet].slice(-300))); } catch { /* اختياري */ } };
   const STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.7 5.5 6 .9-4.4 4.2 1 6-5.3-2.8-5.3 2.8 1-6L3.3 9.9l6-.9z"/></svg>';
   const pill = (m) => {
@@ -541,8 +542,17 @@
     };
     const render = () => {
       paintControls(); renderChips();
+      // المباريات تظهر للفرق المتابَعة فقط
+      if (!followReady) { host.innerHTML = '<div class="empty-state"><p>جارٍ تجهيز مباريات فرقك…</p></div>'; const c0 = $('results-count'); if (c0) c0.textContent = ''; return; }
+      if (!followErr && !followed.size) {
+        host.innerHTML = followSigned
+          ? '<div class="empty-state follow-gate"><p><b>تابع فريقك الأول</b><br>مباريات الموقع بتظهر للفرق اللي بتتابعها بس.</p><a class="btn primary" href="account.html#teams">تابع فريقك</a></div>'
+          : '<div class="empty-state follow-gate"><p><b>سجّل دخولك وتابع فريقك</b><br>هتشوف مباريات فرقك بس، وتوصلك إشعاراتها.</p><a class="btn primary" href="account.html#teams">تسجيل الدخول وتابع فريقك</a></div>';
+        const c1 = $('results-count'); if (c1) c1.textContent = ''; return;
+      }
       const q = norm(state.q);
       const rows = all()
+        .filter((m) => followErr || isFollowed(m))
         .filter((m) => state.league === 'all' || m.league_key === state.league)
         .filter((m) => !state.fav || favSet.has(favKey(m)) || isFollowed(m))
         .filter((m) => !q || q.split(' ').every((w) => haystack(m).includes(w)));
@@ -609,7 +619,7 @@
       host.removeAttribute('aria-busy');
       if (state.league !== 'all' && !data.leagues.some((l) => l.key === state.league) && state.league !== 'manual') state.league = 'all';
       render();
-      loadFollows().then((has) => { if (has) render(); });
+      loadFollows().then(() => render());
       if (late && data.fixtures.length) {
         const ov = await applyOverrides(data.fixtures); if (my !== token) return;
         data.fixtures = ov; await markStreams(data.fixtures); if (my !== token) return;
