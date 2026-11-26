@@ -1665,3 +1665,7 @@ body.page-match,body.tp-page{background:var(--bg)!important;color:var(--text)}
 /* v110: أداء — الكروت اللي برا الشاشة ما تتحسبش لحد ما تقرّب (يمنع التهنيج في القوائم الطويلة) */
 .page-matches article.match.mx,.match-list article.match.mx{content-visibility:auto;contain-intrinsic-size:auto 168px}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* v111: علامة «من فرقك» */
+.mx-fol{flex:none;font-size:11px;font-weight:800;padding:3px 8px;border-radius:999px;background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--text);border:1px solid color-mix(in srgb,var(--acc) 55%,transparent);white-space:nowrap}
+article.match.mx.is-followed{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 45%,transparent)}

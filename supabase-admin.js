@@ -298,7 +298,7 @@
     // 1) مصدر المباريات الأساسي
     if (api.status === 'fulfilled') { const n = (api.value?.fixtures || []).length; out.push(n ? hlRow('ok', 'مصدر المباريات (API-Football)', `شغّال — ${n} مباراة مهمة النهارده (ممكن تكون من الكاش).`) : hlRow('warn', 'مصدر المباريات (API-Football)', 'رد فاضي — مفيش مباريات مهمة النهارده، أو الحصة خلصت.')); }
     else out.push(hlRow('bad', 'مصدر المباريات (API-Football)', hlMsg(api.reason)));
-    if (bud.status === 'fulfilled' && bud.value && bud.value.limit) { const u = Number(bud.value.used) || 0; const l = Number(bud.value.limit); const lv = u >= l * 0.9 ? 'bad' : u >= l * 0.6 ? 'warn' : 'ok'; out.push(hlRow(lv, 'استهلاك حصة الـ API النهارده', `${u} من ${l} طلب. ${lv === 'ok' ? 'كويس — الكاش شغّال.' : lv === 'warn' ? 'الاستهلاك عالي: الموقع بيطوّل مدة الكاش تلقائيًا.' : 'قاربت تخلص: الموقع هيعرض المحفوظ ثم SportSRC.'}`)); }
+    if (bud.status === 'fulfilled' && bud.value && bud.value.limit) { const u = Number(bud.value.used) || 0; const l = Number(bud.value.limit); const lv = u >= l * 0.9 ? 'bad' : u >= l * 0.6 ? 'warn' : 'ok'; out.push(hlRow(lv, 'استهلاك حصة الـ API النهارده', `${u} من ${l} طلب${bud.value.followed != null ? ` — الفرق المتابَعة: ${bud.value.followed}` : ''}. ${lv === 'ok' ? 'كويس — الكاش شغّال.' : lv === 'warn' ? 'الاستهلاك عالي: الموقع بيطوّل مدة الكاش تلقائيًا.' : 'قاربت تخلص: الموقع هيعرض المحفوظ ثم SportSRC.'}`)); }
     // 2) SportSRC
     if (sr.status === 'fulfilled') {
       const { st, acc } = sr.value;

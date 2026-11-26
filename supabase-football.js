@@ -95,6 +95,10 @@
   /* المفضلة: محفوظة في المتصفح (localStorage) */
   let favSet = new Set(); try { favSet = new Set(JSON.parse(localStorage.getItem('yr-fav-m') || '[]')); } catch { /* اختياري */ }
   const favKey = (m) => (m.manual ? `m:${m.id}` : `${m.sport || 'football'}:${m.fixture_id}`);
+  // فرق المستخدم المتابَعة (من صفحة المفضلة): تظهر مبارياتها في فلتر «المفضلة» وعليها علامة
+  let followed = new Set();
+  const isFollowed = (m) => followed.size > 0 && (followed.has(Number(m.home_id)) || followed.has(Number(m.away_id)));
+  const loadFollows = async () => { try { const { data: s } = await db.auth.getSession(); if (!s?.session) return false; const r = await db.from('push_follows').select('push_targets(api_id,kind)'); followed = new Set((r.data || []).map((x) => x.push_targets).filter((t) => t && t.kind === 'team' && t.api_id).map((t) => Number(t.api_id))); return followed.size > 0; } catch { return false; } };
   const saveFav = () => { try { localStorage.setItem('yr-fav-m', JSON.stringify([...favSet].slice(-300))); } catch { /* اختياري */ } };
   const STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.7 5.5 6 .9-4.4 4.2 1 6-5.3-2.8-5.3 2.8 1-6L3.3 9.9l6-.9z"/></svg>';
   const pill = (m) => {
@@ -104,8 +108,8 @@
     if (m.status === 'cancelled') return '<span class="mx-pill warn">ملغاة</span>';
     return '<span class="mx-pill">لم تبدأ</span>';
   };
-  const mxCard = (m, href, watch) => { const k = favKey(m); const on = favSet.has(k); return `<article class="match mx${m.status === 'live' ? ' is-live' : ''}" data-fk="${escapeHtml(k)}">
-      <div class="mx-head"><button type="button" class="mx-fav${on ? ' on' : ''}" data-fav="${escapeHtml(k)}" aria-pressed="${on}" aria-label="${on ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}">${STAR}</button><span class="mx-lg">${escapeHtml(m.league_label || m.league || '')}${m.round ? ` • ${escapeHtml(m.round)}` : ''}</span>${pill(m)}</div>
+  const mxCard = (m, href, watch) => { const k = favKey(m); const on = favSet.has(k); return `<article class="match mx${m.status === 'live' ? ' is-live' : ''}${isFollowed(m) ? ' is-followed' : ''}" data-fk="${escapeHtml(k)}">
+      <div class="mx-head"><button type="button" class="mx-fav${on ? ' on' : ''}" data-fav="${escapeHtml(k)}" aria-pressed="${on}" aria-label="${on ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}">${STAR}</button><span class="mx-lg">${escapeHtml(m.league_label || m.league || '')}${m.round ? ` • ${escapeHtml(m.round)}` : ''}</span>${isFollowed(m) ? '<span class="mx-fol">من فرقك</span>' : ''}${pill(m)}</div>
       <a class="mx-link" href="${href}"><div class="teams">${teamMarkup(m.home_team, m.home_logo, m.sport)}<div class="mx-mid">${centerMarkup(m)}${stLine(m)}</div>${teamMarkup(m.away_team, m.away_logo, m.sport)}</div>
       <div class="mx-foot"><span class="mx-more">التفاصيل <i aria-hidden="true"></i></span>${watch ? `<b class="mx-watch"><i class="mx-pl" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6.5v11l9-5.5z"/></svg></i>${m.status === 'live' ? 'شاهد البث' : m.status === 'finished' ? 'شاهد الملخص' : 'شاهد'}</b>` : ''}</div></a>
     </article>`; };
@@ -539,7 +543,7 @@
       const q = norm(state.q);
       const rows = all()
         .filter((m) => state.league === 'all' || m.league_key === state.league)
-        .filter((m) => !state.fav || favSet.has(favKey(m)))
+        .filter((m) => !state.fav || favSet.has(favKey(m)) || isFollowed(m))
         .filter((m) => !q || q.split(' ').every((w) => haystack(m).includes(w)));
       const count = $('results-count');
       if (data.error && !rows.length) {
@@ -604,6 +608,7 @@
       host.removeAttribute('aria-busy');
       if (state.league !== 'all' && !data.leagues.some((l) => l.key === state.league) && state.league !== 'manual') state.league = 'all';
       render();
+      loadFollows().then((has) => { if (has) render(); });
       if (late && data.fixtures.length) {
         const ov = await applyOverrides(data.fixtures); if (my !== token) return;
         data.fixtures = ov; await markStreams(data.fixtures); if (my !== token) return;
