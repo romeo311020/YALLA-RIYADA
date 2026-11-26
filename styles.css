@@ -1661,3 +1661,7 @@ body.page-match,body.tp-page{background:var(--bg)!important;color:var(--text)}
 @media(min-width:1100px){#md-prev{inset-inline-start:-18px}#md-next{inset-inline-end:-18px}}
 .src-tm{margin:12px 0;padding:12px;border:1px dashed var(--line);border-radius:12px}
 .src-tm-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:8px 0}
+
+/* v110: أداء — الكروت اللي برا الشاشة ما تتحسبش لحد ما تقرّب (يمنع التهنيج في القوائم الطويلة) */
+.page-matches article.match.mx,.match-list article.match.mx{content-visibility:auto;contain-intrinsic-size:auto 168px}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}

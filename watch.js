@@ -18,7 +18,7 @@
     expand: S('<path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/>'), tv: S('<rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M8 21h8M9 3l3 3 3-3"/>'),
     chev: S('<path d="M9 6l6 6-6 6"/>'),
   };
-  const HLS_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js';
+  const HLS_SRC = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js';
   let hlsLoad = null;
   const loadHls = () => hlsLoad || (hlsLoad = new Promise((ok, no) => { if (window.Hls) return ok(window.Hls); const s = document.createElement('script'); s.src = HLS_SRC; s.crossOrigin = 'anonymous'; s.onload = () => ok(window.Hls); s.onerror = () => { hlsLoad = null; no(new Error('hls')); }; document.head.appendChild(s); }));
   const loadYT = () => new Promise((ok, no) => { if (window.yrYT) return ok(); const s = document.createElement('script'); s.src = 'yt-player.js'; s.onload = ok; s.onerror = no; document.head.appendChild(s); });

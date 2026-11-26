@@ -288,15 +288,17 @@
   async function loadHealth() {
     const list = $('hl-list'); if (!list) return; list.innerHTML = hlRow('', 'جارٍ الفحص…', '');
     const out = [];
-    const [api, sr, saved, srcs] = await Promise.allSettled([
+    const [api, sr, saved, srcs, bud] = await Promise.allSettled([
       hlTimeout(callFn('football-matches', { action: 'fixtures', sport: 'football', date: cairoDate(0) })),
       hlTimeout((async () => { const st = await callFn('sportsrc', { action: 'status' }); let acc = null; if (st.hasKey) { try { acc = await callFn('sportsrc', { action: 'test', type: 'account' }); } catch (e) { acc = { error: e.message }; } } return { st, acc }; })()),
       client.from('fixture_overrides').select('fixture_id,snapshot').not('snapshot', 'is', null).limit(500),
       client.from('match_sources').select('*', { count: 'exact', head: true }).eq('active', true),
+      hlTimeout(callFn('football-matches', { action: 'budget' })),
     ]);
     // 1) مصدر المباريات الأساسي
     if (api.status === 'fulfilled') { const n = (api.value?.fixtures || []).length; out.push(n ? hlRow('ok', 'مصدر المباريات (API-Football)', `شغّال — ${n} مباراة مهمة النهارده (ممكن تكون من الكاش).`) : hlRow('warn', 'مصدر المباريات (API-Football)', 'رد فاضي — مفيش مباريات مهمة النهارده، أو الحصة خلصت.')); }
     else out.push(hlRow('bad', 'مصدر المباريات (API-Football)', hlMsg(api.reason)));
+    if (bud.status === 'fulfilled' && bud.value && bud.value.limit) { const u = Number(bud.value.used) || 0; const l = Number(bud.value.limit); const lv = u >= l * 0.9 ? 'bad' : u >= l * 0.6 ? 'warn' : 'ok'; out.push(hlRow(lv, 'استهلاك حصة الـ API النهارده', `${u} من ${l} طلب. ${lv === 'ok' ? 'كويس — الكاش شغّال.' : lv === 'warn' ? 'الاستهلاك عالي: الموقع بيطوّل مدة الكاش تلقائيًا.' : 'قاربت تخلص: الموقع هيعرض المحفوظ ثم SportSRC.'}`)); }
     // 2) SportSRC
     if (sr.status === 'fulfilled') {
       const { st, acc } = sr.value;
@@ -1547,7 +1549,7 @@
     const esc2 = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
     const httpsOk = (u) => { try { return new URL(u).protocol === 'https:'; } catch { return false; } };
     let hlsP = null;
-    const loadHls = () => hlsP || (hlsP = new Promise((ok, no) => { if (window.Hls) return ok(window.Hls); const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js'; s.onload = () => ok(window.Hls); s.onerror = () => { hlsP = null; no(new Error('hls')); }; document.head.appendChild(s); }));
+    const loadHls = () => hlsP || (hlsP = new Promise((ok, no) => { if (window.Hls) return ok(window.Hls); const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js'; s.onload = () => ok(window.Hls); s.onerror = () => { hlsP = null; no(new Error('hls')); }; document.head.appendChild(s); }));
     // يعرض الرابط في مشغّل صغير (16:9) جوه الصندوق المحدد
     const pvShow = async (box, url, type) => {
       box.hidden = false; box.innerHTML = '<div class="pv-top"><span>تجربة الرابط</span><button type="button" class="pv-x" aria-label="إغلاق">✕</button></div><div class="pv-st"></div><p class="pv-msg"></p>';
