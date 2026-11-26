@@ -97,6 +97,7 @@
   const favKey = (m) => (m.manual ? `m:${m.id}` : `${m.sport || 'football'}:${m.fixture_id}`);
   // فرق المستخدم المتابَعة (من صفحة المفضلة): تظهر مبارياتها في فلتر «المفضلة» وعليها علامة
   let followed = new Set();
+  const hero0f = (m) => Number(m.home_id) > 0 && Number(m.away_id) > 0;
   const isFollowed = (m) => followed.size > 0 && (followed.has(Number(m.home_id)) || followed.has(Number(m.away_id)));
   const loadFollows = async () => { try { const { data: s } = await db.auth.getSession(); if (!s?.session) return false; const r = await db.from('push_follows').select('push_targets(api_id,kind)'); followed = new Set((r.data || []).map((x) => x.push_targets).filter((t) => t && t.kind === 'team' && t.api_id).map((t) => Number(t.api_id))); return followed.size > 0; } catch { return false; } };
   const saveFav = () => { try { localStorage.setItem('yr-fav-m', JSON.stringify([...favSet].slice(-300))); } catch { /* اختياري */ } };
@@ -714,6 +715,7 @@
           window.yrShareBloom({ type: 'match', url: location.href.split('#')[0], league: m.league_label || m.league, home: { name: H, logo: safeUrl(m.home_logo) }, away: { name: A, logo: safeUrl(m.away_logo) }, score: has ? `${m.away_score} - ${m.home_score}` : '', live, finished: fin, minute: m.minute, time: formatTime(m.kickoff), when: formatDate(m.kickoff), title: `${H} × ${A}` });
         };
         { const hero = $('match-hero'); if (hero && !hero.querySelector('.mh-share')) { const b = document.createElement('button'); b.type = 'button'; b.className = 'mh-share'; b.innerHTML = window.yrIco('share') + ' شارك المباراة'; b.addEventListener('click', () => window.yrMatchShare()); hero.append(b); } }
+        if (sport === 'football' && window.yrFollow && hero0f(m)) { const hero = $('match-hero'); if (hero && !hero.querySelector('.mh-fol')) { const r = document.createElement('div'); r.className = 'mh-fol'; r.innerHTML = window.yrFollow.button(m.home_id, m.home_team, H, m.home_logo) + window.yrFollow.button(m.away_id, m.away_team, A, m.away_logo); hero.append(r); window.yrFollow.sync(); window.yrFollow.nudge([{ id: m.home_id, name: m.home_team, dn: H, logo: m.home_logo }, { id: m.away_id, name: m.away_team, dn: A, logo: m.away_logo }]); } }
         if (sport === 'football' && window.yrPredictMount) window.yrPredictMount(m);
         window.yrHero && window.yrHero({ league: m.league_label || m.league, kickoff: m.kickoff, status: m.status, note: ['live', 'postponed', 'cancelled'].includes(m.status) ? m.status_note : '' });
         mdMore(m, sport, day);
@@ -784,7 +786,7 @@
           root.removeAttribute('aria-busy');
           root.innerHTML = `<section class="tp-hero"><span class="tp-av">${logo ? `<img src="${escapeHtml(logo)}" alt="">` : '⚽'}</span>
               <div class="tp-hi"><small>${t.national ? 'منتخب' : 'نادي'}${t.country ? ' · ' + escapeHtml(countryAr(t.country)) : ''}</small><h1>${escapeHtml(tn(t.name))}</h1>
-              <div class="tp-acts"><button type="button" class="tp-btn" onclick="window.yrTeamShare&&window.yrTeamShare()">مشاركة</button><a class="tp-btn ghost" href="notification-preferences.html?follow=team:${id}&n=${encodeURIComponent(t.name || '')}">🔔 متابعة الفريق</a></div></div></section>
+              <div class="tp-acts"><button type="button" class="tp-btn" onclick="window.yrTeamShare&&window.yrTeamShare()">مشاركة</button>${window.yrFollow ? window.yrFollow.button(id, t.name, tn(t.name), logo, 'tp-btn') : ''}<a class="tp-btn ghost" href="notification-preferences.html?follow=team:${id}&n=${encodeURIComponent(t.name || '')}">🔔 الإشعارات</a></div></div></section>
             <nav class="tp-tabs" role="tablist"><button class="tp-tab active" data-t="ov" role="tab" aria-selected="true">نظرة عامة</button><button class="tp-tab" data-t="mt" role="tab" aria-selected="false">المباريات</button><button class="tp-tab" data-t="st" role="tab" aria-selected="false">الترتيب</button><button class="tp-tab" data-t="pl" role="tab" aria-selected="false">اللاعبين</button></nav>
             <div class="tp-pane" id="pane-ov">
               <section class="tp-card"><h2>معلومات الفريق</h2><div class="tp-tiles">${[['سنة التأسيس', t.founded], ['الملعب', v.name ? tn(v.name) : ''], ['المدينة', v.city], ['السعة', v.capacity ? nAr(v.capacity) : ''], ['المدرب', c && c.name ? pn(c.name) : '']].filter((x) => x[1]).map(([k, x]) => tile('', String(x), k)).join('')}</div></section>
