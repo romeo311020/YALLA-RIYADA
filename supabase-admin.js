@@ -319,6 +319,20 @@
     list.innerHTML = out.join('');
   }
   document.addEventListener('click', (e) => { if (e.target.closest('#hl-refresh')) loadHealth(); });
+  // كتالوج البطولات والفرق: خطوة البطولات ثم فريق كل بطولة (مع انتظار لو الحد في الدقيقة اتملى)
+  let catBusy = false;
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('#cat-sync'); if (!btn || catBusy) return;
+    catBusy = true; btn.disabled = true; const msg = $('cat-msg'); const say = (t) => { if (msg) msg.textContent = t; };
+    const step = async (body) => { for (let i = 0; i < 8; i++) { const r = await callFn('football-matches', { action: 'catalog', sport: 'football', ...body }); if (!r || !r.wait) return r; await new Promise((ok) => setTimeout(ok, 8000)); } throw new Error('الحد في الدقيقة لسه ممتلي، جرّب بعد شوية.'); };
+    try {
+      say('جارٍ جلب البطولات…'); const L = await step({ step: 'leagues' });
+      let total = 0; const list = L.leagues || [];
+      for (let i = 0; i < list.length; i++) { say(`فرق ${list[i].ar} (${i + 1}/${list.length})…`); const r = await step({ step: 'teams', leagueId: list[i].id }); total += r.teams || 0; }
+      say(`تمام ✓ ${list.length} بطولة و${total} فريق (بتتكرر الفرق بين البطولات).` + ((L.missing || []).length ? ` مش متاحة حاليًا من المزوّد: ${L.missing.join('، ')}.` : ''));
+    } catch (err) { say('فشل: ' + (err.message || err)); }
+    catBusy = false; btn.disabled = false;
+  });
 
   async function loadOverview() {
     const host = $('overview-cards');

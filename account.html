@@ -145,12 +145,16 @@
 
         <div class="ac-pane" data-pane-body="teams" hidden>
           <div class="ac-pane-bar"><button class="ac-back" type="button" data-back aria-label="رجوع">→</button><h3>تابع فريقك</h3></div>
-          <p class="note">المباريات في الموقع بتظهرلك للفرق اللي بتتابعها بس.</p>
-          <h4 class="mt-h">فرقك</h4>
-          <div id="mt-mine" class="mt-list" aria-live="polite"><p class="note">جارٍ التحميل…</p></div>
-          <h4 class="mt-h">أضف فريق</h4>
-          <input id="mt-q" class="mt-q" type="search" placeholder="ابحث باسم الفريق…" autocomplete="off" aria-label="ابحث عن فريق">
-          <div id="mt-res" class="mt-list" aria-live="polite"></div>
+          <div class="mt-tabs" role="tablist" aria-label="المتابعة">
+            <button type="button" class="mt-tab" role="tab" data-v="mine" aria-selected="true">متابعتي</button>
+            <button type="button" class="mt-tab" role="tab" data-v="new" aria-selected="false">متابعة جديدة</button>
+          </div>
+          <div class="mt-chips" role="group" aria-label="النوع"><button type="button" class="mt-chip" data-k="team" aria-pressed="true">الفرق</button><button type="button" class="mt-chip" data-k="league" aria-pressed="false">البطولات</button></div>
+          <div id="mt-new" hidden>
+            <input id="mt-q" class="mt-q" type="search" placeholder="ابحث بالاسم…" autocomplete="off" aria-label="بحث">
+            <div id="mt-lg" class="mt-chips" role="group" aria-label="تصفية بالبطولة"></div>
+          </div>
+          <div id="mt-list" class="mt-list" aria-live="polite"><p class="note">جارٍ التحميل…</p></div>
           <p class="account-message note" id="mt-msg" role="status" aria-live="polite"></p>
         </div>
       </section>
@@ -163,7 +167,7 @@
   <script src="supabase-client.js"></script>
   <script src="supabase-account.js"></script>
   <script src="notify-prompt.js" defer></script>
-  <script src="follow.js"></script>
+  <script src="names-ar.js"></script>
   <script src="my-teams.js" defer></script>
   <script src="account-ui.js" defer></script>
 <script src="install.js" defer></script></body>

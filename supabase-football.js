@@ -542,17 +542,8 @@
     };
     const render = () => {
       paintControls(); renderChips();
-      // المباريات تظهر للفرق المتابَعة فقط
-      if (!followReady) { host.innerHTML = '<div class="empty-state"><p>جارٍ تجهيز مباريات فرقك…</p></div>'; const c0 = $('results-count'); if (c0) c0.textContent = ''; return; }
-      if (!followErr && !followed.size) {
-        host.innerHTML = followSigned
-          ? '<div class="empty-state follow-gate"><p><b>تابع فريقك الأول</b><br>مباريات الموقع بتظهر للفرق اللي بتتابعها بس.</p><a class="btn primary" href="account.html#teams">تابع فريقك</a></div>'
-          : '<div class="empty-state follow-gate"><p><b>سجّل دخولك وتابع فريقك</b><br>هتشوف مباريات فرقك بس، وتوصلك إشعاراتها.</p><a class="btn primary" href="account.html#teams">تسجيل الدخول وتابع فريقك</a></div>';
-        const c1 = $('results-count'); if (c1) c1.textContent = ''; return;
-      }
       const q = norm(state.q);
       const rows = all()
-        .filter((m) => followErr || isFollowed(m))
         .filter((m) => state.league === 'all' || m.league_key === state.league)
         .filter((m) => !state.fav || favSet.has(favKey(m)) || isFollowed(m))
         .filter((m) => !q || q.split(' ').every((w) => haystack(m).includes(w)));
