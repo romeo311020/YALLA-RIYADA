@@ -21,17 +21,22 @@
 <body>
   <div id="shared-header"></div>
   <main class="wrap page pd-page">
-    <span class="kicker">PREDICTOR</span>
-    <h1>توقعات المباريات</h1>
-    <p class="sub">توقّع النتيجة قبل ركلة البداية. نتيجة تامة = ٥ نقاط، الفائز وفرق الأهداف = ٣، الفائز بس = ١.</p>
-    <div class="pd-tabs" role="tablist">
-      <button type="button" class="active" data-pt="predict">توقّع</button>
-      <button type="button" data-pt="mine">توقعاتي</button>
-      <button type="button" data-pt="board">المتصدرين</button>
+    <section class="pq-hero" aria-labelledby="pq-title">
+      <div class="pq-trophy" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M20 8h24v16a12 12 0 0 1-24 0V8z"/><path d="M20 12H10v4a10 10 0 0 0 10 10M44 12h10v4a10 10 0 0 1-10 10"/><path d="M32 36v10M22 56h20M26 46h12v10H26z"/></svg></div>
+      <div class="pq-ht">
+        <span class="kicker">PREDICTOR</span>
+        <h1 id="pq-title">توقع واربح النقاط</h1>
+        <p class="sub">ضع توقعاتك للمباريات واجمع النقاط وتصدّر لوحة المشجعين. نتيجة دقيقة = ٥ نقاط، الفائز وفرق الأهداف = ٣، الفائز بس = ١.</p>
+      </div>
+      <div class="pq-stats" id="pq-stats" aria-live="polite"></div>
+    </section>
+    <div class="pq-tabs" role="tablist" aria-label="أقسام التوقعات">
+      <button type="button" role="tab" class="active" data-pt="predict" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.2"/></svg><span>توقّع</span></button>
+      <button type="button" role="tab" data-pt="mine" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>توقعاتي</span></button>
+      <button type="button" role="tab" data-pt="board" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v6a4 4 0 0 1-8 0V4zM8 6H4v1a3 3 0 0 0 3 3M16 6h4v1a3 3 0 0 1-3 3M12 14v4M8 20h8"/></svg><span>المتصدرين</span></button>
     </div>
-    <div class="pd-subtabs" id="pd-sub" hidden><button type="button" class="active" data-d="">كل الوقت</button><button type="button" data-d="7">آخر أسبوع</button></div>
-    <div id="pd-root" aria-live="polite"><p class="note">جارٍ التحميل…</p></div>
-    <p class="note">النقاط بتتحسب أوتوماتيك بعد نهاية المباراة. أي توقع يتعدّل بعد البداية بيتلغي.</p>
+    <div id="pd-root" class="pq-root" aria-live="polite"><p class="note">جارٍ التحميل…</p></div>
+    <p class="note pq-foot">النقاط بتتحسب أوتوماتيك بعد نهاية المباراة من النتيجة الحقيقية. أي توقع يتعدّل بعد البداية بيتلغي.</p>
   </main>
   <div id="shared-footer"></div>
   <script src="app.js"></script>
