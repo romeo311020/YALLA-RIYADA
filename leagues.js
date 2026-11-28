@@ -47,6 +47,8 @@
   document.title = `${meta.n} | يلا رياضة`;
   let cur = null;
   const ZMAP = { ucl: 'champ', uclq: 'champ', uel: 'uel', uecl: 'uecl', rel: 'rel' };
+  head.innerHTML = `<span class="lg-logo big"><img src="${logo(id)}" alt="" referrerpolicy="no-referrer"></span><div><h1>${esc(meta.n)}</h1><p class="sub" id="lg-season">${esc(meta.c)}</p></div><button type="button" class="mh-share inline" id="lg-share">${ico('share')} شارك</button><button type="button" class="lu-glass" id="lg-img" aria-label="شارك كصورة" title="شارك كصورة">${ico('share')}</button>`;
+  document.getElementById('lg-share').addEventListener('click', () => window.yrShareBloom({ type: 'team', title: meta.n, sub: 'الترتيب والهدافون', image: logo(id), tag: 'يلا رياضة', emoji: '🏆', url: location.href }));
   document.getElementById('lg-img').addEventListener('click', () => {
     if (!cur) return;
     const base = { logo: logo(id), title: meta.n, tag: 'يلا رياضة', url: location.href };
@@ -60,8 +62,6 @@
       window.yrShareImage({ ...base, type: 'scorers', sub: 'ترتيب الهدافين', rows });
     }
   });
-  head.innerHTML = `<span class="lg-logo big"><img src="${logo(id)}" alt="" referrerpolicy="no-referrer"></span><div><h1>${esc(meta.n)}</h1><p class="sub" id="lg-season">${esc(meta.c)}</p></div><button type="button" class="mh-share inline" id="lg-share">${ico('share')} شارك</button><button type="button" class="lu-glass" id="lg-img" aria-label="شارك كصورة" title="شارك كصورة">${ico('share')}</button>`;
-  document.getElementById('lg-share').addEventListener('click', () => window.yrShareBloom({ type: 'team', title: meta.n, sub: 'الترتيب والهدافون', image: logo(id), tag: 'يلا رياضة', emoji: '🏆', url: location.href }));
   const ZONE = (note) => { const t = String(note || '').toLowerCase(); if (!t) return ['', '']; if (/relegat/.test(t)) return ['rel', 'هبوط']; if (/conference/.test(t)) return ['uecl', 'دوري المؤتمر']; if (/europa/.test(t)) return ['uel', 'الدوري الأوروبي']; if (/champions/.test(t) && /qualif/.test(t)) return ['uclq', 'تصفيات دوري الأبطال']; if (/champions|promotion/.test(t)) return ['ucl', 'دوري الأبطال / صعود']; if (/round of|next round|knockout|final|play/.test(t)) return ['ucl', 'التأهل']; return ['', '']; };
   const formDots = (f) => String(f || '').slice(-5).split('').map((c) => `<i class="fd ${c}" title="${c}"></i>`).join('');
   const row = (t) => { const [z] = ZONE(t.note); const tg = t.team.id ? `a href="team.html?id=${t.team.id}"` : 'div'; return `<${tg} class="lg-r ${z}"><b class="rk">${nAr(t.rank)}</b><span class="tm">${https(t.team.logo) ? `<img src="${esc(https(t.team.logo))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}<span>${esc(tn(t.team.name))}</span></span><span>${nAr(t.played)}</span><span class="h">${nAr(t.win)}</span><span class="h">${nAr(t.draw)}</span><span class="h">${nAr(t.lose)}</span><span class="h gd">${nAr(t.gd)}</span><b class="pt">${nAr(t.points)}</b><span class="fm">${formDots(t.form)}</span></${tg.split(' ')[0]}>`; };
