@@ -3,6 +3,7 @@
   'use strict';
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const inline = (t) => esc(t)
+    .replace(/\s*\|+\s*/g, ' · ')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\[([^\]]+)\]\((https:\/\/[^\s)]+)\)/g, (m, a, u) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${a}</a>`);
   const url = (l) => { try { const u = new URL(l); return u.protocol === 'https:' && !/\s/.test(l) ? u : null; } catch { return null; } };
@@ -24,10 +25,47 @@
   };
   const yt = (id, vertical) => `<div class="emb emb-yt${vertical ? ' vert' : ''}"><iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0" loading="lazy" allowfullscreen allow="encrypted-media; picture-in-picture; fullscreen" title="فيديو"></iframe></div>`;
 
+  /* ---------- الجداول: | و || بتتحوّل لجدول HTML حقيقي (RTL) من غير ما نغيّر أي نص أو رقم ---------- */
+  const NUM = /^[\d٠-٩۰-۹.,٫٬%+\-–−:/\s]+$/;
+  const splitCells = (l) => l.trim().replace(/^\|+/, '').replace(/\|+\s*$/, '').split('|').map((c) => c.trim());
+  const isSep = (cells) => cells.length > 0 && cells.every((c) => /^:?-{2,}:?$/.test(c));
+  function toRows(lines) {
+    const rows = [];
+    lines.forEach((l) => { (l.includes('||') ? l.split('||') : [l]).forEach((piece) => { if (piece.trim() && piece.includes('|')) rows.push(splitCells(piece)); }); });
+    return rows;
+  }
+  function buildTable(lines) {
+    let rows = toRows(lines); if (rows.length < 2) return null;
+    let sepAt = rows.findIndex(isSep); if (sepAt >= 0) rows = rows.filter((r, i) => i !== sepAt);
+    const counts = {}; rows.forEach((r) => { counts[r.length] = (counts[r.length] || 0) + 1; });
+    const cols = Number(Object.keys(counts).sort((a, b) => counts[b] - counts[a] || b - a)[0]);
+    if (cols < 2 || counts[cols] < Math.ceil(rows.length * 0.6) || rows.length < 2) return null;
+    rows = rows.map((r) => { const o = r.slice(0, cols); if (r.length > cols) o[cols - 1] = r.slice(cols - 1).join(' '); while (o.length < cols) o.push(''); return o; });
+    const hasNum = (r) => r.some((c) => c && NUM.test(c));
+    const header = sepAt === 1 || sepAt === 0 || (!hasNum(rows[0]) && rows.slice(1).some(hasNum)) ? rows[0] : null;
+    const body = header ? rows.slice(1) : rows;
+    const colNum = Array.from({ length: cols }, (_, c) => body.length > 0 && body.every((r) => !r[c] || NUM.test(r[c])));
+    const nameCol = colNum.findIndex((x) => !x);
+    const th = header ? `<thead><tr>${header.map((h, c) => `<th scope="col"${colNum[c] ? ' class="n"' : ''}>${inline(h)}</th>`).join('')}</tr></thead>` : '';
+    const tb = body.map((r) => `<tr>${r.map((c, i) => `<td${header ? ` data-label="${esc(header[i])}"` : ''} class="${colNum[i] ? (i === 0 ? 'n rk' : 'n') : (i === nameCol ? 'nm' : '')}">${inline(c)}</td>`).join('')}</tr>`).join('');
+    return `<div class="art-tblw" role="region" tabindex="0" aria-label="جدول"><table class="art-tbl${cols >= 4 && header ? ' cards-m' : ''}" dir="rtl">${th}<tbody>${tb}</tbody></table></div>`;
+  }
+  // يجمّع الأسطر المتتالية اللي فيها | في جداول، وأي سطر | مش جدول بيتنضّف في inline
+  function withTables(src) {
+    const out = []; let grp = [];
+    const closeGrp = () => { if (!grp.length) return; const t = buildTable(grp); if (t) out.push({ html: t }); else grp.forEach((g) => out.push(g)); grp = []; };
+    src.forEach((raw) => {
+      const l = raw.trim();
+      if (l.includes('|') && !url(l) && !/^(#|>|!\[)/.test(l)) grp.push(l); else { closeGrp(); out.push(raw); }
+    });
+    closeGrp(); return out;
+  }
+
   function render(body) {
     const out = []; let list = null; let para = [];
     const flush = () => { if (para.length) { out.push(`<p>${inline(para.join(' '))}</p>`); para = []; } if (list) { out.push(`<ul>${list.map((x) => `<li>${inline(x)}</li>`).join('')}</ul>`); list = null; } };
-    String(body || '').replace(/\r/g, '').split('\n').forEach((raw) => {
+    withTables(String(body || '').replace(/\r/g, '').split('\n')).forEach((raw) => {
+      if (raw && typeof raw === 'object') { flush(); out.push(raw.html); return; }
       const l = raw.trim();
       if (!l) { flush(); return; }
       let m; const u = url(l);

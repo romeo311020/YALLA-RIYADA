@@ -67,12 +67,12 @@
     const [first, ...rest] = list;
     host.className = '';
     host.innerHTML = chips + (first ? featureCard(first) : '') + (rest.length ? `<div class="news-grid">${rest.map(manualCard).join('')}</div>` : '')
-      + (!first && !apiHtml ? '<p class="note">لا توجد أخبار حاليًا.</p>' : '') + apiHtml;
+      + (!first && !apiHtml ? (window.yrEmpty ? window.yrEmpty('matches', 'لا توجد أخبار حاليًا', 'ارجع بعد شوية، بنحدّث الأخبار باستمرار.') : '<p class="note">لا توجد أخبار حاليًا.</p>') : '') + apiHtml;
   };
   async function loadNews() {
-    if (!db) { host.innerHTML = '<p class="note">إعدادات Supabase غير مكتملة. لا يمكن تحميل الأخبار حاليًا.</p>'; return; }
+    if (!db) { host.innerHTML = window.yrEmpty ? window.yrEmpty('error', 'تعذّر تحميل الأخبار', 'إعدادات الاتصال غير مكتملة.') : '<p class="note">لا يمكن تحميل الأخبار حاليًا.</p>'; return; }
     host.setAttribute('aria-busy', 'true');
-    host.innerHTML = '<p class="note">جارٍ تحميل آخر الأخبار الرياضية...</p>';
+    host.innerHTML = '<div class="skeleton-list" aria-hidden="true"><div></div><div></div><div></div></div>';
     // أخبار الموقع الحصرية تظهر فورًا، وأخبار الصحافة تتحمّل بعدها (فشلها أو بطؤها لا يعطّل الصفحة)
     let r = await db.from('news').select('id,title,body,image_url,source_url,created_at,category,excerpt').eq('is_published', true).order('created_at', { ascending: false }).limit(30);
     if (r.error) r = await db.from('news').select('id,title,body,image_url,source_url,created_at').eq('is_published', true).order('created_at', { ascending: false }).limit(30);

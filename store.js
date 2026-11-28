@@ -21,7 +21,7 @@
   async function runStore() {
     const { data, error } = await db.from('products').select('id,name,category,description,price,image_url').eq('is_published', true).order('created_at', { ascending: false });
     root.removeAttribute('aria-busy');
-    if (error) { root.innerHTML = `<p class="note">تعذّر تحميل المنتجات: ${esc(error.message)}</p>`; return; }
+    if (error) { root.innerHTML = window.yrEmpty ? window.yrEmpty('error', 'تعذّر تحميل المنتجات', esc(error.message)) : `<p class="note">تعذّر تحميل المنتجات: ${esc(error.message)}</p>`; return; }
     const items = data || [];
     const cats = [...new Set(items.map((p) => p.category).filter(Boolean))];
     // تطبيع عربي للبحث: يتجاهل التشكيل والهمزات والتاء المربوطة
@@ -51,7 +51,7 @@
         const img = https(p.image_url);
         return `<a class="product-card" style="--i:${Math.min(i, 11)}" href="product.html?id=${encodeURIComponent(p.id)}">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<div class="product-ph" aria-hidden="true">◈</div>'}
           <div class="product-info"><strong>${esc(p.name)}</strong>${p.category ? `<small>${esc(p.category)}</small>` : ''}<b>${esc(price(p.price))}</b></div></a>`;
-      }).join('') || `<div class="empty-state"><span aria-hidden="true">🔍</span><h3>${items.length ? 'لا توجد نتائج مطابقة' : 'لا توجد منتجات حاليًا'}</h3>${items.length ? '<p class="note">جرّب كلمة تانية أو امسح الفلاتر.</p><button type="button" class="btn outline" id="store-reset">مسح الفلاتر</button>' : ''}</div>`;
+      }).join('') || (window.yrEmpty ? window.yrEmpty(items.length ? 'search' : 'matches', items.length ? 'لا توجد نتائج مطابقة' : 'لا توجد منتجات حاليًا', items.length ? 'جرّب كلمة تانية أو امسح الفلاتر.' : '', items.length ? '<button type="button" class="btn outline" id="store-reset">مسح الفلاتر</button>' : '') : `<div class="empty-state"><span aria-hidden="true">🔍</span><h3>${items.length ? 'لا توجد نتائج مطابقة' : 'لا توجد منتجات حاليًا'}</h3>${items.length ? '<p class="note">جرّب كلمة تانية أو امسح الفلاتر.</p><button type="button" class="btn outline" id="store-reset">مسح الفلاتر</button>' : ''}</div>`);
     };
     const input = $('store-search'); const clear = $('store-clear'); let timer;
     input.addEventListener('input', () => { clear.hidden = !input.value; clearTimeout(timer); timer = setTimeout(() => { state.q = input.value; draw(); }, 150); });
@@ -68,10 +68,10 @@
 
   async function runProduct() {
     const id = new URLSearchParams(location.search).get('id') || '';
-    if (!/^[0-9a-f-]{36}$/i.test(id)) { root.removeAttribute('aria-busy'); root.innerHTML = '<p class="note">المنتج غير موجود. <a href="store.html">العودة للمتجر</a></p>'; return; }
+    if (!/^[0-9a-f-]{36}$/i.test(id)) { root.removeAttribute('aria-busy'); root.innerHTML = window.yrEmpty ? window.yrEmpty('search', 'المنتج غير موجود', '', '<a class="btn outline" href="store.html">العودة للمتجر</a>') : '<p class="note">المنتج غير موجود. <a href="store.html">العودة للمتجر</a></p>'; return; }
     const { data: p, error } = await db.from('products').select('*').eq('id', id).eq('is_published', true).maybeSingle();
     root.removeAttribute('aria-busy');
-    if (error || !p) { root.innerHTML = '<p class="note">المنتج غير متاح. <a href="store.html">العودة للمتجر</a></p>'; return; }
+    if (error || !p) { root.innerHTML = window.yrEmpty ? window.yrEmpty('error', 'المنتج غير متاح', '', '<a class="btn outline" href="store.html">العودة للمتجر</a>') : '<p class="note">المنتج غير متاح. <a href="store.html">العودة للمتجر</a></p>'; return; }
     document.title = `${p.name} | يلا رياضة`;
     window.yrProductShare = () => window.yrShareBloom({ type: 'product', title: p.name, sub: p.category || '', price: price(p.price), image: https(p.image_url), emoji: '🛍️', tag: 'متجر يلا رياضة', url: location.href.split('#')[0] });
     const { data: sess } = await db.auth.getSession();

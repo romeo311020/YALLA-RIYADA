@@ -1730,3 +1730,30 @@ article.match.mx.is-followed{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--
 .md-social{margin-top:14px}
 @media(max-width:560px){.dq{gap:6px}.dq-b{padding:0 14px;flex:1;justify-content:center}}
 @media(max-width:480px){.st-seg{gap:3px;padding:4px}.st-seg button{padding:0 6px;gap:5px;font-size:13px;min-width:0}.st-seg button em{padding:2px 6px;min-width:0}}
+
+/* v123 — جداول المقالات (RTL حقيقي، متجاوبة، بطاقات على الموبايل) */
+.art-tblw{margin:22px 0;border:1px solid var(--line);border-radius:16px;background:var(--panel);overflow-x:auto;-webkit-overflow-scrolling:touch;direction:rtl}
+.art-tblw:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.art-tbl{width:100%;min-width:100%;border-collapse:separate;border-spacing:0;direction:rtl;text-align:right;font-size:15px;line-height:1.6}
+.art-tbl th,.art-tbl td{padding:12px 14px;text-align:right;vertical-align:middle;border-bottom:1px solid var(--line)}
+.art-tbl thead th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-size:13px;font-weight:900;white-space:nowrap}
+.art-tbl tbody tr:last-child td{border-bottom:0}
+.art-tbl tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--panel2) 55%,transparent)}
+.art-tbl tbody tr:hover td{background:color-mix(in srgb,var(--acc) 9%,transparent)}
+.art-tbl td.nm{font-weight:900;color:var(--text);min-width:130px;unicode-bidi:isolate}
+.art-tbl .n{text-align:center;direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums;white-space:nowrap}
+.art-tbl th.n{direction:rtl;text-align:center}
+.art-tbl td.n{font-weight:800}
+.art-tbl td.rk{width:56px;color:var(--muted)}
+.art-tbl tbody tr:nth-child(-n+3) td.rk{color:var(--acc);font-weight:900}
+.art-tbl td.n:last-child{color:var(--acc);font-weight:900}
+@media(max-width:560px){
+  .art-tbl{font-size:14px}.art-tbl th,.art-tbl td{padding:10px 10px}
+  .art-tbl.cards-m,.art-tbl.cards-m tbody{display:block}.art-tbl.cards-m thead{display:none}
+  .art-tblw:has(.cards-m){border:0;background:transparent;overflow:visible}
+  .art-tbl.cards-m tr{display:block;margin-bottom:10px;border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden}
+  .art-tbl.cards-m td,.art-tbl.cards-m tbody tr:nth-child(even) td{display:flex;justify-content:space-between;align-items:center;gap:12px;background:transparent;text-align:right;border-bottom:1px solid var(--line)}
+  .art-tbl.cards-m td:last-child{border-bottom:0}
+  .art-tbl.cards-m td::before{content:attr(data-label);color:var(--muted);font-size:12.5px;font-weight:800;flex:none}
+  .art-tbl.cards-m td.n{direction:rtl;text-align:left}
+}
