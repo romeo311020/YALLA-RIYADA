@@ -328,8 +328,9 @@
     try {
       say('جارٍ جلب البطولات…'); const L = await step({ step: 'leagues' });
       let total = 0; const list = L.leagues || [];
-      for (let i = 0; i < list.length; i++) { say(`فرق ${list[i].ar} (${i + 1}/${list.length})…`); const r = await step({ step: 'teams', leagueId: list[i].id }); total += r.teams || 0; }
-      say(`تمام ✓ ${list.length} بطولة و${total} فريق (بتتكرر الفرق بين البطولات).` + ((L.missing || []).length ? ` مش متاحة حاليًا من المزوّد: ${L.missing.join('، ')}.` : ''));
+      const tl = list.filter((x) => x.t); for (let i = 0; i < tl.length; i++) { say(`فرق ${tl[i].ar} (${i + 1}/${tl.length})…`); const r = await step({ step: 'teams', leagueId: tl[i].id }); total += r.teams || 0; }
+      await step({ step: 'prune', ids: tl.map((x) => x.id) });
+      say(`تمام ✓ ${list.length} بطولة و${total} فريق من الدوريات الكبرى.` + ((L.missing || []).length ? ` مش متاحة حاليًا من المزوّد: ${L.missing.join('، ')}.` : ''));
     } catch (err) { say('فشل: ' + (err.message || err)); }
     catBusy = false; btn.disabled = false;
   });
