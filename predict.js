@@ -8,7 +8,7 @@
   const nAr = (n) => Number(n).toLocaleString('ar-EG');
   const tn = (n) => (window.YR_NAMES ? window.YR_NAMES.team(n) : n);
   const ico = (n) => (window.yrIco ? window.yrIco(n) : '');
-  const MAXG = 20; const SR_MIN = 3_000_000_000; // أرقام SportSRC مش بتتحسب تلقائيًا
+  const MAXG = 20;
   const crest = (name, logo) => `<span class="pq-cr">${https(logo) ? `<img src="${esc(https(logo))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '⚽'}</span><b>${esc(tn(name))}</b>`;
   const dtf = (iso, o) => { try { return new Date(iso).toLocaleString('ar-EG', { ...o, timeZone: 'Africa/Cairo' }); } catch { return ''; } };
   const when = (iso) => dtf(iso, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
@@ -92,15 +92,21 @@
     for (const d of [cairoDay(0), cairoDay(1), cairoDay(2)]) {
       try { const { data } = await db.functions.invoke('football-matches', { body: { action: 'fixtures', sport: 'football', date: d } }); (data?.fixtures || []).forEach((f) => all.push(f)); } catch { /* يوم واحد فاشل ما يوقفش الباقي */ }
     }
-    if (!all.length) {
+    if (!all.length) { // 2) الأرشيف المحفوظ + المباريات اللي الأدمن حفظها
+      try { const { data } = await db.rpc('predictable_fixtures'); (data || []).forEach((r) => all.push({ fixture_id: r.fixture_id, kickoff: r.kickoff, home_team: r.home_team, away_team: r.away_team, home_logo: r.home_logo, away_logo: r.away_logo, league: r.league, status: 'scheduled' })); } catch { /* الدالة لسه متثبتتش */ }
       try {
         const { data } = await db.from('fixture_overrides').select('fixture_id,status,kickoff,snapshot').not('snapshot', 'is', null).limit(300);
         (data || []).forEach((o) => { if (o.snapshot) all.push({ ...o.snapshot, fixture_id: o.fixture_id, status: o.status || o.snapshot.status, kickoff: o.kickoff || o.snapshot.kickoff }); });
       } catch { /* بدون نسخ */ }
     }
+    if (!all.length) { // 3) SportSRC (نتيجتها بتتحسب من قائمتها بعد النهاية)
+      for (const d of [cairoDay(0), cairoDay(1), cairoDay(2)]) {
+        try { const { data } = await db.functions.invoke('sportsrc', { body: { action: 'fixtures', date: d } }); (data?.fixtures || []).forEach((f) => all.push(f)); } catch { /* اختياري */ }
+      }
+    }
     const seen = new Set(); const now = Date.now();
     return all.filter((f) => f.fixture_id && !seen.has(f.fixture_id) && seen.add(f.fixture_id))
-      .filter((f) => Number(f.fixture_id) < SR_MIN && f.status === 'scheduled' && f.kickoff && new Date(f.kickoff).getTime() > now && f.home_team && f.away_team)
+      .filter((f) => f.status === 'scheduled' && f.kickoff && new Date(f.kickoff).getTime() > now && f.home_team && f.away_team)
       .sort((x, y) => new Date(x.kickoff) - new Date(y.kickoff));
   }
   async function pagePredict(root) {
@@ -114,6 +120,7 @@
 
   // ---------- توقعاتي ----------
   const state = (r) => (r.void ? 'void' : !r.settled ? 'wait' : r.points > 0 ? 'ok' : 'bad');
+  const waitTxt = (r) => (new Date(r.kickoff).getTime() < Date.now() - 110 * 60000 ? 'بانتظار حساب النتيجة' : 'في الانتظار');
   const CHIP = { ok: ['ناجح', 'ok'], bad: ['خاطئ', 'bad'], void: ['ملغي', 'void'], wait: ['في الانتظار', 'wait'] };
   let mineFilter = 'all';
   async function pageMine(root) {
@@ -132,7 +139,7 @@
     const draw = () => {
       const list = rows.filter((r) => mineFilter === 'all' || state(r) === mineFilter);
       $('.pq-list', root).innerHTML = list.length ? list.map((r) => { const st = state(r); const [t, c] = CHIP[st];
-        return `<article class="pq-card his ${c}"><div class="pq-top"><span class="pq-chip ${c}">${st === 'ok' ? ico('check') : st === 'bad' ? '✕' : ''} ${t}</span><span class="pq-lg">${esc(r.league || '')} · ${esc(dtf(r.kickoff, { day: 'numeric', month: 'numeric', year: 'numeric' }))}</span></div>
+        return `<article class="pq-card his ${c}"><div class="pq-top"><span class="pq-chip ${c}">${st === 'ok' ? ico('check') : st === 'bad' ? '✕' : ''} ${st === 'wait' ? waitTxt(r) : t}</span><span class="pq-lg">${esc(r.league || '')} · ${esc(dtf(r.kickoff, { day: 'numeric', month: 'numeric', year: 'numeric' }))}</span></div>
           <div class="pq-teams"><div class="pq-t">${crest(r.home_team, r.home_logo)}</div>
           <div class="pq-mid">${r.settled ? `<div class="pq-fin"><span>${nAr(r.result_home)}</span><i>-</i><span>${nAr(r.result_away)}</span></div>` : '<strong>VS</strong>'}<small class="pq-pk">توقعك: <span class="pq-n">${nAr(r.pick_home)}</span> - <span class="pq-n">${nAr(r.pick_away)}</span></small></div>
           <div class="pq-t">${crest(r.away_team, r.away_logo)}</div></div>
@@ -193,7 +200,7 @@
   // ---------- صندوق التوقع داخل صفحة المباراة ----------
   window.yrPredictMount = async (m) => {
     try {
-      if (!db || !m || m.status !== 'scheduled' || !m.fixture_id || Number(m.fixture_id) >= SR_MIN || !m.kickoff || new Date(m.kickoff).getTime() <= Date.now()) return;
+      if (!db || !m || m.status !== 'scheduled' || !m.fixture_id || !m.kickoff || new Date(m.kickoff).getTime() <= Date.now()) return;
       if ($('#pd-box')) return;
       const slot = $('#pd-slot') || $('#match-hero'); if (!slot) return;
       const box = document.createElement('div'); box.id = 'pd-box'; box.className = 'pd-launch';
