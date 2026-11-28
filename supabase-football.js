@@ -392,8 +392,7 @@
     const gridOk = [...home.start, ...away.start].every((p) => /^\d+:\d+$/.test(String(p.grid || '')));
     const H = tn(m.home_team); const A = tn(m.away_team);
     const pitch = gridOk
-      ? `<div class="team-switch" role="tablist" aria-label="اختر الفريق"><button type="button" class="ts-btn active" data-lt="home" aria-selected="true"><span>${escapeHtml(H)}</span><b dir="ltr">${escapeHtml(home.formation)}</b></button><button type="button" class="ts-btn" data-lt="away" aria-selected="false"><span>${escapeHtml(A)}</span><b dir="ltr">${escapeHtml(away.formation)}</b></button></div>
-         <div class="lu-share"><button type="button" class="btn outline" id="lu-img">📷 شارك التشكيلة كصورة</button></div>
+      ? `<div class="lu-bar"><div class="team-switch" role="tablist" aria-label="اختر الفريق"><button type="button" class="ts-btn active" data-lt="home" aria-selected="true"><span>${escapeHtml(H)}</span><b dir="ltr">${escapeHtml(home.formation)}</b></button><button type="button" class="ts-btn" data-lt="away" aria-selected="false"><span>${escapeHtml(A)}</span><b dir="ltr">${escapeHtml(away.formation)}</b></button></div><button type="button" class="lu-glass" id="lu-img" aria-label="شارك التشكيلة كصورة" title="شارك كصورة"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/></svg></button></div>
          <div class="pitch-stage">${pitchBox(home, true, false, H)}${pitchBox(away, false, true, A)}</div>`
       : `<div class="starters">${[[H, home], [A, away]].map(([n, l]) => `<div class="bench"><h3>${escapeHtml(n)} <small dir="ltr">${escapeHtml(l.formation)}</small></h3><ul>${l.start.map((p) => `<li${pAttrs(p)} class="${p.id > 0 ? 'clickable' : ''}"><span class="sq-img sm">${photoImg(p.id)}</span><span class="pl-no sm">${escapeHtml(p.number ?? '')}</span>${escapeHtml(shortName(p.name))}</li>`).join('')}</ul></div>`).join('')}</div>`;
     return `${pitch}<div class="benches">${benchList(`احتياط ${H}`, home)}${benchList(`احتياط ${A}`, away)}</div>`;
@@ -446,7 +445,7 @@
       const side = (document.querySelector('.ts-btn.active') || {}).dataset?.lt === 'away' ? 'away' : 'home';
       const l = (res.lineups || []).find((x) => x.team_id === (side === 'away' ? m.away_id : m.home_id)); if (!l) return;
       const nm = tn(side === 'away' ? m.away_team : m.home_team);
-      window.yrShareImage({ type: 'lineup', title: nm, formation: l.formation, sub: `${tn(m.home_team)} × ${tn(m.away_team)}${l.formation ? ' · ' + l.formation : ''}`, logo: side === 'away' ? m.away_logo : m.home_logo, players: l.start.map((p) => ({ name: shortName(pn(p.name)), number: p.number, grid: p.grid })), tag: 'التشكيلة', url: location.href });
+      window.yrShareImage({ type: 'lineup', title: nm, formation: l.formation, sub: `${tn(m.home_team)} × ${tn(m.away_team)}${l.formation ? ' · ' + l.formation : ''}`, logo: side === 'away' ? m.away_logo : m.home_logo, players: l.start.map((p) => ({ name: shortName(pn(p.name)), number: p.number, grid: p.grid, pos: posAr(p.pos), photo: photoOf(p.id) })), tag: 'التشكيلة', url: location.href });
     });
     $('tab-stats').innerHTML = renderStats(m, res);
     if ($('tab-info')) $('tab-info').innerHTML = renderInfo(m, res, manualInfo);

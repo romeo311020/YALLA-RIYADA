@@ -60,7 +60,7 @@
       window.yrShareImage({ ...base, type: 'scorers', sub: 'ترتيب الهدافين', rows });
     }
   });
-  head.innerHTML = `<span class="lg-logo big"><img src="${logo(id)}" alt="" referrerpolicy="no-referrer"></span><div><h1>${esc(meta.n)}</h1><p class="sub" id="lg-season">${esc(meta.c)}</p></div><button type="button" class="mh-share inline" id="lg-share">${ico('share')} شارك</button><button type="button" class="mh-share inline" id="lg-img">${ico('share')} صورة</button>`;
+  head.innerHTML = `<span class="lg-logo big"><img src="${logo(id)}" alt="" referrerpolicy="no-referrer"></span><div><h1>${esc(meta.n)}</h1><p class="sub" id="lg-season">${esc(meta.c)}</p></div><button type="button" class="mh-share inline" id="lg-share">${ico('share')} شارك</button><button type="button" class="lu-glass" id="lg-img" aria-label="شارك كصورة" title="شارك كصورة">${ico('share')}</button>`;
   document.getElementById('lg-share').addEventListener('click', () => window.yrShareBloom({ type: 'team', title: meta.n, sub: 'الترتيب والهدافون', image: logo(id), tag: 'يلا رياضة', emoji: '🏆', url: location.href }));
   const ZONE = (note) => { const t = String(note || '').toLowerCase(); if (!t) return ['', '']; if (/relegat/.test(t)) return ['rel', 'هبوط']; if (/conference/.test(t)) return ['uecl', 'دوري المؤتمر']; if (/europa/.test(t)) return ['uel', 'الدوري الأوروبي']; if (/champions/.test(t) && /qualif/.test(t)) return ['uclq', 'تصفيات دوري الأبطال']; if (/champions|promotion/.test(t)) return ['ucl', 'دوري الأبطال / صعود']; if (/round of|next round|knockout|final|play/.test(t)) return ['ucl', 'التأهل']; return ['', '']; };
   const formDots = (f) => String(f || '').slice(-5).split('').map((c) => `<i class="fd ${c}" title="${c}"></i>`).join('');

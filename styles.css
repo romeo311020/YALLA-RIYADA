@@ -1760,3 +1760,10 @@ article.match.mx.is-followed{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--
 /* v124 مشاركة التشكيلة */
 .lu-share{display:flex;justify-content:center;margin:10px 0 4px}
 .lu-share .btn{min-height:44px}
+.lu-bar{display:flex;align-items:center;gap:10px}
+.lu-bar .team-switch{flex:1;min-width:0}
+.lu-glass{flex:none;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:var(--text);cursor:pointer;border:1px solid rgba(255,255,255,.35);background:linear-gradient(145deg,rgba(255,255,255,.28),rgba(255,255,255,.06));-webkit-backdrop-filter:blur(10px) saturate(1.4);backdrop-filter:blur(10px) saturate(1.4);box-shadow:0 4px 14px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.5);position:relative;overflow:hidden;transition:transform .15s}
+.lu-glass::after{content:"";position:absolute;top:-60%;left:-40%;width:60%;height:220%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);transform:rotate(25deg);animation:luShine 3.5s ease-in-out infinite}
+.lu-glass:active{transform:scale(.92)}
+@keyframes luShine{0%,60%{left:-60%}100%{left:140%}}
+@media (prefers-reduced-motion:reduce){.lu-glass::after{animation:none}}

@@ -211,7 +211,7 @@
         const cy = y + h / 2; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = i < 3 ? th.a : th.mute; c.font = font(900, Math.min(40 * s, h * 0.5)); c.fillText(nAr(r.rank != null ? r.rank : i + 1), R - 38 * s, cy + 2 * s);
         const ir = Math.min(h * 0.36, 30 * s); const ix = R - 100 * s;
         if (d.type === 'scorers') { c.save(); c.fillStyle = 'rgba(255,255,255,.92)'; c.beginPath(); c.arc(ix - 8 * s, cy, ir + 4 * s, 0, 7); c.fill(); c.clip(); if (imgs[i]) cover(c, imgs[i], ix - 8 * s - ir - 4 * s, cy - ir - 4 * s, (ir + 4 * s) * 2, (ir + 4 * s) * 2); c.restore(); }
-        else if (imgs[i]) { c.save(); c.fillStyle = 'rgba(255,255,255,.95)'; c.beginPath(); c.arc(ix, cy, ir, 0, 7); c.fill(); c.restore(); contain(c, imgs[i], ix - ir * 0.72, cy - ir * 0.72, ir * 1.44, ir * 1.44); }
+        else { c.save(); c.fillStyle = 'rgba(255,255,255,.95)'; c.beginPath(); c.arc(ix, cy, ir, 0, 7); c.fill(); c.restore(); if (imgs[i]) contain(c, imgs[i], ix - ir * 0.72, cy - ir * 0.72, ir * 1.44, ir * 1.44); else { c.fillStyle = '#0b1f14'; c.font = font(900, ir); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(r.name || '').trim().replace(/^ال/, '').charAt(0), ix, cy + 2 * s); c.textBaseline = 'alphabetic'; } }
         const nx = R - (d.type === 'scorers' ? 160 * s : 148 * s); c.textAlign = 'right'; c.fillStyle = th.t; let nf = Math.min(36 * s, h * 0.44); c.font = font(900, nf); const nmax = nx - (L + (d.type === 'scorers' ? 250 : 380) * s);
         while (c.measureText(r.name).width > nmax && nf > 20 * s) { nf -= 2 * s; c.font = font(900, nf); }
         if (d.type === 'scorers') { c.fillText(r.name, nx, cy - h * 0.12); c.font = font(700, Math.min(24 * s, h * 0.3)); c.fillStyle = th.mute; c.fillText(r.team || '', nx - (timgs[i] ? 34 * s : 0), cy + h * 0.24); if (timgs[i]) contain(c, timgs[i], nx - 28 * s, cy + h * 0.24 - 14 * s, 28 * s, 28 * s); }
@@ -229,13 +229,20 @@
       c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 3.5 * s; rr(c, px + 14 * s, py + 14 * s, pw - 28 * s, ph - 28 * s, 18 * s); c.stroke(); c.beginPath(); c.moveTo(px + 14 * s, py + ph / 2); c.lineTo(px + pw - 14 * s, py + ph / 2); c.stroke(); c.beginPath(); c.arc(px + pw / 2, py + ph / 2, 80 * s, 0, 7); c.stroke();
       c.strokeRect(px + pw * 0.28, py + 14 * s, pw * 0.44, ph * 0.13); c.strokeRect(px + pw * 0.28, py + ph - 14 * s - ph * 0.13, pw * 0.44, ph * 0.13);
       const rowsM = new Map(); (d.players || []).forEach((p) => { const [r, k] = String(p.grid || '').split(':').map(Number); if (!Number.isFinite(r)) return; if (!rowsM.has(r)) rowsM.set(r, []); rowsM.get(r).push({ ...p, k }); });
-      const rmax = Math.max(...rowsM.keys(), 1); const cr = 36 * s;
-      rowsM.forEach((arr, r) => { arr.sort((a, b) => a.k - b.k); arr.forEach((p, i) => {
-        const x = px + pw * (arr.length === 1 ? 0.5 : 0.14 + (i / (arr.length - 1)) * 0.72); const t = rmax === 1 ? 0 : (r - 1) / (rmax - 1); const y = py + ph * (0.9 - t * 0.78);
-        c.save(); c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 16 * s; c.fillStyle = r === 1 ? '#f5f5f5' : th.a; c.beginPath(); c.arc(x, y, cr, 0, 7); c.fill(); c.restore();
-        c.fillStyle = r === 1 ? '#0b1f14' : th.on; c.font = font(900, 34 * s); c.textAlign = 'center'; c.textBaseline = 'middle'; c.direction = 'ltr'; c.fillText(String(p.number ?? ''), x, y + 2 * s); c.direction = 'rtl'; c.textBaseline = 'alphabetic';
-        c.font = font(800, 25 * s); const nm = String(p.name || ''); const w = Math.min(c.measureText(nm).width + 22 * s, 190 * s); c.fillStyle = 'rgba(4,16,9,.78)'; rr(c, x - w / 2, y + cr + 8 * s, w, 38 * s, 19 * s); c.fill(); c.fillStyle = '#fff'; c.fillText(wrap(c, nm, w - 14 * s, 1)[0] || nm, x, y + cr + 35 * s);
-      }); });
+      const rmax = Math.max(...rowsM.keys(), 1); const cr = 46 * s;
+      const all = []; rowsM.forEach((arr, r) => arr.sort((x, y) => x.k - y.k).forEach((p, i) => all.push({ p, r, i, n: arr.length })));
+      const phs = await Promise.all(all.map((q) => getImg(q.p.photo)));
+      all.forEach((q, idx) => {
+        const { p, r, i, n } = q; const x = px + pw * (n === 1 ? 0.5 : 0.15 + (i / (n - 1)) * 0.7); const t = rmax === 1 ? 0 : (r - 1) / (rmax - 1); const y = py + ph * (0.86 - t * 0.74);
+        c.save(); c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 18 * s; c.fillStyle = r === 1 ? '#f5f5f5' : th.a; c.beginPath(); c.arc(x, y, cr + 4 * s, 0, 7); c.fill(); c.restore();
+        c.save(); c.beginPath(); c.arc(x, y, cr, 0, 7); c.clip(); c.fillStyle = '#1b3a2a'; c.fillRect(x - cr, y - cr, cr * 2, cr * 2);
+        if (phs[idx]) cover(c, phs[idx], x - cr, y - cr, cr * 2, cr * 2); else { c.fillStyle = '#fff'; c.font = font(900, 40 * s); c.textAlign = 'center'; c.textBaseline = 'middle'; c.direction = 'ltr'; c.fillText(String(p.number ?? ''), x, y + 2 * s); c.direction = 'rtl'; c.textBaseline = 'alphabetic'; }
+        c.restore();
+        const bx = x + cr * 0.78, by = y - cr * 0.78; c.fillStyle = r === 1 ? '#0b1f14' : th.a; c.beginPath(); c.arc(bx, by, 19 * s, 0, 7); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2.5 * s; c.stroke();
+        c.fillStyle = r === 1 ? '#fff' : th.on; c.font = font(900, 22 * s); c.textAlign = 'center'; c.textBaseline = 'middle'; c.direction = 'ltr'; c.fillText(String(p.number ?? ''), bx, by + 1 * s); c.direction = 'rtl'; c.textBaseline = 'alphabetic';
+        c.font = font(800, 24 * s); const nm = String(p.name || ''); const w = Math.min(c.measureText(nm).width + 24 * s, 200 * s); c.fillStyle = 'rgba(4,16,9,.82)'; rr(c, x - w / 2, y + cr + 10 * s, w, 36 * s, 18 * s); c.fill(); c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText(wrap(c, nm, w - 14 * s, 1)[0] || nm, x, y + cr + 36 * s);
+        const ps = p.pos || (r === 1 ? 'حارس مرمى' : r === rmax ? 'مهاجم' : r === 2 ? 'مدافع' : 'وسط'); c.font = font(700, 19 * s); c.fillStyle = 'rgba(255,255,255,.82)'; c.fillText(ps, x, y + cr + 66 * s);
+      });
     }
     await footerPro(c, W, H, th, d, s, true);
   }
