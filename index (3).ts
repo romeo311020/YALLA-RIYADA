@@ -27,6 +27,29 @@ Deno.serve(async (req) => {
   const { createClient } = await import('npm:@supabase/supabase-js@2');
   const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 
+  // تذكيرات المباريات: بتتنادى من cron كل 5 دقايق. بتبعت اللي كيك-أوفه خلال 12 دقيقة مرة واحدة بس (محتواها من الجدول مش من الطلب)
+  try {
+    const early = await req.clone().json().catch(() => null);
+    if (early?.action === 'remind') {
+      const now = Date.now();
+      const due = await admin.from('match_reminders').select('user_id,fixture_id,title,kickoff').is('sent_at', null).gt('kickoff', new Date(now - 5 * 60000).toISOString()).lt('kickoff', new Date(now + 12 * 60000).toISOString()).limit(300);
+      const rows = (due.data ?? []) as Any[]; if (!rows.length) return json({ sent: 0, due: 0 });
+      const claimed = await admin.from('match_reminders').update({ sent_at: new Date().toISOString() }).is('sent_at', null).in('fixture_id', rows.map((r) => r.fixture_id)).in('user_id', [...new Set(rows.map((r) => r.user_id))]).select('user_id,fixture_id,title');
+      const mine = (claimed.data ?? []) as Any[]; if (!mine.length) return json({ sent: 0, due: rows.length });
+      const subs = await admin.from('push_subscriptions').select('id,user_id,endpoint,p256dh,auth').in('user_id', [...new Set(mine.map((r) => r.user_id))]);
+      let sent = 0; const dead: string[] = [];
+      for (const r of mine) {
+        const payload = JSON.stringify({ title: 'المباراة بتبدأ بعد قليل ⚽', body: String(r.title).slice(0, 120), url: `match.html?fixture=${Number(r.fixture_id)}&sport=football`, tag: `rem-${r.fixture_id}` });
+        for (const sub of ((subs.data ?? []) as Any[]).filter((x) => x.user_id === r.user_id)) {
+          try { await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload, { TTL: 900 }); sent++; }
+          catch (e) { const code = (e as Any)?.statusCode; if (code === 404 || code === 410) dead.push(sub.id); }
+        }
+      }
+      if (dead.length) await admin.from('push_subscriptions').delete().in('id', dead);
+      return json({ sent, due: rows.length });
+    }
+  } catch (e) { console.error('remind', e); return json({ error: 'تعذّر إرسال التذكيرات.' }, 500); }
+
   const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
   if (!token) return json({ error: 'سجّل الدخول أولًا.' }, 401);
   const { data: who, error: we } = await admin.auth.getUser(token);
