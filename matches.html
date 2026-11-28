@@ -2,7 +2,7 @@
     <section class="mhero" aria-labelledby="mhero-t">
       <div class="mhero-bg" aria-hidden="true"></div>
       <svg class="mhero-ball" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="#fff"/><path d="M32 20l10 7-4 12H26l-4-12z" fill="#0f172a"/><path d="M32 20V6M42 27l14-5M38 39l8 11M26 39l-8 11M22 27L8 22" stroke="#0f172a" stroke-width="2.4" fill="none" stroke-linecap="round"/><circle cx="32" cy="32" r="29" fill="none" stroke="#cbd5e1" stroke-width="1.5"/></svg>
-      <div class="mhero-tx"><h1 id="mhero-t">المباريات</h1><p id="mc-sub">تابع جميع المباريات والبطولات</p></div>
+      <div class="mhero-tx"><h1 id="mhero-t">جميع المباريات</h1><p id="mc-sub">تابع كل المباريات لحظة بلحظة</p></div>
     </section>
 
     <div class="mc-toolbar">
@@ -20,6 +20,12 @@
       </div>
     </div>
 
+    <div class="dq" role="group" aria-label="اختيار سريع لليوم">
+      <button type="button" class="dq-b" data-q="0">اليوم</button>
+      <button type="button" class="dq-b" data-q="-1">أمس</button>
+      <button type="button" class="dq-b" data-q="1">غدًا</button>
+      <label class="dq-b dq-date" for="day-pick"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>التاريخ</span><input type="date" id="day-pick" aria-label="اختر تاريخ"></label>
+    </div>
     <div class="daybar" role="group" aria-label="اختر اليوم">
       <button class="dnav" id="day-next-btn" type="button" aria-label="الأيام السابقة">›</button>
       <div class="days" id="day-strip"></div>
@@ -29,6 +35,7 @@
       <button type="button" class="lg-open" id="lg-open" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><b id="lg-cur">كل البطولات</b><i class="sc-chev" aria-hidden="true"></i></button>
       <button type="button" class="fav-filter" id="fav-filter" aria-pressed="false" aria-label="المفضلة فقط"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.7 5.5 6 .9-4.4 4.2 1 6-5.3-2.8-5.3 2.8 1-6L3.3 9.9l6-.9z"/></svg><span id="fav-n"></span></button>
     </div>
+    <div class="st-seg" id="st-seg" role="group" aria-label="حالة المباراة"></div>
     <p class="results-count" id="results-count" aria-live="polite"></p>
 
     <div id="matches-list" class="match-groups" aria-live="polite"></div>

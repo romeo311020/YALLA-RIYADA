@@ -1705,3 +1705,28 @@ article.match.mx.is-followed{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--
 .fol-btn{border-color:var(--acc);color:var(--text)}
 .fol-btn.on{color:var(--on-acc)}
 .mt-tab[aria-selected=true]{box-shadow:none;outline:0}
+
+/* v118 — صفحة المباريات: اختيار سريع لليوم + فلتر الحالة + جرس التذكير + تفاعل صفحة المباراة */
+.mhero{border:1px solid color-mix(in srgb,var(--acc) 45%,transparent);box-shadow:0 18px 40px -26px var(--acc),inset 0 0 0 1px rgba(255,255,255,.04)}
+.mhero-bg{background:radial-gradient(60% 140% at 8% 110%,color-mix(in srgb,var(--acc) 38%,transparent),transparent 62%),radial-gradient(50% 90% at 90% -10%,rgba(255,255,255,.14),transparent 60%),repeating-linear-gradient(115deg,rgba(255,255,255,.045) 0 26px,transparent 26px 52px),linear-gradient(135deg,#052b17,#0a4a26 60%,#06361d)}
+.dq{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.dq-b{position:relative;display:inline-flex;align-items:center;gap:7px;min-height:42px;padding:0 18px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--text);font:800 14px/1 inherit;cursor:pointer;transition:background .15s,color .15s,border-color .15s,transform .15s}
+.dq-b:hover{border-color:var(--acc)}.dq-b:active{transform:scale(.97)}
+.dq-b.active{background:var(--acc);border-color:var(--acc);color:var(--on-acc);box-shadow:0 8px 20px -10px var(--acc)}
+.dq-date svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dq-date input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.dq-b:focus-visible,.dq-date:focus-within{outline:2px solid var(--acc);outline-offset:2px}
+.st-seg{display:flex;gap:6px;padding:5px;margin:4px 0 12px;border:1px solid var(--line);border-radius:16px;background:var(--panel);overflow-x:auto}
+.st-seg button{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:0 14px;border:0;border-radius:12px;background:transparent;color:var(--muted);font:800 14px/1 inherit;cursor:pointer;white-space:nowrap}
+.st-seg button em{font-style:normal;min-width:22px;padding:2px 7px;border-radius:99px;background:var(--panel2);color:var(--muted);font-size:12px}
+.st-seg button[aria-pressed=true]{background:var(--acc);color:var(--on-acc)}.st-seg button[aria-pressed=true] em{background:rgba(0,0,0,.18);color:inherit}
+.st-seg .ld{width:8px;height:8px;border-radius:50%;background:#ef4444;animation:ldp 1.2s ease-in-out infinite}
+@keyframes ldp{50%{opacity:.35;transform:scale(.8)}}
+@media(prefers-reduced-motion:reduce){.st-seg .ld{animation:none}.dq-b{transition:none}}
+.mx-bell{width:34px;height:34px;display:grid;place-items:center;flex:none;border:1px solid var(--line);border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;transition:background .15s,color .15s}
+.mx-bell svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mx-bell.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}.mx-bell:disabled{opacity:.5}
+.mx-bell:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.md-social{margin-top:14px}
+@media(max-width:560px){.dq{gap:6px}.dq-b{padding:0 14px;flex:1;justify-content:center}}
+@media(max-width:480px){.st-seg{gap:3px;padding:4px}.st-seg button{padding:0 6px;gap:5px;font-size:13px;min-width:0}.st-seg button em{padding:2px 6px;min-width:0}}

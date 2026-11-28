@@ -110,8 +110,12 @@
     if (m.status === 'cancelled') return '<span class="mx-pill warn">ملغاة</span>';
     return '<span class="mx-pill">لم تبدأ</span>';
   };
+  const BELL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 1112 0v5l1.5 2h-15zM10 20a2 2 0 004 0"/></svg>';
+  let bells = new Set();
+  const bellable = (m) => !m.manual && m.status === 'scheduled' && Number(m.fixture_id) > 0 && m.kickoff && new Date(m.kickoff).getTime() > Date.now();
+  const bellBtn = (m) => (bellable(m) ? `<button type="button" class="mx-bell${bells.has(Number(m.fixture_id)) ? ' on' : ''}" data-bell="${Number(m.fixture_id)}" data-t="${escapeHtml(tn(m.home_team) + ' × ' + tn(m.away_team))}" data-ko="${escapeHtml(m.kickoff)}" aria-pressed="${bells.has(Number(m.fixture_id))}" aria-label="ذكّرني قبل المباراة" title="ذكّرني قبل المباراة">${BELL}</button>` : '');
   const mxCard = (m, href, watch) => { const k = favKey(m); const on = favSet.has(k); return `<article class="match mx${m.status === 'live' ? ' is-live' : ''}${isFollowed(m) ? ' is-followed' : ''}" data-fk="${escapeHtml(k)}">
-      <div class="mx-head"><button type="button" class="mx-fav${on ? ' on' : ''}" data-fav="${escapeHtml(k)}" aria-pressed="${on}" aria-label="${on ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}">${STAR}</button><span class="mx-lg">${escapeHtml(m.league_label || m.league || '')}${m.round ? ` • ${escapeHtml(m.round)}` : ''}</span>${isFollowed(m) ? '<span class="mx-fol">من فرقك</span>' : ''}${pill(m)}</div>
+      <div class="mx-head"><button type="button" class="mx-fav${on ? ' on' : ''}" data-fav="${escapeHtml(k)}" aria-pressed="${on}" aria-label="${on ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}">${STAR}</button>${bellBtn(m)}<span class="mx-lg">${escapeHtml(m.league_label || m.league || '')}${m.round ? ` • ${escapeHtml(m.round)}` : ''}</span>${isFollowed(m) ? '<span class="mx-fol">من فرقك</span>' : ''}${pill(m)}</div>
       <a class="mx-link" href="${href}"><div class="teams">${teamMarkup(m.home_team, m.home_logo, m.sport)}<div class="mx-mid">${centerMarkup(m)}${stLine(m)}</div>${teamMarkup(m.away_team, m.away_logo, m.sport)}</div>
       <div class="mx-foot"><span class="mx-more">التفاصيل <i aria-hidden="true"></i></span>${watch ? `<b class="mx-watch"><i class="mx-pl" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6.5v11l9-5.5z"/></svg></i>${m.status === 'live' ? 'شاهد البث' : m.status === 'finished' ? 'شاهد الملخص' : 'شاهد'}</b>` : ''}</div></a>
     </article>`; };
@@ -468,6 +472,7 @@
       league: params.get('league') || 'all',
       q: '',
       fav: false,
+      st: 'all',
     };
     let data = { fixtures: [], leagues: [], manual: [], error: '' };
     let token = 0;
@@ -506,6 +511,7 @@
     const paintControls = () => {
       document.querySelectorAll('[data-sport]').forEach((b) => { const on = b.dataset.sport === state.sport; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
       renderDays();
+      document.querySelectorAll('.dq-b[data-q]').forEach((b) => { const on = Number(b.dataset.q) === dayOff(state.day); b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
       const nm = $('sc-nm'); const ic = $('sc-ic'); if (nm) nm.textContent = SPORT_NAME[state.sport]; if (ic) ic.textContent = SPORT_ICON[state.sport];
     };
 
@@ -540,11 +546,18 @@
       });
       document.addEventListener('keydown', escSheet);
     };
+    const stOf = (m) => (m.status === 'live' ? 'live' : m.status === 'finished' ? 'fin' : 'up');
+    const renderSeg = () => {
+      const box = $('st-seg'); if (!box) return;
+      const list = all(); const c = { all: list.length, live: 0, up: 0, fin: 0 }; list.forEach((m) => { c[stOf(m)] += 1; });
+      box.innerHTML = [['all', 'الكل'], ['live', 'مباشرة'], ['up', 'قادمة'], ['fin', 'منتهية']].map(([k, l]) => `<button type="button" data-st="${k}" class="${k === 'live' ? 'is-live' : ''}" aria-pressed="${state.st === k}">${k === 'live' ? '<i class="ld" aria-hidden="true"></i>' : ''}<span>${l}</span><em>${c[k].toLocaleString('ar-EG')}</em></button>`).join('');
+    };
     const render = () => {
-      paintControls(); renderChips();
+      paintControls(); renderChips(); renderSeg();
       const q = norm(state.q);
       const rows = all()
         .filter((m) => state.league === 'all' || m.league_key === state.league)
+        .filter((m) => state.st === 'all' || stOf(m) === state.st)
         .filter((m) => !state.fav || favSet.has(favKey(m)) || isFollowed(m))
         .filter((m) => !q || q.split(' ').every((w) => haystack(m).includes(w)));
       const count = $('results-count');
@@ -629,6 +642,30 @@
       goDay(dayOff(state.day) + (dx > 0 ? 1 : -1));
     }, { passive: true });
     $('day-strip')?.addEventListener('click', (e) => { const b = e.target.closest('.dchip'); if (b) goDay(Number(b.dataset.off)); });
+    // حالة المباراة + اختيار اليوم السريع + التاريخ
+    $('st-seg')?.addEventListener('click', (e) => { const b = e.target.closest('button[data-st]'); if (!b) return; state.st = b.dataset.st; render(); });
+    document.querySelectorAll('.dq-b[data-q]').forEach((b) => b.addEventListener('click', () => goDay(Number(b.dataset.q))));
+    const pick = $('day-pick');
+    if (pick) {
+      pick.min = localDate(-7); pick.max = localDate(7);
+      pick.addEventListener('change', () => { if (!pick.value) return; const off = Math.round((Date.parse(pick.value + 'T00:00:00Z') - Date.parse(localDate(0) + 'T00:00:00Z')) / 864e5); if (off < -7 || off > 7) { pick.value = ''; return; } goDay(off); });
+    }
+    // تذكير قبل المباراة (زر الجرس)
+    const loadBells = async () => { try { const { data: s0 } = await db.auth.getSession(); if (!s0?.session) return; const r = await db.from('match_reminders').select('fixture_id').is('sent_at', null); if (r.error) return; bells = new Set((r.data || []).map((x) => Number(x.fixture_id))); render(); } catch { /* الجدول لسه متفعّلش */ } };
+    host.addEventListener('click', async (e) => {
+      const b = e.target.closest('.mx-bell'); if (!b) return; e.preventDefault(); e.stopPropagation();
+      const fid = Number(b.dataset.bell); const { data: s0 } = await db.auth.getSession(); const u = s0?.session?.user;
+      if (!u) { if (window.yrLogin) window.yrLogin('سجّل دخولك علشان نذكّرك قبل المباراة'); else location.href = 'account.html'; return; }
+      const on = !bells.has(fid); b.disabled = true;
+      try {
+        if (on && window.yrPush) { const st = await window.yrPush.state(); if (st !== 'on') { const r0 = await window.yrPush.enable(); if (!r0.ok) { b.disabled = false; alert(r0.msg || 'فعّل الإشعارات من المتصفح علشان توصلك التذكيرات.'); return; } } }
+        const r = on ? await db.from('match_reminders').insert({ fixture_id: fid, title: b.dataset.t, kickoff: b.dataset.ko }) : await db.from('match_reminders').delete().eq('user_id', u.id).eq('fixture_id', fid);
+        if (r.error && !/duplicate/i.test(r.error.message || '')) { alert(/relation|schema/i.test(r.error.message || '') ? 'ميزة التذكير لسه متفعّلتش على السيرفر.' : 'تعذّر الحفظ، جرّب تاني.'); }
+        else { if (on) bells.add(fid); else bells.delete(fid); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }
+      } catch { alert('تعذّر الحفظ، جرّب تاني.'); }
+      b.disabled = false;
+    });
+    loadBells();
     $('day-prev-btn')?.addEventListener('click', () => goDay(dayOff(state.day) + 1));
     $('day-next-btn')?.addEventListener('click', () => goDay(dayOff(state.day) - 1));
     $('lg-open')?.addEventListener('click', openSheet);
@@ -683,7 +720,7 @@
     if (!db) { if (note) note.textContent = 'بيانات Supabase غير مكتملة، تعذّر تحميل تفاصيل المباراة.'; return; }
     (async () => {
       try {
-        let res = null; let m = null; let degraded = false;
+        let res = null; let m = null; let degraded = false; let lastMan = null; let lastInf = null;
         if (Number(fixtureId) < 3e9) try { res = await request({ action: 'fixture', sport, fixtureId: Number(fixtureId) }); m = res?.fixture; } catch (e) { console.error('fixture:', e); }
         if (!m) { // المباراة المهمة المحفوظة (من لوحة التحكم) تفتح حتى لو الـ API واقف
           try { const q = await db.from('fixture_overrides').select('*').eq('fixture_id', Number(fixtureId)).not('snapshot', 'is', null).maybeSingle(); if (q.data?.snapshot) { m = mergeOverride({ ...q.data.snapshot, from_snapshot: true }, q.data); res = {}; degraded = true; } } catch { /* نكمل */ }
@@ -728,7 +765,7 @@
             if (q.error) q = await db.from('fixture_manual').select('lineups').eq('fixture_id', Number(fixtureId)).maybeSingle(); // العمود info غير موجود بعد
             manual = q.data?.lineups || null; manualInfo = q.data?.info || null;
           } catch (e) { console.error('manual lineup lookup:', e); }
-          renderDetails(m, res, manual, manualInfo);
+          lastMan = manual; lastInf = manualInfo; renderDetails(m, res, manual, manualInfo);
         }
 
         // بطاقة المشاهدة: بتظهر فقط لو المسؤول أضاف رابط (بث/ملخص) لهذه المباراة. مفيش روابط = مفيش بطاقة ولا زر
@@ -742,6 +779,33 @@
             src: { home: m.home_team, away: m.away_team, date: String(m.kickoff || '').slice(0, 10), sr_id: m.sr_id || '' },
           });
           if (shown) { player.hidden = false; window.yrPlayerReady && window.yrPlayerReady(); window.yrSelectTab && window.yrSelectTab('player'); }
+        }
+        // التفاعل والتعليقات في صفحة المباراة (مش مربوطة بوجود بث)
+        if (sport === 'football' && window.yrWatchSocial && $('md-social')) {
+          try { const { data: ss } = await db.auth.getSession(); const uu = ss?.session?.user || null; window.yrWatchSocial.mount($('md-social'), { db, fixtureId, signedIn: Boolean(uu), userId: uu?.id || null, title: `${H} ضد ${A}`, league: m.league_label || m.league || '', shareUrl: location.href }); } catch (e2) { console.error('social:', e2); }
+        }
+        // تحديث تلقائي من نفس المصدر: المباشرة وقبل البداية بقليل، كل دقيقة (الدالة بتقدّم الكاش فمش بيستهلك حصة زيادة)
+        if (sport === 'football' && Number(fixtureId) < 3e9 && !degraded && m.status !== 'finished') {
+          let busyR = false; let timer = 0;
+          const near = () => m.status === 'live' || (m.kickoff && new Date(m.kickoff).getTime() - Date.now() < 20 * 60000);
+          const tick = async () => {
+            if (document.hidden || busyR || !near()) return; busyR = true;
+            try {
+              const r = await request({ action: 'fixture', sport, fixtureId: Number(fixtureId) }); let n = r?.fixture; if (!n) { busyR = false; return; }
+              [n] = await applyOverrides([n]);
+              const changed = n.status !== m.status || n.home_score !== m.home_score || n.away_score !== m.away_score || n.minute !== m.minute || JSON.stringify(r.events || []) !== JSON.stringify(res?.events || []);
+              if (changed) {
+                m = n; res = r;
+                score.innerHTML = `${teamMarkup(m.home_team, m.home_logo, sport, m.home_id)}${centerMarkup(m)}${teamMarkup(m.away_team, m.away_logo, sport, m.away_id)}`;
+                window.yrHero && window.yrHero({ league: m.league_label || m.league, kickoff: m.kickoff, status: m.status, note: ['live', 'postponed', 'cancelled'].includes(m.status) ? m.status_note : '' });
+                renderDetails(m, res, lastMan, lastInf);
+              }
+              if (m.status === 'finished') clearInterval(timer);
+            } catch { /* هنحاول المرة الجاية */ }
+            busyR = false;
+          };
+          timer = setInterval(tick, 60000);
+          document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
         }
       } catch (error) {
         console.error('match details:', error);
