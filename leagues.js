@@ -43,31 +43,48 @@
   /* ---------- صفحة الدوري ---------- */
   const id = Number(new URLSearchParams(location.search).get('id'));
   const meta = ALL.get(id); const head = document.getElementById('lg-head'); const body = document.getElementById('lg-body');
-  if (!meta) { head.innerHTML = ''; body.setAttribute('aria-busy', 'false'); body.innerHTML = '<p class="note">البطولة دي مش موجودة. <a href="leagues.html">كل الدوريات</a></p>'; return; }
+  if (!meta) { head.innerHTML = ''; body.setAttribute('aria-busy', 'false'); body.innerHTML = window.yrEmpty ? window.yrEmpty('search', 'البطولة دي مش موجودة', '', '<a class="btn outline" href="leagues.html">كل الدوريات</a>') : '<p class="note">البطولة دي مش موجودة. <a href="leagues.html">كل الدوريات</a></p>'; return; }
   document.title = `${meta.n} | يلا رياضة`;
-  head.innerHTML = `<span class="lg-logo big"><img src="${logo(id)}" alt="" referrerpolicy="no-referrer"></span><div><h1>${esc(meta.n)}</h1><p class="sub" id="lg-season">${esc(meta.c)}</p></div><button type="button" class="mh-share inline" id="lg-share">${ico('share')} شارك</button>`;
+  let cur = null;
+  const ZMAP = { ucl: 'champ', uclq: 'champ', uel: 'uel', uecl: 'uecl', rel: 'rel' };
+  document.getElementById('lg-img').addEventListener('click', () => {
+    if (!cur) return;
+    const base = { logo: logo(id), title: meta.n, tag: 'يلا رياضة', url: location.href };
+    if (cur.type === 'standings') {
+      const g = cur.d.groups || []; const flat = g.length > 1 ? g[0] : (g[0] || []);
+      const seen = new Set(); const legend = [];
+      const rows = flat.map((t) => { const [z, l] = ZONE(t.note); const k = ZMAP[z] || ''; if (k && !seen.has(k)) { seen.add(k); legend.push({ k, l }); } return { rank: t.rank, name: tn(t.team.name), logo: https(t.team.logo), played: t.played, gd: t.gd, points: t.points, zone: k }; });
+      window.yrShareImage({ ...base, type: 'standings', sub: 'جدول الترتيب' + (cur.d.league && Number(cur.d.league.season) ? ' · موسم ' + cur.d.league.season + '/' + String(Number(cur.d.league.season) + 1).slice(2) : ''), rows, legend });
+    } else {
+      const rows = (cur.d.players || []).map((p, i) => ({ rank: i + 1, name: pn(p.name), photo: https(p.photo), team: tn(p.team.name), teamLogo: https(p.team.logo), goals: p.goals, assists: p.assists }));
+      window.yrShareImage({ ...base, type: 'scorers', sub: 'ترتيب الهدافين', rows });
+    }
+  });
+  head.innerHTML = `<span class="lg-logo big"><img src="${logo(id)}" alt="" referrerpolicy="no-referrer"></span><div><h1>${esc(meta.n)}</h1><p class="sub" id="lg-season">${esc(meta.c)}</p></div><button type="button" class="mh-share inline" id="lg-share">${ico('share')} شارك</button><button type="button" class="mh-share inline" id="lg-img">${ico('share')} صورة</button>`;
   document.getElementById('lg-share').addEventListener('click', () => window.yrShareBloom({ type: 'team', title: meta.n, sub: 'الترتيب والهدافون', image: logo(id), tag: 'يلا رياضة', emoji: '🏆', url: location.href }));
   const ZONE = (note) => { const t = String(note || '').toLowerCase(); if (!t) return ['', '']; if (/relegat/.test(t)) return ['rel', 'هبوط']; if (/conference/.test(t)) return ['uecl', 'دوري المؤتمر']; if (/europa/.test(t)) return ['uel', 'الدوري الأوروبي']; if (/champions/.test(t) && /qualif/.test(t)) return ['uclq', 'تصفيات دوري الأبطال']; if (/champions|promotion/.test(t)) return ['ucl', 'دوري الأبطال / صعود']; if (/round of|next round|knockout|final|play/.test(t)) return ['ucl', 'التأهل']; return ['', '']; };
   const formDots = (f) => String(f || '').slice(-5).split('').map((c) => `<i class="fd ${c}" title="${c}"></i>`).join('');
   const row = (t) => { const [z] = ZONE(t.note); const tg = t.team.id ? `a href="team.html?id=${t.team.id}"` : 'div'; return `<${tg} class="lg-r ${z}"><b class="rk">${nAr(t.rank)}</b><span class="tm">${https(t.team.logo) ? `<img src="${esc(https(t.team.logo))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}<span>${esc(tn(t.team.name))}</span></span><span>${nAr(t.played)}</span><span class="h">${nAr(t.win)}</span><span class="h">${nAr(t.draw)}</span><span class="h">${nAr(t.lose)}</span><span class="h gd">${nAr(t.gd)}</span><b class="pt">${nAr(t.points)}</b><span class="fm">${formDots(t.form)}</span></${tg.split(' ')[0]}>`; };
   const table = (rows, title) => `${title ? `<h3 class="lg-grp">${esc(title)}</h3>` : ''}<div class="lg-t"><div class="lg-r lg-th"><b class="rk">#</b><span class="tm">الفريق</span><span>لعب</span><span class="h">ف</span><span class="h">ت</span><span class="h">خ</span><span class="h gd">+/-</span><b class="pt">نقاط</b><span class="fm">آخر 5</span></div>${rows.map(row).join('')}</div>`;
   async function showTable() {
-    body.setAttribute('aria-busy', 'true'); body.innerHTML = '<p class="note">جارٍ التحميل…</p>';
+    body.setAttribute('aria-busy', 'true'); body.innerHTML = '<div class="skeleton-list" aria-hidden="true"><div></div><div></div><div></div></div>';
     try {
       const d = await get({ action: 'standings', leagueId: id }, 90);
       document.getElementById('lg-season').textContent = `${meta.c} · موسم ${d.league.season}${Number(d.league.season) ? '/' + String(Number(d.league.season) + 1).slice(2) : ''}`;
+      cur = { type: 'standings', d };
       const groups = d.groups || []; const seen = new Set();
       const legend = [...new Set(groups.flat().map((t) => ZONE(t.note).join('|')).filter((x) => x !== '|'))].map((x) => { const [c, l] = x.split('|'); seen.add(c); return `<span class="lg-lg"><i class="z ${c}"></i>${l}</span>`; }).join('');
       body.innerHTML = groups.map((g) => table(g, groups.length > 1 ? (g[0] && g[0].group) || '' : '')).join('') + (legend ? `<div class="lg-legend">${legend}</div>` : '') + '<p class="note">البيانات بتتحدّث تلقائيًا كل بضع ساعات.</p>';
-    } catch (e) { body.innerHTML = `<p class="note">${esc(e.message)}</p>`; }
+    } catch (e) { body.innerHTML = window.yrEmpty ? window.yrEmpty(navigator.onLine === false ? 'offline' : 'error', navigator.onLine === false ? 'مفيش اتصال بالإنترنت' : 'تعذّر تحميل البيانات', esc(e.message)) : `<p class="note">${esc(e.message)}</p>`; }
     body.setAttribute('aria-busy', 'false');
   }
   async function showScorers() {
-    body.setAttribute('aria-busy', 'true'); body.innerHTML = '<p class="note">جارٍ التحميل…</p>';
+    body.setAttribute('aria-busy', 'true'); body.innerHTML = '<div class="skeleton-list" aria-hidden="true"><div></div><div></div><div></div></div>';
     try {
       const d = await get({ action: 'scorers', leagueId: id }, 180);
+      cur = { type: 'scorers', d };
       body.innerHTML = `<div class="lg-sc">${d.players.map((p, i) => `<article class="lg-p${https(p.photo) ? '' : ' np'}"><b class="rk">${nAr(i + 1)}</b>${https(p.photo) ? `<span class="ph"><img src="${esc(https(p.photo))}" alt="" loading="lazy" referrerpolicy="no-referrer"></span>` : ''}<span class="nm"><b>${esc(pn(p.name))}</b><small>${https(p.team.logo) ? `<img src="${esc(https(p.team.logo))}" alt="" referrerpolicy="no-referrer">` : ''}${esc(tn(p.team.name))}</small></span><span class="st"><small>صناعة</small><b>${nAr(p.assists)}</b></span><span class="st"><small>مباريات</small><b>${nAr(p.apps)}</b></span><span class="gl"><b>${nAr(p.goals)}</b><small>هدف</small></span></article>`).join('')}</div>`;
-    } catch (e) { body.innerHTML = `<p class="note">${esc(e.message)}</p>`; }
+    } catch (e) { body.innerHTML = window.yrEmpty ? window.yrEmpty(navigator.onLine === false ? 'offline' : 'error', navigator.onLine === false ? 'مفيش اتصال بالإنترنت' : 'تعذّر تحميل البيانات', esc(e.message)) : `<p class="note">${esc(e.message)}</p>`; }
     body.setAttribute('aria-busy', 'false');
   }
   document.querySelector('.lg-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-t]'); if (!b) return; document.querySelectorAll('.lg-tabs .tab').forEach((x) => { const on = x === b; x.classList.toggle('active', on); x.setAttribute('aria-selected', on); }); (b.dataset.t === 'table' ? showTable : showScorers)(); });

@@ -178,10 +178,73 @@
     await footerPro(c, W, H, th, d, s, !wide);
   }
 
+
+  /* ===== كروت البيانات: ترتيب الدوري · الهدافون · التشكيلة (ستايل احترافي، بوست/ستوري) ===== */
+  const DATA = ['standings', 'scorers', 'lineup'];
+  const ZCOL = { champ: '#22c55e', uel: '#f59e0b', uecl: '#38bdf8', rel: '#ef4444', promo: '#a78bfa' };
+  async function dataHead(c, W, H, d, th, s) {
+    await brandTop(c, W, th, s, d.tag);
+    c.direction = 'rtl'; c.textAlign = 'right'; const R = W - 60 * s;
+    const lg = await getImg(d.logo);
+    let tx = R; if (lg) { c.save(); c.fillStyle = 'rgba(255,255,255,.95)'; c.beginPath(); c.arc(R - 56 * s, 218 * s, 56 * s, 0, 7); c.fill(); c.restore(); contain(c, lg, R - 56 * s - 38 * s, 218 * s - 38 * s, 76 * s, 76 * s); tx = R - 130 * s; }
+    let fs = 64 * s; c.font = font(900, fs); const maxW = tx - 60 * s; while (c.measureText(d.title).width > maxW && fs > 36 * s) { fs -= 2 * s; c.font = font(900, fs); }
+    c.fillStyle = th.t; c.fillText(d.title, tx, 214 * s);
+    c.font = font(800, 34 * s); c.fillStyle = th.a; c.fillText(d.sub || '', tx, 264 * s);
+    return 330 * s;
+  }
+  function panelCol(th) { return th.t === '#ffffff' || th.t === '#fff8e6' ? 'rgba(255,255,255,.075)' : 'rgba(11,31,20,.07)'; }
+  async function drawData(c, W, H, d, o, th) {
+    const s = W / 1080; const gl = c.createRadialGradient(W / 2, H * 0.3, 40, W / 2, H * 0.3, Math.max(W, H) * 0.8); gl.addColorStop(0, th.b1); gl.addColorStop(1, th.b2); c.fillStyle = gl; c.fillRect(0, 0, W, H);
+    c.save(); c.strokeStyle = th.t; c.globalAlpha = 0.05; c.lineWidth = 5 * s; c.beginPath(); c.arc(W / 2, H * 0.5, 260 * s, 0, 7); c.stroke(); c.beginPath(); c.moveTo(0, H * 0.5); c.lineTo(W, H * 0.5); c.stroke(); c.restore();
+    const y0 = await dataHead(c, W, H, d, th, s); const bottom = H - 310 * s; const L = 60 * s, R = W - 60 * s; const pc = panelCol(th);
+    c.direction = 'rtl';
+    if (d.type === 'standings' || d.type === 'scorers') {
+      const rows = (d.rows || []).slice(0, o.fmt === 'story' ? 14 : 10); const hh = 54 * s; const rh = Math.min(96 * s, (bottom - y0 - hh) / Math.max(rows.length, 1));
+      const imgs = await Promise.all(rows.map((r) => getImg(d.type === 'scorers' ? r.photo : r.logo)));
+      const timgs = d.type === 'scorers' ? await Promise.all(rows.map((r) => getImg(r.teamLogo))) : [];
+      c.font = font(800, 24 * s); c.fillStyle = th.mute; c.textAlign = 'center';
+      if (d.type === 'standings') { c.fillText('نقاط', L + 70 * s, y0 + 34 * s); c.fillText('فرق', L + 195 * s, y0 + 34 * s); c.fillText('لعب', L + 310 * s, y0 + 34 * s); c.textAlign = 'right'; c.fillText('الفريق', R - 112 * s, y0 + 34 * s); c.textAlign = 'center'; c.fillText('#', R - 38 * s, y0 + 34 * s); }
+      else { c.fillText('أهداف', L + 70 * s, y0 + 34 * s); c.fillText('تمريرات', L + 200 * s, y0 + 34 * s); c.textAlign = 'right'; c.fillText('اللاعب', R - 130 * s, y0 + 34 * s); c.textAlign = 'center'; c.fillText('#', R - 38 * s, y0 + 34 * s); }
+      rows.forEach((r, i) => {
+        const y = y0 + hh + i * rh; const h = rh - 8 * s; c.fillStyle = pc; rr(c, L, y, R - L, h, 22 * s); c.fill();
+        if (r.zone && ZCOL[r.zone]) { c.fillStyle = ZCOL[r.zone]; rr(c, R - 9 * s, y + 10 * s, 9 * s, h - 20 * s, 5 * s); c.fill(); }
+        const cy = y + h / 2; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = i < 3 ? th.a : th.mute; c.font = font(900, Math.min(40 * s, h * 0.5)); c.fillText(nAr(r.rank != null ? r.rank : i + 1), R - 38 * s, cy + 2 * s);
+        const ir = Math.min(h * 0.36, 30 * s); const ix = R - 100 * s;
+        if (d.type === 'scorers') { c.save(); c.fillStyle = 'rgba(255,255,255,.92)'; c.beginPath(); c.arc(ix - 8 * s, cy, ir + 4 * s, 0, 7); c.fill(); c.clip(); if (imgs[i]) cover(c, imgs[i], ix - 8 * s - ir - 4 * s, cy - ir - 4 * s, (ir + 4 * s) * 2, (ir + 4 * s) * 2); c.restore(); }
+        else if (imgs[i]) { c.save(); c.fillStyle = 'rgba(255,255,255,.95)'; c.beginPath(); c.arc(ix, cy, ir, 0, 7); c.fill(); c.restore(); contain(c, imgs[i], ix - ir * 0.72, cy - ir * 0.72, ir * 1.44, ir * 1.44); }
+        const nx = R - (d.type === 'scorers' ? 160 * s : 148 * s); c.textAlign = 'right'; c.fillStyle = th.t; let nf = Math.min(36 * s, h * 0.44); c.font = font(900, nf); const nmax = nx - (L + (d.type === 'scorers' ? 250 : 380) * s);
+        while (c.measureText(r.name).width > nmax && nf > 20 * s) { nf -= 2 * s; c.font = font(900, nf); }
+        if (d.type === 'scorers') { c.fillText(r.name, nx, cy - h * 0.12); c.font = font(700, Math.min(24 * s, h * 0.3)); c.fillStyle = th.mute; c.fillText(r.team || '', nx - (timgs[i] ? 34 * s : 0), cy + h * 0.24); if (timgs[i]) contain(c, timgs[i], nx - 28 * s, cy + h * 0.24 - 14 * s, 28 * s, 28 * s); }
+        else c.fillText(r.name, nx, cy + 2 * s);
+        c.textAlign = 'center';
+        if (d.type === 'standings') { c.fillStyle = th.a; c.font = font(900, Math.min(44 * s, h * 0.56)); c.fillText(nAr(r.points), L + 70 * s, cy + 2 * s); c.fillStyle = th.t; c.font = font(800, Math.min(32 * s, h * 0.42)); c.direction = 'ltr'; c.fillText(String(r.gd > 0 ? '+' + r.gd : r.gd).replace(/\d/g, (x) => x), L + 195 * s, cy + 2 * s); c.direction = 'rtl'; c.fillText(nAr(r.played), L + 310 * s, cy + 2 * s); }
+        else { c.fillStyle = th.a; c.font = font(900, Math.min(50 * s, h * 0.6)); c.fillText(nAr(r.goals), L + 70 * s, cy + 2 * s); c.fillStyle = th.mute; c.font = font(800, Math.min(32 * s, h * 0.42)); c.fillText(nAr(r.assists || 0), L + 200 * s, cy + 2 * s); }
+        c.textBaseline = 'alphabetic';
+      });
+      if (d.type === 'standings' && d.legend && d.legend.length) { c.font = font(700, 24 * s); c.textAlign = 'right'; let lx = R; d.legend.slice(0, 4).forEach((z) => { c.fillStyle = ZCOL[z.k] || th.a; c.beginPath(); c.arc(lx - 8 * s, bottom + 28 * s, 8 * s, 0, 7); c.fill(); c.fillStyle = th.mute; c.fillText(z.l, lx - 26 * s, bottom + 37 * s); lx -= c.measureText(z.l).width + 70 * s; }); }
+    } else if (d.type === 'lineup') {
+      const px = L, pw = R - L, py = y0 + 12 * s, ph = bottom - py - 36 * s;
+      const g = c.createLinearGradient(0, py, 0, py + ph); g.addColorStop(0, '#1a7a3a'); g.addColorStop(1, '#0f5a2a'); c.fillStyle = g; rr(c, px, py, pw, ph, 30 * s); c.fill();
+      c.save(); rr(c, px, py, pw, ph, 30 * s); c.clip(); for (let k = 0; k < 8; k++) { if (k % 2 === 0) { c.fillStyle = 'rgba(255,255,255,.035)'; c.fillRect(px, py + (ph / 8) * k, pw, ph / 8); } } c.restore();
+      c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 3.5 * s; rr(c, px + 14 * s, py + 14 * s, pw - 28 * s, ph - 28 * s, 18 * s); c.stroke(); c.beginPath(); c.moveTo(px + 14 * s, py + ph / 2); c.lineTo(px + pw - 14 * s, py + ph / 2); c.stroke(); c.beginPath(); c.arc(px + pw / 2, py + ph / 2, 80 * s, 0, 7); c.stroke();
+      c.strokeRect(px + pw * 0.28, py + 14 * s, pw * 0.44, ph * 0.13); c.strokeRect(px + pw * 0.28, py + ph - 14 * s - ph * 0.13, pw * 0.44, ph * 0.13);
+      const rowsM = new Map(); (d.players || []).forEach((p) => { const [r, k] = String(p.grid || '').split(':').map(Number); if (!Number.isFinite(r)) return; if (!rowsM.has(r)) rowsM.set(r, []); rowsM.get(r).push({ ...p, k }); });
+      const rmax = Math.max(...rowsM.keys(), 1); const cr = 36 * s;
+      rowsM.forEach((arr, r) => { arr.sort((a, b) => a.k - b.k); arr.forEach((p, i) => {
+        const x = px + pw * (arr.length === 1 ? 0.5 : 0.14 + (i / (arr.length - 1)) * 0.72); const t = rmax === 1 ? 0 : (r - 1) / (rmax - 1); const y = py + ph * (0.9 - t * 0.78);
+        c.save(); c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 16 * s; c.fillStyle = r === 1 ? '#f5f5f5' : th.a; c.beginPath(); c.arc(x, y, cr, 0, 7); c.fill(); c.restore();
+        c.fillStyle = r === 1 ? '#0b1f14' : th.on; c.font = font(900, 34 * s); c.textAlign = 'center'; c.textBaseline = 'middle'; c.direction = 'ltr'; c.fillText(String(p.number ?? ''), x, y + 2 * s); c.direction = 'rtl'; c.textBaseline = 'alphabetic';
+        c.font = font(800, 25 * s); const nm = String(p.name || ''); const w = Math.min(c.measureText(nm).width + 22 * s, 190 * s); c.fillStyle = 'rgba(4,16,9,.78)'; rr(c, x - w / 2, y + cr + 8 * s, w, 38 * s, 19 * s); c.fill(); c.fillStyle = '#fff'; c.fillText(wrap(c, nm, w - 14 * s, 1)[0] || nm, x, y + cr + 35 * s);
+      }); });
+    }
+    await footerPro(c, W, H, th, d, s, true);
+  }
+
   async function draw(cv, d, o) {
     const [W, H] = FMT[o.fmt] || FMT.post; cv.width = W; cv.height = H; const th = THEMES[o.theme] || THEMES.night;
     const c = cv.getContext('2d'); c.direction = 'rtl'; c.textAlign = 'right';
     try { await document.fonts.load('900 60px Cairo'); await document.fonts.load('700 30px Cairo'); } catch { /* خط النظام */ }
+    if (DATA.includes(d.type)) { await drawData(c, W, H, d, o, th); return; }
     if (o.style !== 'classic') { await drawPro(c, W, H, d, o, th); return; }
     bgFor(c, W, H, th); const PH = H - FOOT;
     if (d.type === 'match') {
@@ -255,6 +318,9 @@
   function postText(d) {
     const u = d.url;
     if (d.type === 'match') return `⚽ ${d.home.name} × ${d.away.name}\n${d.score ? '🔢 النتيجة: ' + d.score.replace(/\s/g, '') : '🕒 ' + (d.when || '')}\n\n📺 تابع المباراة وكل التفاصيل على ${SITE} 👇\n${u}\n\n#يلا_رياضة`;
+    if (d.type === 'standings') return `🏆 ${d.title} — جدول الترتيب\n${(d.rows || []).slice(0, 5).map((r) => `${r.rank}. ${r.name} — ${r.points} نقطة`).join('\n')}\n\n📊 الترتيب كامل على ${SITE} 👇\n${u}\n\n#يلا_رياضة`;
+    if (d.type === 'scorers') return `⚽ هدافو ${d.title}\n${(d.rows || []).slice(0, 5).map((r) => `${r.rank}. ${r.name} — ${r.goals} هدف`).join('\n')}\n\n📲 كل التفاصيل على ${SITE} 👇\n${u}\n\n#يلا_رياضة`;
+    if (d.type === 'lineup') return `📋 تشكيلة ${d.title}${d.formation ? ' (' + d.formation + ')' : ''}\n${d.sub || ''}\n\n📺 تابع المباراة على ${SITE} 👇\n${u}\n\n#يلا_رياضة`;
     if (d.type === 'player') return `🔄 ${d.title}\n\n📲 كل أخبار الانتقالات على ${SITE} 👇\n${u}\n\n#يلا_رياضة #الانتقالات`;
     if (d.type === 'product') return `🛍️ ${d.title}${d.price ? '\n💰 ' + d.price : ''}\n\n📲 اطلبه من ${SITE} 👇\n${u}`;
     return `🔥 ${d.title}\n\n📲 التفاصيل كاملة على ${SITE} 👇\n${u}\n\n#يلا_رياضة`;
@@ -265,13 +331,14 @@
     document.getElementById('ss')?.remove();
     const p = pref(); const o = { fmt: p.fmt || 'post', layout: p.layout || 'full', theme: THEMES[p.theme] ? p.theme : 'navy', style: p.style || 'pro' };
     if (d.type === 'match') o.layout = 'full';
+    const isData = DATA.includes(d.type); if (isData) { o.style = 'pro'; o.layout = 'full'; if (o.fmt === 'x') o.fmt = 'post'; }
     const w = document.createElement('div'); w.id = 'ss'; w.className = 'ss-back'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'مشاركة كصورة');
     const seg = (k, items) => `<div class="ss-seg" data-k="${k}">${items.map(([v, l]) => `<button type="button" data-v="${v}">${l}</button>`).join('')}</div>`;
     w.innerHTML = `<div class="ss-sheet"><div class="ss-head"><b>${window.yrIco('image')} كارت المشاركة</b><button type="button" class="ss-x" aria-label="إغلاق">✕</button></div>
       <div class="ss-stage busy" id="ss-stage"><canvas class="ss-prev" id="ss-cv"></canvas></div>
-      <div class="ss-ctl"><div class="ss-row"><span>المقاس</span>${seg('fmt', [['post', 'بوست'], ['x', 'X / تويتر'], ['story', 'ستوري']])}</div>
-      <div class="ss-row"><span>الستايل</span>${seg('style', [['pro', 'احترافي'], ['classic', 'كلاسيك']])}</div>
-      ${d.type === 'match' ? '' : `<div class="ss-row" id="ss-lay"><span>الشكل</span>${seg('layout', [['full', 'صورة كاملة'], ['card', 'كارت']])}</div>`}
+      <div class="ss-ctl"><div class="ss-row"><span>المقاس</span>${seg('fmt', isData ? [['post', 'بوست'], ['story', 'ستوري']] : [['post', 'بوست'], ['x', 'X / تويتر'], ['story', 'ستوري']])}</div>
+      ${isData ? '' : `<div class="ss-row"><span>الستايل</span>${seg('style', [['pro', 'احترافي'], ['classic', 'كلاسيك']])}</div>`}
+      ${d.type === 'match' || isData ? '' : `<div class="ss-row" id="ss-lay"><span>الشكل</span>${seg('layout', [['full', 'صورة كاملة'], ['card', 'كارت']])}</div>`}
       <div class="ss-row"><span>اللون</span><div class="ss-sw" data-k="theme">${Object.entries(THEMES).map(([k, t]) => `<button type="button" data-v="${k}" aria-label="${t.n}" style="background:linear-gradient(135deg,${t.sw[0]} 50%,${t.sw[1]} 50%)"></button>`).join('')}</div></div></div>
       <div class="ss-act"><button type="button" class="main" id="ss-share">${window.yrIco('send')} شارك الصورة مع البوست</button><button type="button" id="ss-save">${window.yrIco('download')} حفظ الصورة</button><button type="button" id="ss-copy">${window.yrIco('copy')} نسخ البوست</button></div>
       <p class="ss-note">الصورة فيها QR يفتح الصفحة، والبوست فيه الرابط.</p></div>`;

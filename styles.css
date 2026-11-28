@@ -1757,3 +1757,6 @@ article.match.mx.is-followed{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--
   .art-tbl.cards-m td::before{content:attr(data-label);color:var(--muted);font-size:12.5px;font-weight:800;flex:none}
   .art-tbl.cards-m td.n{direction:rtl;text-align:left}
 }
+/* v124 مشاركة التشكيلة */
+.lu-share{display:flex;justify-content:center;margin:10px 0 4px}
+.lu-share .btn{min-height:44px}

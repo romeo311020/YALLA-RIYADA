@@ -393,6 +393,7 @@
     const H = tn(m.home_team); const A = tn(m.away_team);
     const pitch = gridOk
       ? `<div class="team-switch" role="tablist" aria-label="اختر الفريق"><button type="button" class="ts-btn active" data-lt="home" aria-selected="true"><span>${escapeHtml(H)}</span><b dir="ltr">${escapeHtml(home.formation)}</b></button><button type="button" class="ts-btn" data-lt="away" aria-selected="false"><span>${escapeHtml(A)}</span><b dir="ltr">${escapeHtml(away.formation)}</b></button></div>
+         <div class="lu-share"><button type="button" class="btn outline" id="lu-img">📷 شارك التشكيلة كصورة</button></div>
          <div class="pitch-stage">${pitchBox(home, true, false, H)}${pitchBox(away, false, true, A)}</div>`
       : `<div class="starters">${[[H, home], [A, away]].map(([n, l]) => `<div class="bench"><h3>${escapeHtml(n)} <small dir="ltr">${escapeHtml(l.formation)}</small></h3><ul>${l.start.map((p) => `<li${pAttrs(p)} class="${p.id > 0 ? 'clickable' : ''}"><span class="sq-img sm">${photoImg(p.id)}</span><span class="pl-no sm">${escapeHtml(p.number ?? '')}</span>${escapeHtml(shortName(p.name))}</li>`).join('')}</ul></div>`).join('')}</div>`;
     return `${pitch}<div class="benches">${benchList(`احتياط ${H}`, home)}${benchList(`احتياط ${A}`, away)}</div>`;
@@ -441,6 +442,12 @@
     const body = $('match-body');
     $('tab-summary').innerHTML = renderSummary(m, res);
     $('tab-lineup').innerHTML = renderLineup(m, res);
+    const lb = $('lu-img'); if (lb) lb.addEventListener('click', () => {
+      const side = (document.querySelector('.ts-btn.active') || {}).dataset?.lt === 'away' ? 'away' : 'home';
+      const l = (res.lineups || []).find((x) => x.team_id === (side === 'away' ? m.away_id : m.home_id)); if (!l) return;
+      const nm = tn(side === 'away' ? m.away_team : m.home_team);
+      window.yrShareImage({ type: 'lineup', title: nm, formation: l.formation, sub: `${tn(m.home_team)} × ${tn(m.away_team)}${l.formation ? ' · ' + l.formation : ''}`, logo: side === 'away' ? m.away_logo : m.home_logo, players: l.start.map((p) => ({ name: shortName(pn(p.name)), number: p.number, grid: p.grid })), tag: 'التشكيلة', url: location.href });
+    });
     $('tab-stats').innerHTML = renderStats(m, res);
     if ($('tab-info')) $('tab-info').innerHTML = renderInfo(m, res, manualInfo);
     body.hidden = false;
