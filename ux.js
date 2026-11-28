@@ -63,3 +63,13 @@
   };
   window.yrEmpty = (kind, title, text, action) => `<div class="yr-empty ${kind}">${ART[kind] || ART.matches}<b>${title}</b>${text ? `<p>${text}</p>` : ''}${action || ''}</div>`;
 })();
+
+/* شريط التحميل العلوي: يظهر لما أي طلب بيانات ياخد أكتر من لحظة، ويكمّل لوحده */
+(() => {
+  let n = 0, bar = null, v = 0, tm = null, show = null;
+  const el = () => bar || (bar = Object.assign(document.createElement('div'), { id: 'yr-bar', innerHTML: '<i></i>' }), bar.setAttribute('role', 'progressbar'), bar.setAttribute('aria-label', 'جارٍ التحميل'), document.body.appendChild(bar), bar);
+  const set = (x) => { v = x; el().firstChild.style.transform = `scaleX(${x})`; };
+  const begin = () => { if (n++ > 0) return; show = setTimeout(() => { el().classList.add('on'); set(0.12); tm = setInterval(() => set(v + (0.9 - v) * 0.12), 250); }, 180); };
+  const end = () => { if (--n > 0) return; n = 0; clearTimeout(show); clearInterval(tm); if (!bar || !bar.classList.contains('on')) return; set(1); setTimeout(() => { bar.classList.remove('on'); setTimeout(() => set(0), 300); }, 220); };
+  window.yrBar = { begin, end, wrap: (pr) => { begin(); return Promise.resolve(pr).finally(end); } };
+})();

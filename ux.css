@@ -42,3 +42,16 @@ body{animation:pgIn .35s ease both}
 button,.btn,a.btn{-webkit-tap-highlight-color:transparent}
 .btn:active,.dq-b:active,.pq-o:active{transform:scale(.97)}
 @media(prefers-reduced-motion:reduce){body,.match.mx,.pq-card,.news-card,.yr-empty svg,#yr-splash .sp-logo,.sp-bar i,#yr-off .dot{animation:none!important}.yr-toast,#yr-off,#yr-nav i{transition:none}}
+/* شريط التحميل العلوي */
+#yr-bar{position:fixed;inset:0 0 auto 0;height:3px;z-index:9999;pointer-events:none;opacity:0;transition:opacity .25s}
+#yr-bar.on{opacity:1}
+#yr-bar i{display:block;height:100%;transform-origin:right center;transform:scaleX(0);transition:transform .25s ease-out;background:linear-gradient(90deg,var(--acc,#c6ff3d),#fff,var(--acc,#c6ff3d));box-shadow:0 0 10px var(--acc,#c6ff3d);border-radius:0 3px 3px 0}
+.lu-load{display:grid;gap:8px;justify-items:center;margin:14px 0;color:var(--muted);font-size:13px}
+.lu-load i{display:block;width:min(260px,70%);height:6px;border-radius:6px;background:color-mix(in srgb,var(--text) 12%,transparent);position:relative;overflow:hidden}
+.lu-load i::after{content:"";position:absolute;inset:0;width:40%;border-radius:6px;background:var(--acc);animation:luBar 1.1s ease-in-out infinite}
+@keyframes luBar{0%{transform:translateX(250%)}100%{transform:translateX(-120%)}}
+.lu-pred{display:grid;gap:6px;margin:0 0 12px;padding:12px 14px;border-radius:16px;border:1px dashed color-mix(in srgb,var(--acc) 60%,transparent);background:color-mix(in srgb,var(--acc) 9%,transparent)}
+.lu-pred p{margin:0;font-size:12.5px;line-height:1.7;color:var(--muted)}
+.lu-pred-b{justify-self:start;padding:4px 12px;border-radius:99px;background:var(--acc);color:var(--on-acc);font-weight:900;font-size:12.5px}
+.lu-predicted .benches{display:none}
+@media(prefers-reduced-motion:reduce){.lu-load i::after{animation:none;width:100%;opacity:.5}}

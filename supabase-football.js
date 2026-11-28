@@ -25,7 +25,7 @@
   const pn = (name) => (window.YR_NAMES ? window.YR_NAMES.player(name) : name);
 
   /* كاش مؤقت في الذاكرة: نفس الطلب لا يتكرر خلال مدة صلاحيته، وعند الفشل نعرض آخر نسخة من نفس الجلسة */
-  const TTL = { fixtures: (b) => (b.date === localDate(0) ? 3 : 30) * 60e3, fixture: () => 2 * 60e3, team: () => 12 * 3600e3, form: () => 2 * 3600e3, player: () => 12 * 3600e3 };
+  const TTL = { fixtures: (b) => (b.date === localDate(0) ? 3 : 30) * 60e3, fixture: () => 2 * 60e3, team: () => 12 * 3600e3, predicted: () => 6 * 3600e3, form: () => 2 * 3600e3, player: () => 12 * 3600e3 };
   /* الكاش في ذاكرة الصفحة فقط (مش بيتحفظ على جهاز الزائر): بيختفي بمجرد إغلاق/تحديث الصفحة.
      الدالة نفسها على السيرفر عندها كاش، فمفيش داعي لتخزين بيانات المباريات على الجهاز. */
   const memCache = new Map();
@@ -40,7 +40,7 @@
     if (hit && ttl && Date.now() - hit.t < ttl) { try { await window.YR_NAMES?.ready; } catch { /* اختياري */ } return hit.v; }
     if (inflight.has(key)) return inflight.get(key);
     const job = (async () => {
-      const { data, error } = await db.functions.invoke('football-matches', { body });
+      const { data, error } = await (window.yrBar ? window.yrBar.wrap(db.functions.invoke('football-matches', { body })) : db.functions.invoke('football-matches', { body }));
       if (error || data?.error) {
         if (hit) return hit.v; // خدمة مشغولة أو الحد اليومي خلص: نعرض آخر نسخة بدل الخطأ
         if (error) {
@@ -431,6 +431,7 @@
     subs: (s.subs || []).map((p) => ({ id: null, name: p.name, number: p.number, pos: null, grid: null })),
   });
 
+  const predState = new Map();
   function renderDetails(m0, res0, manual, manualInfo) {
     let m = m0; let res = res0;
     if (manual?.home?.start?.length && manual?.away?.start?.length) {
@@ -441,12 +442,40 @@
     const body = $('match-body');
     $('tab-summary').innerHTML = renderSummary(m, res);
     $('tab-lineup').innerHTML = renderLineup(m, res);
-    const lb = $('lu-img'); if (lb) lb.addEventListener('click', () => {
-      const side = (document.querySelector('.ts-btn.active') || {}).dataset?.lt === 'away' ? 'away' : 'home';
-      const l = (res.lineups || []).find((x) => x.team_id === (side === 'away' ? m.away_id : m.home_id)); if (!l) return;
-      const nm = tn(side === 'away' ? m.away_team : m.home_team);
-      window.yrShareImage({ type: 'lineup', title: nm, formation: l.formation, sub: `${tn(m.home_team)} × ${tn(m.away_team)}${l.formation ? ' · ' + l.formation : ''}`, logo: side === 'away' ? m.away_logo : m.home_logo, players: l.start.map((p) => ({ name: shortName(pn(p.name)), number: p.number, grid: p.grid, pos: posAr(p.pos), photo: photoOf(p.id) })), tag: 'التشكيلة', url: location.href });
-    });
+    const bindShare = (resX, tag) => {
+      const lb = $('lu-img'); if (!lb) return;
+      lb.addEventListener('click', () => {
+        const side = (document.querySelector('.ts-btn.active') || {}).dataset?.lt === 'away' ? 'away' : 'home';
+        const l = (resX.lineups || []).find((x) => x.team_id === (side === 'away' ? m.away_id : m.home_id)); if (!l) return;
+        const nm = tn(side === 'away' ? m.away_team : m.home_team);
+        window.yrShareImage({ type: 'lineup', title: nm, formation: l.formation, sub: `${tag ? tag + ' · ' : ''}${tn(m.home_team)} × ${tn(m.away_team)}${l.formation ? ' · ' + l.formation : ''}`, logo: side === 'away' ? m.away_logo : m.home_logo, players: l.start.map((p) => ({ name: shortName(pn(p.name)), number: p.number, grid: p.grid, pos: posAr(p.pos), photo: photoOf(p.id) })), tag: tag || 'التشكيلة', url: location.href });
+      });
+    };
+    bindShare(res, '');
+    // تشكيلة متوقعة: لو الرسمية لسه ما اتعلنتش — آخر تشكيلة أساسية لكل فريق (مش رسمية، ومكتوب كده بوضوح)
+    const hasOfficial = (res.lineups || []).some((l) => l.start && l.start.length);
+    const canPred = !hasOfficial && m.status !== 'finished' && Number(m.home_id) > 0 && Number(m.away_id) > 0 && !(manual?.home?.start?.length);
+    if (canPred) {
+      const paintPred = (pr) => {
+        const el = $('tab-lineup'); if (!el || !pr || !pr.home?.lineup || !pr.away?.lineup) return;
+        const mk = (t, x) => ({ team_id: t, formation: x.lineup.formation || '', coach: x.lineup.coach || '', start: x.lineup.start, subs: [] });
+        const res2 = { ...res, lineups: [mk(m.home_id, pr.home), mk(m.away_id, pr.away)] };
+        const dt = (x) => x.from ? new Date(x.from.date).toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short' }) : '';
+        const html = renderLineup(m, res2);
+        if (/empty-note/.test(html)) return;
+        el.innerHTML = `<div class="lu-pred"><span class="lu-pred-b">تشكيلة متوقعة</span><p>مش رسمية — دي التشكيلة الأساسية اللي لعب بيها كل فريق في آخر مباراة له (${escapeHtml(tn(m.home_team))}: ${dt(pr.home)} · ${escapeHtml(tn(m.away_team))}: ${dt(pr.away)}). بتتبدّل أوتوماتيك لما التشكيلة الرسمية تتعلن.</p></div><div class="lu-predicted">${html}</div>`;
+        el.querySelectorAll('.pitch-wrap').length && bindShare(res2, 'تشكيلة متوقعة');
+      };
+      const cached = predState.get(m.fixture_id);
+      if (cached) paintPred(cached);
+      else if (cached !== 'none') {
+        const el = $('tab-lineup'); if (el) el.insertAdjacentHTML('beforeend', '<div class="lu-load" aria-live="polite"><i></i><span>بدوّر على آخر تشكيلة للفريقين…</span></div>');
+        Promise.all([request({ action: 'predicted', teamId: m.home_id, fixtureId: m.fixture_id }), request({ action: 'predicted', teamId: m.away_id, fixtureId: m.fixture_id })]).then(([h, a]) => {
+          const v = h?.lineup && a?.lineup ? { home: h, away: a } : 'none'; predState.set(m.fixture_id, v);
+          const e2 = $('tab-lineup'); e2?.querySelector('.lu-load')?.remove(); if (v !== 'none') paintPred(v);
+        }).catch(() => { $('tab-lineup')?.querySelector('.lu-load')?.remove(); });
+      }
+    }
     $('tab-stats').innerHTML = renderStats(m, res);
     if ($('tab-info')) $('tab-info').innerHTML = renderInfo(m, res, manualInfo);
     body.hidden = false;
