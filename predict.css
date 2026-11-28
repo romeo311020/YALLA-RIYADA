@@ -101,3 +101,12 @@
 .pd-glass .pq-cr{background:rgba(255,255,255,.22)}.pd-glass .pq-o,.pd-glass .pq-b{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.35);color:#fff}
 .pd-glass .pq-o.on{background:#c6ff3d;border-color:#c6ff3d;color:#0b1200}.pd-glass .pq-save{background:#c6ff3d;color:#0b1200}.pd-glass .pq-save.ok,.pd-glass .pq-save:disabled{background:rgba(255,255,255,.22);color:#c6ff3d}
 .pd-glass .pq-mid strong{color:#c6ff3d}.pd-glass .pq-login{border-color:rgba(255,255,255,.35);background:transparent}.pd-glass .pq-login p{color:rgba(255,255,255,.8)}
+
+/* v126: منع خروج الكروت عن الشاشة على الموبايل + زجاج */
+.pq-grid{grid-template-columns:minmax(0,1fr)}
+@media(min-width:760px){.pq-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.pq-card{min-width:0;max-width:100%;position:relative;overflow:hidden;border-color:color-mix(in srgb,var(--text) 14%,transparent);background:linear-gradient(160deg,color-mix(in srgb,var(--text) 7%,var(--panel)),var(--panel));box-shadow:0 14px 34px -22px rgba(0,0,0,.6),inset 0 1px 0 color-mix(in srgb,#fff 22%,transparent)}
+.pq-mid{min-width:0;max-width:34vw}.pq-mid small{overflow-wrap:anywhere}
+@media(max-width:520px){.pq-score{flex-wrap:wrap;justify-content:center;row-gap:8px}.pq-hint{order:3;flex:1 0 100%}.pq-t b{font-size:13px}}
+.pq-hero,.pq-tabs{box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 20%,transparent)}
+.pq-badge{white-space:nowrap;flex:none}.pq-top{min-width:0}
