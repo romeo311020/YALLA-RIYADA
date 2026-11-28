@@ -1,0 +1,44 @@
+/* يلا رياضة — طبقة تجربة الاستخدام */
+#yr-splash{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:radial-gradient(60% 50% at 50% 42%,#0c2a18,#040906 70%);color:#fff;transition:opacity .45s ease,visibility .45s}
+#yr-splash.out{opacity:0;visibility:hidden}
+.yr-splashing body{overflow:hidden}
+#yr-splash .sp-in{display:grid;justify-items:center;gap:6px;animation:spIn .6s cubic-bezier(.2,.8,.2,1) both}
+#yr-splash .sp-logo{width:92px;height:92px;filter:drop-shadow(0 0 28px rgba(198,255,61,.35));animation:spPulse 1.6s ease-in-out infinite}
+#yr-splash b{font-size:24px;font-weight:900;margin-top:8px}
+#yr-splash small{font-size:11px;letter-spacing:.35em;color:#c6ff3d;opacity:.9}
+.sp-bar{width:150px;height:4px;margin-top:18px;border-radius:9px;background:rgba(255,255,255,.12);overflow:hidden}
+.sp-bar i{display:block;width:40%;height:100%;border-radius:9px;background:#c6ff3d;animation:spBar 1s ease-in-out infinite}
+@keyframes spIn{from{opacity:0;transform:translateY(10px) scale(.96)}}
+@keyframes spPulse{50%{transform:scale(1.05)}}
+@keyframes spBar{0%{transform:translateX(250%)}100%{transform:translateX(-120%)}}
+#yr-nav{position:fixed;top:0;inset-inline:0;height:3px;z-index:99998;pointer-events:none;opacity:0}
+#yr-nav i{display:block;height:100%;width:0;background:linear-gradient(90deg,#c6ff3d,#6fe27a);box-shadow:0 0 10px #c6ff3d;border-radius:0 3px 3px 0;margin-inline-start:auto}
+#yr-nav.on{opacity:1}#yr-nav.on i{width:72%;transition:width 1.4s cubic-bezier(.1,.7,.2,1)}#yr-nav.on.long i{width:92%;transition:width 6s linear}
+body{animation:pgIn .35s ease both}
+@keyframes pgIn{from{opacity:0}}
+#yr-toasts{position:fixed;inset:auto 0 88px;z-index:9990;display:grid;justify-items:center;gap:8px;pointer-events:none;padding:0 14px}
+.yr-toast{display:flex;align-items:center;gap:10px;max-width:420px;padding:11px 16px;border-radius:14px;background:#10201a;color:#fff;border:1px solid rgba(255,255,255,.14);box-shadow:0 14px 34px -12px rgba(0,0,0,.6);font-size:14px;font-weight:700;opacity:0;transform:translateY(10px);transition:opacity .25s,transform .25s}
+.yr-toast.in{opacity:1;transform:none}
+.yr-toast i{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:13px;font-weight:900;background:#c6ff3d;color:#0b1200}
+.yr-toast.err i{background:#ef4444;color:#fff}.yr-toast.warn i{background:#f5b324;color:#201400}.yr-toast.info i{background:#60a5fa;color:#04101f}
+#yr-off{position:fixed;inset:auto 12px 84px;margin:auto;max-width:560px;z-index:9991;display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:12px 14px;border-radius:16px;background:#2a0f12;color:#ffe4e4;border:1px solid #7f1d1d;box-shadow:0 16px 38px -14px rgba(0,0,0,.7);opacity:0;transform:translateY(14px);transition:opacity .3s,transform .3s;font-size:13.5px}
+#yr-off.in{opacity:1;transform:none}
+#yr-off .dot{width:10px;height:10px;border-radius:50%;background:#ef4444;animation:ldp2 1.2s ease-in-out infinite}
+#yr-off b{font-size:14.5px}#yr-off span:not(.dot){opacity:.85;flex:1 1 160px}
+#yr-off button{min-height:38px;padding:0 16px;border:0;border-radius:11px;background:#c6ff3d;color:#0b1200;font:900 13px/1 inherit;cursor:pointer}
+@keyframes ldp2{50%{opacity:.35}}
+.yr-empty{display:grid;justify-items:center;gap:8px;padding:34px 18px;text-align:center}
+.yr-empty svg{width:132px;height:auto;margin-bottom:4px}
+.yr-empty svg .a{fill:color-mix(in srgb,var(--acc,#c6ff3d) 14%,transparent);stroke:var(--acc,#c6ff3d);stroke-width:3;stroke-linejoin:round}
+.yr-empty svg .b{fill:none;stroke:var(--acc,#c6ff3d);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.yr-empty svg .c{fill:var(--acc,#c6ff3d)}.yr-empty svg .d{fill:none;stroke:#ef4444;stroke-width:4;stroke-linecap:round}
+.yr-empty b{font-size:17px}.yr-empty p{margin:0;color:var(--muted);max-width:380px;line-height:1.7;font-size:14px}.yr-empty .btn{margin-top:8px}
+.yr-empty svg{animation:emF 3.4s ease-in-out infinite}@keyframes emF{50%{transform:translateY(-5px)}}
+/* ظهور ناعم للكروت + شاشات التحميل */
+@keyframes yrRise{from{opacity:0;transform:translateY(10px)}}
+.match.mx,.pq-card,.news-card,.card.rise{animation:yrRise .4s cubic-bezier(.2,.8,.2,1) both}
+.match-grid>.match:nth-child(2){animation-delay:.04s}.match-grid>.match:nth-child(3){animation-delay:.08s}.match-grid>.match:nth-child(4){animation-delay:.12s}
+.skeleton-list div,.sk{position:relative;overflow:hidden}
+button,.btn,a.btn{-webkit-tap-highlight-color:transparent}
+.btn:active,.dq-b:active,.pq-o:active{transform:scale(.97)}
+@media(prefers-reduced-motion:reduce){body,.match.mx,.pq-card,.news-card,.yr-empty svg,#yr-splash .sp-logo,.sp-bar i,#yr-off .dot{animation:none!important}.yr-toast,#yr-off,#yr-nav i{transition:none}}

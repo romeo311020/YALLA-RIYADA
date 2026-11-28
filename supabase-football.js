@@ -562,12 +562,12 @@
         .filter((m) => !q || q.split(' ').every((w) => haystack(m).includes(w)));
       const count = $('results-count');
       if (data.error && !rows.length) {
-        host.innerHTML = `<div class="empty-state"><p>${escapeHtml(data.error)}</p><button class="btn outline" type="button" id="retry">إعادة المحاولة</button></div>`;
+        host.innerHTML = window.yrEmpty ? window.yrEmpty(navigator.onLine === false ? 'offline' : 'error', navigator.onLine === false ? 'مفيش اتصال بالإنترنت' : 'تعذّر تحميل المباريات', escapeHtml(data.error), '<button class="btn outline" type="button" id="retry">إعادة المحاولة</button>') : `<div class="empty-state"><p>${escapeHtml(data.error)}</p><button class="btn outline" type="button" id="retry">إعادة المحاولة</button></div>`;
         if (count) count.textContent = '';
         return;
       }
       if (!rows.length) {
-        host.innerHTML = `<div class="empty-state"><p>${q ? 'لا توجد مباريات مطابقة لبحثك.' : (state.fav ? 'مفيش مباريات مفضلة في اليوم ده. اضغط على ⭐ في أي مباراة لإضافتها.' : `لا توجد مباريات ${SPORT_NAME[state.sport]} في البطولات المهمة لهذا اليوم.`)}</p>${q || state.league !== 'all' ? '<button class="btn outline" type="button" id="reset-filters">إزالة التصفية</button>' : ''}</div>`;
+        host.innerHTML = window.yrEmpty ? window.yrEmpty(q ? 'search' : 'matches', q ? 'مفيش نتيجة للبحث' : 'مفيش مباريات هنا', `${q ? 'لا توجد مباريات مطابقة لبحثك.' : (state.fav ? 'مفيش مباريات مفضلة في اليوم ده. اضغط على ⭐ في أي مباراة لإضافتها.' : `لا توجد مباريات ${SPORT_NAME[state.sport]} في البطولات المهمة لهذا اليوم.`)}`, `${q || state.league !== 'all' ? '<button class="btn outline" type="button" id="reset-filters">إزالة التصفية</button>' : ''}`) : `<div class="empty-state"><p>${q ? 'لا توجد مباريات مطابقة لبحثك.' : (state.fav ? 'مفيش مباريات مفضلة في اليوم ده. اضغط على ⭐ في أي مباراة لإضافتها.' : `لا توجد مباريات ${SPORT_NAME[state.sport]} في البطولات المهمة لهذا اليوم.`)}</p>${q || state.league !== 'all' ? '<button class="btn outline" type="button" id="reset-filters">إزالة التصفية</button>' : ''}</div>`;
         if (count) count.textContent = '';
         return;
       }
@@ -666,6 +666,7 @@
       b.disabled = false;
     });
     loadBells();
+    document.addEventListener('yr-online', () => { if (data.error) load(); });
     $('day-prev-btn')?.addEventListener('click', () => goDay(dayOff(state.day) + 1));
     $('day-next-btn')?.addEventListener('click', () => goDay(dayOff(state.day) - 1));
     $('lg-open')?.addEventListener('click', openSheet);

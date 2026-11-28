@@ -115,7 +115,7 @@
   async function pagePredict(root) {
     root.innerHTML = '<p class="note">جارٍ التحميل…</p>';
     const up = await loadUpcoming();
-    if (!up.length) { root.innerHTML = '<div class="pq-empty"><b>مفيش مباريات متاحة للتوقع دلوقتي</b><p>المباريات بتظهر هنا قبل ركلة البداية. ارجع قريب.</p></div>'; return; }
+    if (!up.length) { root.innerHTML = window.yrEmpty ? window.yrEmpty('matches', 'مفيش مباريات متاحة للتوقع دلوقتي', 'المباريات بتظهر هنا قبل ركلة البداية. ارجع قريب.') : '<div class="pq-empty"><b>مفيش مباريات متاحة للتوقع دلوقتي</b></div>'; return; }
     root.innerHTML = '<h2 class="pq-h"><span>المباريات المتاحة للتوقع</span><i class="dot" aria-hidden="true"></i></h2><div class="pq-grid"></div>';
     const grid = $('.pq-grid', root);
     up.slice(0, 40).forEach((f) => grid.append(card(f, { afterSave: paintStats })));
@@ -135,7 +135,7 @@
       try { localStorage.setItem('yr-settle', String(Date.now())); } catch { /* ok */ }
       try { await db.functions.invoke('football-matches', { body: { action: 'settle' } }); rows = await loadMine(); paintStats(); } catch { /* هيتحسب المرة الجاية */ }
     }
-    if (!rows.length) { root.innerHTML = '<div class="pq-empty"><b>لسه ما توقعتش أي مباراة</b><p>افتح تبويب «توقّع» واختار مباراة وابدأ تجمع النقاط.</p></div>'; return; }
+    if (!rows.length) { root.innerHTML = window.yrEmpty ? window.yrEmpty('trophy', 'لسه ما توقعتش أي مباراة', 'افتح تبويب «توقّع» واختار مباراة وابدأ تجمع النقاط.') : '<div class="pq-empty"><b>لسه ما توقعتش أي مباراة</b></div>'; return; }
     const settled = rows.filter((r) => r.settled && !r.void); const ok = settled.filter((r) => r.points > 0);
     const pct = settled.length ? Math.round((ok.length / settled.length) * 100) : 0; const pts = settled.reduce((s, r) => s + (r.points || 0), 0);
     const FL = [['all', 'كل التوقعات'], ['ok', 'الناجحة'], ['bad', 'الخاطئة'], ['wait', 'الجارية']];
