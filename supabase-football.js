@@ -721,7 +721,11 @@
     (async () => {
       try {
         let res = null; let m = null; let degraded = false; let lastMan = null; let lastInf = null;
-        if (Number(fixtureId) < 3e9) try { res = await request({ action: 'fixture', sport, fixtureId: Number(fixtureId) }); m = res?.fixture; } catch (e) { console.error('fixture:', e); }
+        if (Number(fixtureId) < 3e9) {
+          // توفير الـAPI: المباراة اللي لسه قدامها أكتر من 90 دقيقة بنعرضها من قائمة اليوم (مخزّنة ومشتركة) من غير طلب تفاصيل لوحدها
+          try { const lr = await request({ action: 'fixtures', sport, date: localDate(Number(day)) }); const f0 = (lr?.fixtures || []).find((x) => String(x.fixture_id) === String(fixtureId)); if (f0 && f0.status === 'scheduled' && f0.kickoff && new Date(f0.kickoff).getTime() - Date.now() > 90 * 60000) { m = f0; res = {}; } } catch { /* نكمل بطلب التفاصيل */ }
+          if (!m) try { res = await request({ action: 'fixture', sport, fixtureId: Number(fixtureId) }); m = res?.fixture; } catch (e) { console.error('fixture:', e); }
+        }
         if (!m) { // المباراة المهمة المحفوظة (من لوحة التحكم) تفتح حتى لو الـ API واقف
           try { const q = await db.from('fixture_overrides').select('*').eq('fixture_id', Number(fixtureId)).not('snapshot', 'is', null).maybeSingle(); if (q.data?.snapshot) { m = mergeOverride({ ...q.data.snapshot, from_snapshot: true }, q.data); res = {}; degraded = true; } } catch { /* نكمل */ }
         }
@@ -779,10 +783,6 @@
             src: { home: m.home_team, away: m.away_team, date: String(m.kickoff || '').slice(0, 10), sr_id: m.sr_id || '' },
           });
           if (shown) { player.hidden = false; window.yrPlayerReady && window.yrPlayerReady(); window.yrSelectTab && window.yrSelectTab('player'); }
-        }
-        // التفاعل والتعليقات في صفحة المباراة (مش مربوطة بوجود بث)
-        if (sport === 'football' && window.yrWatchSocial && $('md-social')) {
-          try { const { data: ss } = await db.auth.getSession(); const uu = ss?.session?.user || null; window.yrWatchSocial.mount($('md-social'), { db, fixtureId, signedIn: Boolean(uu), userId: uu?.id || null, title: `${H} ضد ${A}`, league: m.league_label || m.league || '', shareUrl: location.href }); } catch (e2) { console.error('social:', e2); }
         }
         // تحديث تلقائي من نفس المصدر: المباشرة وقبل البداية بقليل، كل دقيقة (الدالة بتقدّم الكاش فمش بيستهلك حصة زيادة)
         if (sport === 'football' && Number(fixtureId) < 3e9 && !degraded && m.status !== 'finished') {
