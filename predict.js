@@ -89,17 +89,20 @@
   // ---------- مباريات متاحة: الدالة ← النسخ المحفوظة ----------
   async function loadUpcoming() {
     const all = [];
-    for (const d of [cairoDay(0), cairoDay(1), cairoDay(2)]) {
-      try { const { data } = await db.functions.invoke('football-matches', { body: { action: 'fixtures', sport: 'football', date: d } }); (data?.fixtures || []).forEach((f) => all.push(f)); } catch { /* يوم واحد فاشل ما يوقفش الباقي */ }
+    // 1) من قاعدة البيانات الأول (مجاني): الأرشيف المحفوظ + المباريات المهمة اللي حفظها الموقع/الأدمن
+    try { const { data } = await db.rpc('predictable_fixtures'); (data || []).forEach((r) => all.push({ fixture_id: r.fixture_id, kickoff: r.kickoff, home_team: r.home_team, away_team: r.away_team, home_logo: r.home_logo, away_logo: r.away_logo, league: r.league, status: 'scheduled' })); } catch { /* الدالة لسه متثبتتش */ }
+    try {
+      const { data } = await db.from('fixture_overrides').select('fixture_id,status,kickoff,snapshot').not('snapshot', 'is', null).limit(300);
+      (data || []).forEach((o) => { if (o.snapshot) all.push({ ...o.snapshot, fixture_id: o.fixture_id, status: o.status || o.snapshot.status, kickoff: o.kickoff || o.snapshot.kickoff }); });
+    } catch { /* بدون نسخ */ }
+    const fresh = () => all.filter((f) => f.kickoff && new Date(f.kickoff).getTime() > Date.now() && f.status === 'scheduled').length;
+    // 2) لو القاعدة فيها أقل من 6 مباريات: طلب واحد بس (اليوم) من الدالة (كاش مشترك). لو لسه فاضي: غدًا وبعده
+    if (fresh() < 6) {
+      for (const d of [cairoDay(0), ...(fresh() ? [] : [cairoDay(1), cairoDay(2)])]) {
+        try { const { data } = await db.functions.invoke('football-matches', { body: { action: 'fixtures', sport: 'football', date: d } }); (data?.fixtures || []).forEach((f) => all.push(f)); } catch { /* يوم فاشل ما يوقفش الباقي */ }
+      }
     }
-    if (!all.length) { // 2) الأرشيف المحفوظ + المباريات اللي الأدمن حفظها
-      try { const { data } = await db.rpc('predictable_fixtures'); (data || []).forEach((r) => all.push({ fixture_id: r.fixture_id, kickoff: r.kickoff, home_team: r.home_team, away_team: r.away_team, home_logo: r.home_logo, away_logo: r.away_logo, league: r.league, status: 'scheduled' })); } catch { /* الدالة لسه متثبتتش */ }
-      try {
-        const { data } = await db.from('fixture_overrides').select('fixture_id,status,kickoff,snapshot').not('snapshot', 'is', null).limit(300);
-        (data || []).forEach((o) => { if (o.snapshot) all.push({ ...o.snapshot, fixture_id: o.fixture_id, status: o.status || o.snapshot.status, kickoff: o.kickoff || o.snapshot.kickoff }); });
-      } catch { /* بدون نسخ */ }
-    }
-    if (!all.length) { // 3) SportSRC (نتيجتها بتتحسب من قائمتها بعد النهاية)
+    if (!fresh()) { // 3) SportSRC (نتيجتها بتتحسب من قائمتها بعد النهاية)
       for (const d of [cairoDay(0), cairoDay(1), cairoDay(2)]) {
         try { const { data } = await db.functions.invoke('sportsrc', { body: { action: 'fixtures', date: d } }); (data?.fixtures || []).forEach((f) => all.push(f)); } catch { /* اختياري */ }
       }
