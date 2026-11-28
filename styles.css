@@ -1771,3 +1771,29 @@ article.match.mx.is-followed{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--
 .page-match .m-split>*,.page-match main>*{min-width:0;max-width:100%}
 .md-card,.mt-card,.lg-t{-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .md-card{box-shadow:0 14px 30px -20px rgba(0,0,0,.6),inset 0 1px 0 color-mix(in srgb,#fff 24%,transparent)!important}
+
+/* v129: تطوير الأخبار (موبايل أولًا، زجاج، كروت كبيرة) */
+.news-cats{position:sticky;top:0;z-index:4;margin:6px -16px 8px;padding:8px 16px;scrollbar-width:none;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);background:color-mix(in srgb,var(--bg) 78%,transparent)}
+.news-cats::-webkit-scrollbar{display:none}
+.news-card,.news-feature{background:linear-gradient(160deg,color-mix(in srgb,var(--text) 6%,var(--panel)),var(--panel));box-shadow:0 16px 36px -26px rgba(0,0,0,.7),inset 0 1px 0 color-mix(in srgb,#fff 18%,transparent)}
+.news-card h2,.news-feature h2{text-wrap:balance}
+.news-card p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.news-card .tag.excl,.news-feature .tag.excl{background:linear-gradient(135deg,var(--acc),color-mix(in srgb,var(--acc) 60%,#fff));color:var(--on-acc);font-weight:900}
+@media(max-width:760px){
+  .news-feature{display:block;position:relative;border-radius:26px;min-height:340px;isolation:isolate}
+  .news-feature .news-card-image{position:absolute;inset:0;aspect-ratio:auto;z-index:-2;border-radius:0}
+  .news-feature .news-card-image img{height:100%}
+  .news-feature::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(4,12,8,.05) 25%,rgba(4,12,8,.92) 82%)}
+  .news-feature .news-card-content{position:absolute;inset:auto 0 0 0;padding:18px;color:#fff}
+  .news-feature h2{font-size:21px;line-height:1.55;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+  .news-feature p,.news-feature time,.news-feature .news-read-more{color:rgba(255,255,255,.86)}
+  .news-feature .news-meta{flex-wrap:wrap;justify-content:flex-start;gap:8px}
+  .news-feature .news-meta:last-child{justify-content:space-between;padding:10px 12px;margin-top:10px;border-radius:16px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  .news-grid{grid-template-columns:minmax(0,1fr)!important;gap:14px}
+  .news-card{border-radius:22px}.news-card-content{padding:16px}.news-card h2{font-size:17.5px}
+}
+@media(min-width:761px) and (max-width:1000px){.news-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+/* مقال: راحة قراءة */
+.art-body{max-width:68ch;margin-inline:auto}
+@media(max-width:600px){.art-body{font-size:17px;line-height:2.1}.art-hero{margin-inline:-16px;border-radius:0}}
+@media(max-width:760px){.news-feature .news-meta:last-child{flex-wrap:wrap;row-gap:8px}.news-feature .news-meta:last-child .news-share{margin-inline-start:auto}.news-feature p{-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}}
